@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  /* Color Palette */
+  --text: #2D2424;
+  --background: #FDFCF0;
+  --primary: #84be79;
+  --secondary: #c4d19e;
+  --accent: #b15988;
+  
+  /* Font Variables */
+  --font-noto-sans: "Noto Sans", sans-serif;
+  --font-pinyon-script: "Pinyon Script", cursive;
+}
+
+@theme inline {
+  --color-text: var(--text);
+  --color-background: var(--background);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  
+  --font-sans: var(--font-noto-sans);
+  --font-display: var(--font-pinyon-script);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #FDFCF0;
+    --background: #1a1a1a;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-noto-sans);
+}
+
+/* Utility class for display font (site title) */
+.font-display {
+  font-family: var(--font-pinyon-script);
+}
+
+/* Utility class for body text */
+.font-body {
+  font-family: var(--font-noto-sans);
+}

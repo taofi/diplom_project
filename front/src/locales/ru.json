@@ -1,0 +1,74 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "back": "Назад",
+    "next": "Далее",
+    "submit": "Отправить"
+  },
+  "site": {
+    "title": "Название сайта"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация",
+    "logout": "Выход",
+    "email": "Email",
+    "password": "Пароль",
+    "name": "Имя",
+    "confirmPassword": "Подтвердите пароль",
+    "forgotPassword": "Забыли пароль?",
+    "noAccount": "Нет аккаунта?",
+    "hasAccount": "Уже есть аккаунт?",
+    "loginSuccess": "Вход выполнен",
+    "registerSuccess": "Регистрация успешна",
+    "logoutSuccess": "Выход выполнен",
+    "loginTitle": "Вход в аккаунт",
+    "registerTitle": "Создание аккаунта",
+    "loginButton": "Войти",
+    "registerButton": "Зарегистрироваться"
+  },
+  "nav": {
+    "dashboard": "Панель управления",
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "home": "Главная",
+    "products": "Товары",
+    "orders": "Заказы",
+    "cart": "Корзина"
+  },
+  "profile": {
+    "title": "Профиль",
+    "email": "Email",
+    "name": "Имя",
+    "role": "Роль",
+    "locale": "Язык",
+    "createdAt": "Создан",
+    "profileInformation": "Информация о профиле"
+  },
+  "errors": {
+    "invalidCredentials": "Неверный email или пароль",
+    "networkError": "Ошибка сети",
+    "unknownError": "Неизвестная ошибка",
+    "registrationFailed": "Ошибка регистрации. Попробуйте ещё раз."
+  },
+  "home": {
+    "welcome": "Добро пожаловать на нашу платформу",
+    "description": "Лучшее решение для ваших потребностей",
+    "getStarted": "Начать",
+    "learnMore": "Узнать больше",
+    "features": "Возможности",
+    "lookingForInstructions": "Ищете начальную точку или дополнительные инструкции? Перейдите в",
+    "templates": "Шаблоны",
+    "or": "или в",
+    "learningCenter": "Обучение",
+    "center:": "центр.",
+    "deployNow": "Развернуть",
+    "documentation": "Документация",
+    "toGetStarted": "Чтобы начать, отредактируйте эту страницу."
+  }
+}

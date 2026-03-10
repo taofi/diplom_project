@@ -1,0 +1,74 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "site": {
+    "title": "Site Name"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Login successful",
+    "registerSuccess": "Registration successful",
+    "logoutSuccess": "Logout successful",
+    "loginTitle": "Login to your account",
+    "registerTitle": "Create an account",
+    "loginButton": "Login",
+    "registerButton": "Register"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "home": "Home",
+    "products": "Products",
+    "orders": "Orders",
+    "cart": "Cart"
+  },
+  "profile": {
+    "title": "Profile",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "locale": "Language",
+    "createdAt": "Created at",
+    "profileInformation": "Profile Information"
+  },
+  "errors": {
+    "invalidCredentials": "Invalid email or password",
+    "networkError": "Network error",
+    "unknownError": "Unknown error",
+    "registrationFailed": "Registration failed. Please try again."
+  },
+  "home": {
+    "welcome": "Welcome to Our Platform",
+    "description": "The best solution for your needs",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "features": "Features",
+    "lookingForInstructions": "Looking for a starting point or more instructions? Head over to",
+    "templates": "Templates",
+    "or": "or the",
+    "learningCenter": "Learning",
+    "center:": "center.",
+    "deployNow": "Deploy Now",
+    "documentation": "Documentation",
+    "toGetStarted": "To get started, edit this page."
+  }
+}
