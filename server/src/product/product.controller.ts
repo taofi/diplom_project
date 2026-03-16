@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Get,
@@ -9,6 +10,9 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -18,10 +22,20 @@ import { AddMediaDto } from './dto/add-media.dto';
 import { AddLicenseDto } from './dto/add-license.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
+import { FileService, MediaFolder } from '../common/services/file.service';
+import type { MulterFile } from '../common/services/file.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { Request } from 'express';
+import { MediaType } from '../db/models/product-media.model';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly fileService: FileService,
+  ) {}
 
   @Get()
   async findAll(@Query() query: ProductQueryDto) {
@@ -86,6 +100,74 @@ export class ProductController {
     @CurrentUserId() sellerId: number,
   ) {
     return this.productService.deactivate(id, sellerId);
+  }
+
+  @Post(':id/media/upload')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      storage: diskStorage({
+        destination: './tmp',
+        filename: (
+          _req: Request,
+          file: MulterFile,
+          cb: (error: Error | null, filename: string) => void,
+        ) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async uploadMedia(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() sellerId: number,
+    @UploadedFile() file: MulterFile,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Check if product exists and belongs to seller
+    const product = await this.productService.findById(id);
+    if (!product) {
+      throw new BadRequestException('Product not found');
+    }
+    if (product.seller_id !== sellerId) {
+      throw new BadRequestException(
+        'You can only upload media to your own products',
+      );
+    }
+
+    // Determine media type
+    let mediaType: MediaType = MediaType.IMAGE;
+    if (file.mimetype.startsWith('video/')) {
+      mediaType = MediaType.VIDEO;
+    }
+
+    // Save file to product media folder
+    const result = this.fileService.saveFile(
+      {
+        originalname: file.originalname,
+        buffer: file.buffer,
+        size: file.size,
+        mimetype: file.mimetype,
+      },
+      MediaFolder.PRODUCT,
+      id,
+    );
+
+    // Add media to database
+    const media = await this.productService.addMedia(id, sellerId, {
+      url: result.url,
+      mediaType,
+    });
+
+    return media;
   }
 
   @Get(':id/media')

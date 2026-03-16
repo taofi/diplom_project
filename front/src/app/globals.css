@@ -24,13 +24,11 @@
   --font-display: var(--font-pinyon-script);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #FDFCF0;
-    --background: #1a1a1a;
-  }
+* {
+  box-sizing: border-box;
 }
 
+html,
 body {
   background: var(--background);
   color: var(--text);

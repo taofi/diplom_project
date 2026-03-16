@@ -7,15 +7,20 @@ import { ProductLicense } from '../../db/models/product-license.model';
 import { ProductCategory } from '../../db/models/product-category.model';
 import { Category } from '../../db/models/category.model';
 import { Language } from '../../common/enums/language.enum';
-import { FindOptions, FindAndCountOptions } from 'sequelize';
+import { FileService, MediaFolder } from '../../common/services/file.service';
+import type { FindOptions } from 'sequelize';
 import { Op } from 'sequelize';
-import { CreateProductDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
-import { ProductQueryDto } from '../dto/product-query.dto';
+import {
+  ProductWithRelations,
+  CreateProductDto,
+  UpdateProductDto,
+  ProductQueryParams,
+} from '../../types/product';
 
-type ProductWhereOptions = FindOptions['where'] & {
+type ProductWhereOptions = {
   categoryId?: number;
   is_active?: boolean;
+  is_featured?: boolean;
   type?: ProductType;
   seller_id?: number;
   price?: { [Op.gte]?: number; [Op.lte]?: number };
@@ -25,6 +30,29 @@ type ProductWhereOptions = FindOptions['where'] & {
     sku?: { [Op.iLike]: string };
   }>;
 };
+
+/**
+ * Интерфейс для создания Product в БД
+ */
+interface ProductCreateData {
+  name: string;
+  description: string | null;
+  price: number;
+  discount_price: number | null;
+  sku: string | null;
+  type: ProductType;
+  file_url: string;
+  stock: number;
+  is_active: boolean;
+  is_featured: boolean;
+  main_image: string | null;
+  seller_id: number;
+}
+
+/**
+ * Интерфейс для обновления Product
+ */
+type ProductUpdateData = Partial<ProductCreateData>;
 
 @Injectable()
 export class ProductRepository {
@@ -37,18 +65,24 @@ export class ProductRepository {
     private readonly productTranslationModel: typeof ProductTranslation,
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
+    private readonly fileService: FileService,
   ) {}
 
-  async findAll(options?: FindOptions): Promise<Product[]> {
+  async findAll(options?: FindOptions<Product>): Promise<Product[]> {
     return this.productModel.findAll(options);
   }
 
-  async findById(id: number, options?: FindOptions): Promise<Product | null> {
+  async findById(
+    id: number,
+    options?: FindOptions<Product>,
+  ): Promise<Product | null> {
     return this.productModel.findByPk(id, options);
   }
 
-  async findByIdWithRelations(id: number): Promise<Product | null> {
-    return this.productModel.findByPk(id, {
+  async findByIdWithRelations(
+    id: number,
+  ): Promise<ProductWithRelations | null> {
+    const product = await this.productModel.findByPk(id, {
       include: [
         { model: ProductMedia },
         { model: ProductTranslation },
@@ -56,9 +90,17 @@ export class ProductRepository {
         { model: Category },
       ],
     });
+
+    if (!product) return null;
+
+    // Добавляем типизированные связи
+    return product as unknown as ProductWithRelations;
   }
 
-  async findBySku(sku: string, options?: FindOptions): Promise<Product | null> {
+  async findBySku(
+    sku: string,
+    options?: FindOptions<Product>,
+  ): Promise<Product | null> {
     return this.productModel.findOne({
       where: { sku },
       ...options,
@@ -66,9 +108,23 @@ export class ProductRepository {
   }
 
   async findAndCountAll(
-    query: ProductQueryDto = {},
-  ): Promise<{ rows: Product[]; count: number }> {
-    const { page = 1, limit = 10, categoryId, isActive, search, type, sellerId, isFeatured, minPrice, maxPrice, sortBy = 'created_at', sortOrder = 'desc' } = query;
+    query: ProductQueryParams = {},
+  ): Promise<{ rows: ProductWithRelations[]; count: number }> {
+    const {
+      page = 1,
+      limit = 10,
+      categoryId,
+      isActive,
+      search,
+      type,
+      sellerId,
+      isFeatured,
+      minPrice,
+      maxPrice,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+    } = query;
+
     const offset = (page - 1) * limit;
 
     const where: ProductWhereOptions = {};
@@ -111,34 +167,40 @@ export class ProductRepository {
       ];
     }
 
-    const options: FindAndCountOptions = {
+    const result = await this.productModel.findAndCountAll({
       where,
       offset,
       limit,
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
-      include: [
-        { model: Category },
-      ],
-    };
+      include: [{ model: Category }],
+    });
 
-    return this.productModel.findAndCountAll(options);
+    return {
+      rows: result.rows as unknown as ProductWithRelations[],
+      count: result.count,
+    };
   }
 
-  async create(data: CreateProductDto): Promise<Product> {
-    const product = await this.productModel.create({
+  async create(
+    data: CreateProductDto,
+    sellerId: number,
+  ): Promise<ProductWithRelations> {
+    const createData: ProductCreateData = {
       name: data.name,
-      description: data.description,
+      description: data.description ?? null,
       price: data.price,
-      discount_price: data.discountPrice,
-      sku: data.sku,
+      discount_price: data.discountPrice ?? null,
+      sku: data.sku ?? null,
       type: data.type,
       file_url: data.fileUrl,
       stock: data.stock ?? 0,
       is_active: data.isActive ?? true,
       is_featured: data.isFeatured ?? false,
-      main_image: data.mainImage,
-      seller_id: 0, // Will be set by service
-    } as any);
+      main_image: data.mainImage ?? null,
+      seller_id: sellerId,
+    };
+
+    const product = await this.productModel.create(createData as any);
 
     // Add categories
     if (data.categoryIds && data.categoryIds.length > 0) {
@@ -174,21 +236,29 @@ export class ProductRepository {
       }
     }
 
-    return this.findByIdWithRelations(product.id) as Promise<Product>;
+    return this.findByIdWithRelations(
+      product.id,
+    ) as Promise<ProductWithRelations>;
   }
 
-  async update(id: number, data: UpdateProductDto): Promise<Product> {
+  async update(
+    id: number,
+    data: UpdateProductDto,
+  ): Promise<ProductWithRelations> {
     const product = await this.findById(id);
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
     // Update basic fields
-    const updateData: Record<string, any> = {};
+    const updateData: ProductUpdateData = {};
+
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.description !== undefined)
+      updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;
-    if (data.discountPrice !== undefined) updateData.discount_price = data.discountPrice;
+    if (data.discountPrice !== undefined)
+      updateData.discount_price = data.discountPrice;
     if (data.sku !== undefined) updateData.sku = data.sku;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.fileUrl !== undefined) updateData.file_url = data.fileUrl;
@@ -224,7 +294,7 @@ export class ProductRepository {
       }
     }
 
-    return this.findByIdWithRelations(id) as Promise<Product>;
+    return this.findByIdWithRelations(id) as Promise<ProductWithRelations>;
   }
 
   async delete(id: number): Promise<void> {
@@ -232,6 +302,9 @@ export class ProductRepository {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
+
+    // Delete all media files from disk
+    this.deleteAllMediaFiles(id);
 
     // Delete related records
     await ProductCategory.destroy({ where: { product_id: id } });
@@ -242,11 +315,26 @@ export class ProductRepository {
     await product.destroy();
   }
 
-  async addMedia(productId: number, data: { url: string; mediaType?: string; isCover?: boolean; sortOrder?: number }): Promise<ProductMedia> {
+  /**
+   * Delete all media files for a product from disk
+   */
+  private deleteAllMediaFiles(productId: number): void {
+    this.fileService.deleteFolderFiles(MediaFolder.PRODUCT, productId);
+  }
+
+  async addMedia(
+    productId: number,
+    data: {
+      url: string;
+      mediaType?: string;
+      isCover?: boolean;
+      sortOrder?: number;
+    },
+  ): Promise<ProductMedia> {
     return this.productMediaModel.create({
       product_id: productId,
       url: data.url,
-      media_type: data.mediaType || 'image',
+      media_type: (data.mediaType as ProductMedia['media_type']) || 'image',
       is_cover: data.isCover || false,
       sort_order: data.sortOrder || 0,
     });
@@ -257,10 +345,20 @@ export class ProductRepository {
     if (!media) {
       throw new NotFoundException('Media not found');
     }
+
+    // Delete the file from disk
+    if (media.url) {
+      this.fileService.deleteFile(media.url);
+    }
+
     await media.destroy();
   }
 
-  async addLicense(productId: number, licenseTypeId: number, price: number): Promise<ProductLicense> {
+  async addLicense(
+    productId: number,
+    licenseTypeId: number,
+    price: number,
+  ): Promise<ProductLicense> {
     return this.productLicenseModel.create({
       product_id: productId,
       license_type_id: licenseTypeId,

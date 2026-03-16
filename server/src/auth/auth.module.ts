@@ -30,6 +30,6 @@ import { User } from '../db/models/user.model';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, TokenModule],
 })
 export class AuthModule {}

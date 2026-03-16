@@ -35,13 +35,13 @@ export class AuthService {
       password_hash: passwordHash,
       name: dto.name,
       locale: dto.locale || 'ru',
-      role: UserRole.USER,
+      role: dto.roles || [UserRole.USER],
     });
 
     const tokens = await this.tokenService.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role,
+      roles: user.role,
     });
 
     return {
@@ -49,7 +49,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        roles: user.role,
         locale: user.locale,
         avatar_url: user.avatar_url,
       },
@@ -79,7 +79,7 @@ export class AuthService {
     const tokens = await this.tokenService.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role,
+      roles: user.role,
     });
 
     return {
@@ -87,7 +87,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        roles: user.role,
         locale: user.locale,
         avatar_url: user.avatar_url,
       },
@@ -128,7 +128,7 @@ export class AuthService {
       const tokens = await this.tokenService.generateTokens({
         sub: user.id,
         email: user.email,
-        role: user.role,
+        roles: user.role,
       });
 
       return {

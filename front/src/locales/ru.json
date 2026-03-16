@@ -13,6 +13,19 @@
   "site": {
     "title": "Название сайта"
   },
+  "nav": {
+    "home": "Главная",
+    "blog": "Блог",
+    "contacts": "Контакты",
+    "cart": "Корзина",
+    "profile": "Профиль",
+    "login": "Войти",
+    "dashboard": "Панель управления",
+    "settings": "Настройки",
+    "products": "Товары",
+    "orders": "Заказы",
+    "catalog": "Каталог"
+  },
   "auth": {
     "login": "Вход",
     "register": "Регистрация",
@@ -30,25 +43,42 @@
     "loginTitle": "Вход в аккаунт",
     "registerTitle": "Создание аккаунта",
     "loginButton": "Войти",
-    "registerButton": "Зарегистрироваться"
-  },
-  "nav": {
-    "dashboard": "Панель управления",
-    "profile": "Профиль",
-    "settings": "Настройки",
-    "home": "Главная",
-    "products": "Товары",
-    "orders": "Заказы",
-    "cart": "Корзина"
-  },
-  "profile": {
+    "registerButton": "Зарегистрироваться",
     "title": "Профиль",
-    "email": "Email",
-    "name": "Имя",
     "role": "Роль",
     "locale": "Язык",
     "createdAt": "Создан",
     "profileInformation": "Информация о профиле"
+  },
+  "profile": {
+    "title": "Профиль",
+    "profileInformation": "Информация о профиле",
+    "name": "Имя",
+    "email": "Email",
+    "role": "Роль",
+    "locale": "Язык",
+    "createdAt": "Создан"
+  },
+  "catalog": {
+    "title": "Каталог",
+    "search": "Поиск",
+    "searchPlaceholder": "Поиск товаров...",
+    "filter": "Фильтр",
+    "category": "Категория",
+    "type": "Тип",
+    "price": "Цена",
+    "priceRange": "Диапазон цен",
+    "from": "От",
+    "to": "До",
+    "all": "Все",
+    "brushes": "Кисти",
+    "illustrations": "Иллюстрации",
+    "noProducts": "Товары не найдены",
+    "sortBy": "Сортировка",
+    "sortPriceAsc": "Цена по возрастанию",
+    "sortPriceDesc": "Цена по убыванию",
+    "sortNewest": "Сначала новые",
+    "loadMore": "Загрузить ещё"
   },
   "errors": {
     "invalidCredentials": "Неверный email или пароль",

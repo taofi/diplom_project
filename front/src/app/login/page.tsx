@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/dashboard');
+      router.push('/profile');
     } catch {
       setError(t('errors.invalidCredentials'));
     }

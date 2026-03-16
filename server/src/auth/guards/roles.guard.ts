@@ -4,7 +4,7 @@ import { UserRole } from '../../db/models/user.model';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 interface AuthRequest {
-  user?: { role: UserRole };
+  user?: { role: UserRole[] };
 }
 
 @Injectable()
@@ -28,6 +28,6 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    return requiredRoles.includes(user.role);
+    return requiredRoles.some((role) => user.role.includes(role));
   }
 }

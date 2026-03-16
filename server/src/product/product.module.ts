@@ -9,6 +9,7 @@ import { ProductTranslation } from '../db/models/product-translation.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { ProductCategory } from '../db/models/product-category.model';
 import { Category } from '../db/models/category.model';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Category } from '../db/models/category.model';
       ProductCategory,
       Category,
     ]),
+    AuthModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductRepository],

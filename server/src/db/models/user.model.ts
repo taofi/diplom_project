@@ -24,6 +24,7 @@ import { CustomOrder } from './custom-order.model';
 export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
+  AUTHOR = 'author',
 }
 
 @Table({ tableName: 'users', timestamps: true })
@@ -46,9 +47,9 @@ export class User extends Model {
   @Column({ type: DataType.STRING(500), allowNull: true })
   declare avatar_url: string | null;
 
-  @Default(UserRole.USER)
-  @Column(DataType.ENUM(...Object.values(UserRole)))
-  declare role: UserRole;
+  @Default(() => [UserRole.USER])
+  @Column(DataType.JSONB)
+  declare role: UserRole[];
 
   @Default('ru')
   @Column({ type: DataType.STRING(5) })

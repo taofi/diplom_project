@@ -13,6 +13,19 @@
   "site": {
     "title": "Site Name"
   },
+  "nav": {
+    "home": "Home",
+    "blog": "Blog",
+    "contacts": "Contacts",
+    "cart": "Cart",
+    "profile": "Profile",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "products": "Products",
+    "orders": "Orders",
+    "catalog": "Catalog"
+  },
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -30,25 +43,42 @@
     "loginTitle": "Login to your account",
     "registerTitle": "Create an account",
     "loginButton": "Login",
-    "registerButton": "Register"
-  },
-  "nav": {
-    "dashboard": "Dashboard",
-    "profile": "Profile",
-    "settings": "Settings",
-    "home": "Home",
-    "products": "Products",
-    "orders": "Orders",
-    "cart": "Cart"
-  },
-  "profile": {
+    "registerButton": "Register",
     "title": "Profile",
-    "email": "Email",
-    "name": "Name",
     "role": "Role",
     "locale": "Language",
     "createdAt": "Created at",
     "profileInformation": "Profile Information"
+  },
+  "profile": {
+    "title": "Profile",
+    "profileInformation": "Profile Information",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "locale": "Language",
+    "createdAt": "Created at"
+  },
+  "catalog": {
+    "title": "Catalog",
+    "search": "Search",
+    "searchPlaceholder": "Search products...",
+    "filter": "Filter",
+    "category": "Category",
+    "type": "Type",
+    "price": "Price",
+    "priceRange": "Price Range",
+    "from": "From",
+    "to": "To",
+    "all": "All",
+    "brushes": "Brushes",
+    "illustrations": "Illustrations",
+    "noProducts": "No products found",
+    "sortBy": "Sort by",
+    "sortPriceAsc": "Price: Low to High",
+    "sortPriceDesc": "Price: High to Low",
+    "sortNewest": "Newest First",
+    "loadMore": "Load More"
   },
   "errors": {
     "invalidCredentials": "Invalid email or password",

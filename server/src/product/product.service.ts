@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ProductRepository } from './repositories/product.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { AddMediaDto } from './dto/add-media.dto';
 import { AddLicenseDto } from './dto/add-license.dto';
+import type { MediaInfo, LicenseInfo } from '../types/product';
 
 @Injectable()
 export class ProductService {
@@ -53,22 +58,28 @@ export class ProductService {
   async create(sellerId: number, createProductDto: CreateProductDto) {
     // Check if SKU already exists
     if (createProductDto.sku) {
-      const existingProduct = await this.productRepository.findBySku(createProductDto.sku);
+      const existingProduct = await this.productRepository.findBySku(
+        createProductDto.sku,
+      );
       if (existingProduct) {
         throw new ForbiddenException('Product with this SKU already exists');
       }
     }
 
     // Set seller ID and create product
-    const product = await this.productRepository.create({
-      ...createProductDto,
+    const product = await this.productRepository.create(
+      createProductDto,
       sellerId,
-    } as any);
+    );
 
     return product;
   }
 
-  async update(id: number, sellerId: number, updateProductDto: UpdateProductDto) {
+  async update(
+    id: number,
+    sellerId: number,
+    updateProductDto: UpdateProductDto,
+  ) {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
@@ -81,7 +92,9 @@ export class ProductService {
 
     // Check if SKU is being changed to an existing one
     if (updateProductDto.sku && updateProductDto.sku !== product.sku) {
-      const existingProduct = await this.productRepository.findBySku(updateProductDto.sku);
+      const existingProduct = await this.productRepository.findBySku(
+        updateProductDto.sku,
+      );
       if (existingProduct && existingProduct.id !== id) {
         throw new ForbiddenException('Product with this SKU already exists');
       }
@@ -139,7 +152,9 @@ export class ProductService {
     }
 
     if (product.seller_id !== sellerId) {
-      throw new ForbiddenException('You can only add media to your own products');
+      throw new ForbiddenException(
+        'You can only add media to your own products',
+      );
     }
 
     return this.productRepository.addMedia(id, addMediaDto);
@@ -152,7 +167,9 @@ export class ProductService {
     }
 
     if (product.seller_id !== sellerId) {
-      throw new ForbiddenException('You can only delete media from your own products');
+      throw new ForbiddenException(
+        'You can only delete media from your own products',
+      );
     }
 
     await this.productRepository.deleteMedia(mediaId);
@@ -165,27 +182,54 @@ export class ProductService {
     }
 
     if (product.seller_id !== sellerId) {
-      throw new ForbiddenException('You can only add licenses to your own products');
+      throw new ForbiddenException(
+        'You can only add licenses to your own products',
+      );
     }
 
-    return this.productRepository.addLicense(id, addLicenseDto.licenseTypeId, addLicenseDto.price);
+    return this.productRepository.addLicense(
+      id,
+      addLicenseDto.licenseTypeId,
+      addLicenseDto.price,
+    );
   }
 
-  async getLicenses(id: number) {
+  async getLicenses(id: number): Promise<LicenseInfo[]> {
     const product = await this.productRepository.findByIdWithRelations(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    return (product as any).licenses || [];
+    return (
+      product.licenses?.map((l) => ({
+        id: l.id,
+        licenseTypeId: l.license_type_id,
+        price: Number(l.price),
+        licenseType: l.license_type
+          ? {
+              id: l.license_type.id,
+              name: l.license_type.slug,
+              slug: l.license_type.slug,
+            }
+          : undefined,
+      })) || []
+    );
   }
 
-  async getMedia(id: number) {
+  async getMedia(id: number): Promise<MediaInfo[]> {
     const product = await this.productRepository.findByIdWithRelations(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    return (product as any).media || [];
+    return (
+      product.media?.map((m) => ({
+        id: m.id,
+        url: m.url,
+        mediaType: m.media_type,
+        isCover: m.is_cover,
+        sortOrder: m.sort_order,
+      })) || []
+    );
   }
 }

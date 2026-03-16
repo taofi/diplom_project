@@ -1,4 +1,5 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsArray, IsEnum } from 'class-validator';
+import { UserRole } from '../../db/models/user.model';
 
 export class RegisterDto {
   @IsEmail({}, { message: 'Email must be valid' })
@@ -11,6 +12,11 @@ export class RegisterDto {
   @IsString()
   @MinLength(1, { message: 'Name is required' })
   name: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(UserRole, { each: true })
+  roles?: UserRole[] = [UserRole.USER];
 
   @IsOptional()
   @IsString()

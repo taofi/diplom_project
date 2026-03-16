@@ -1,0 +1,27 @@
+{
+  "development": {
+    "username": "admin",
+    "password": "p1ssw0rt",
+    "database": "database",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false
+  },
+  "test": {
+    "username": "admin",
+    "password": "p1ssw0rt",
+    "database": "database_test",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "admin",
+    "password": "p1ssw0rt",
+    "database": "database_production",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres"
+  }
+}
