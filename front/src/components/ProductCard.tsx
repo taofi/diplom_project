@@ -13,7 +13,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
   const imageUrl = product.mainImage || product.media?.[0]?.url || null;
   
   // Вычисляем цену: если есть скидка - показываем её
-  const displayPrice = product.discountPrice ?? product.price;
+  const displayPrice = Number(product.discountPrice ?? product.price);
 
   return (
     <div 

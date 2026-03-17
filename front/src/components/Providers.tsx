@@ -3,15 +3,18 @@
 import { ReactNode } from 'react';
 import { AuthProvider } from '@/context/auth/AuthContext';
 import { I18nProvider } from '@/context/i18n/I18nContext';
+import { Locale } from '@/context/i18n/types';
 
 interface ProvidersProps {
   children: ReactNode;
+  initialLocale?: Locale; 
 }
-
-export function Providers({ children }: ProvidersProps) {
+export function Providers({ children, initialLocale }: ProvidersProps) {
   return (
     <AuthProvider>
-      <I18nProvider>{children}</I18nProvider>
+      <I18nProvider initialLocale={initialLocale}>
+      {children}
+    </I18nProvider>
     </AuthProvider>
   );
 }

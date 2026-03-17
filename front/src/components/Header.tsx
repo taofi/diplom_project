@@ -7,7 +7,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Header() {
   return (
-    <header className="border-b border-primary/20 py-2">
+    <header className="border-b fixed z-100 top-0 left-20 right-20 border-primary/20 py-2">
       <div className="grid grid-cols-3 items-center">
         
         {/* Лево: Логотип */}

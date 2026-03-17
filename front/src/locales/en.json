@@ -84,7 +84,8 @@
     "invalidCredentials": "Invalid email or password",
     "networkError": "Network error",
     "unknownError": "Unknown error",
-    "registrationFailed": "Registration failed. Please try again."
+    "registrationFailed": "Registration failed. Please try again.",
+    "passwordsDoNotMatch": "Passwords do not match"
   },
   "home": {
     "welcome": "Welcome to Our Platform",
@@ -100,5 +101,10 @@
     "deployNow": "Deploy Now",
     "documentation": "Documentation",
     "toGetStarted": "To get started, edit this page."
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or has been moved. Please check the URL or go back to the home page.",
+    "backButton": "Go Back"
   }
 }

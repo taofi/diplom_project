@@ -13,19 +13,20 @@ module.exports = {
       );
 
       for (const product of products) {
-        const shortDesc = product.description?.substring(0, 100) || null;
+        const name = product.name || 'Unnamed Product';
+        const description = product.description || '';
         
         // Add Russian translation
         await queryInterface.sequelize.query(
-          `INSERT INTO product_translations (name, description, short_description, product_id, language) 
-           VALUES ('${product.name}', '${product.description}', '${shortDesc || ''}', ${product.id}, 'ru')`,
+          `INSERT INTO product_translations (name, description, productId, language) 
+           VALUES ('${name.replace(/'/g, "''")}', '${description.replace(/'/g, "''")}', ${product.id}, 'ru')`,
           { transaction }
         );
 
         // Add English translation
         await queryInterface.sequelize.query(
-          `INSERT INTO product_translations (name, description, short_description, product_id, language) 
-           VALUES ('${product.name}', '${product.description}', '${shortDesc || ''}', ${product.id}, 'en')`,
+          `INSERT INTO product_translations (name, description, productId, language) 
+           VALUES ('${name.replace(/'/g, "''")}', '${description.replace(/'/g, "''")}', ${product.id}, 'en')`,
           { transaction }
         );
       }

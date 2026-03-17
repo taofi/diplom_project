@@ -28,12 +28,17 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 interface I18nProviderProps {
   children: ReactNode;
+  initialLocale?: Locale;
 }
 
-export function I18nProvider({ children }: I18nProviderProps) {
+export function I18nProvider({ children, initialLocale }: I18nProviderProps) {
   const { user, isAuthenticated } = useAuth();
-
+  
   const [locale, setLocaleState] = useState<Locale>(() => {
+    // Приоритет: 1. initialLocale (из URL), 2. сохраненный в cookie, 3. пользовательский язык, 4. браузерный
+    if (initialLocale && (initialLocale === 'en' || initialLocale === 'ru')) {
+      return initialLocale;
+    }
     const savedLocale = Cookies.get(LOCALE_KEY);
     if (savedLocale === 'en' || savedLocale === 'ru') {
       return savedLocale;
