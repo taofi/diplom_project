@@ -54,11 +54,12 @@ export interface LicenseDto {
 
 /**
  * DTO для создания продукта (camelCase)
+ * price вычисляется как MIN(licenses.price)
  */
 export interface CreateProductDto {
   name: string;
   description?: string;
-  price: number;
+  // price убран - вычисляется как MIN(licenses.price)
   discountPrice?: number;
   sku?: string;
   type: ProductType;
@@ -66,7 +67,7 @@ export interface CreateProductDto {
   stock?: number;
   isActive?: boolean;
   isFeatured?: boolean;
-  mainImage?: string;
+  // mainImage убран - берется из media where is_cover = true
   categoryIds?: number[];
   translations?: TranslationDto[];
   licenses?: LicenseDto[];
@@ -74,8 +75,9 @@ export interface CreateProductDto {
 
 /**
  * DTO для обновления продукта (все поля опциональны)
+ * price вычисляется как MIN(licenses.price)
  */
-export type UpdateProductDto = Partial<CreateProductDto> & {
+export type UpdateProductDto = Partial<Omit<CreateProductDto, 'price' | 'mainImage'>> & {
   categoryIds?: number[];
   translations?: TranslationDto[];
 };
@@ -223,6 +225,14 @@ export type ProductWithRelations = ProductFields & {
   licenses?: (ProductLicense & {
     license_type?: LicenseType;
   })[];
+};
+
+/**
+ * Расширенный тип Product с вычисляемыми полями для репозитория
+ */
+export type ProductWithComputedFields = ProductWithRelations & {
+  price: number;
+  main_image: string;
 };
 
 // =======================

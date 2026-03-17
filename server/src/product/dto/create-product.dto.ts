@@ -49,10 +49,7 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
-  @IsNumber({}, { message: 'Price must be a number' })
-  @IsNotEmpty({ message: 'Price is required' })
-  @Min(0)
-  price: number;
+  // price убран - теперь вычисляется как MIN(licenses.price)
 
   @IsNumber({}, { message: 'Discount price must be a number' })
   @IsOptional()
@@ -84,9 +81,7 @@ export class CreateProductDto {
   @IsOptional()
   isFeatured?: boolean;
 
-  @IsString({ message: 'Main image must be a string' })
-  @IsOptional()
-  mainImage?: string;
+  // mainImage убран - теперь берется из media where is_cover = true
 
   @IsArray({ message: 'Category IDs must be an array' })
   @IsOptional()
@@ -100,8 +95,8 @@ export class CreateProductDto {
   translations?: TranslationDto[];
 
   @IsArray({ message: 'Licenses must be an array' })
-  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => LicenseDto)
-  licenses?: LicenseDto[];
+  @IsNotEmpty({ message: 'At least one license is required' })
+  licenses: LicenseDto[];
 }

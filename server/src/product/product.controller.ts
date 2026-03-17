@@ -209,4 +209,15 @@ export class ProductController {
   ) {
     return this.productService.addLicense(id, sellerId, addLicenseDto);
   }
+
+  @Delete(':id/licenses/:licenseId')
+  @UseGuards(JwtAuthGuard)
+  async deleteLicense(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('licenseId', ParseIntPipe) licenseId: number,
+    @CurrentUserId() sellerId: number,
+  ) {
+    await this.productService.deleteLicense(id, licenseId, sellerId);
+    return { success: true };
+  }
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString({ message: 'Name must be a string' })
@@ -25,9 +25,11 @@ export class CreateCategoryDto {
   @IsOptional()
   image?: string;
 
+  @IsNumber({}, { message: 'ParentId must be a number' })
   @IsOptional()
   parentId?: number;
 
+  @IsNumber({}, { message: 'Position must be a number' })
   @IsOptional()
   position?: number;
 }

@@ -10,3 +10,5 @@ export * from './common';
 
 // Доменные типы
 export * from './product';
+export * from './category';
+export * from './license-type';

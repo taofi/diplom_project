@@ -29,10 +29,7 @@ export class UpdateProductDto {
   @IsOptional()
   description?: string;
 
-  @IsNumber({}, { message: 'Price must be a number' })
-  @IsOptional()
-  @Min(0)
-  price?: number;
+  // price убран - вычисляется как MIN(licenses.price)
 
   @IsNumber({}, { message: 'Discount price must be a number' })
   @IsOptional()
@@ -64,9 +61,7 @@ export class UpdateProductDto {
   @IsOptional()
   isFeatured?: boolean;
 
-  @IsString({ message: 'Main image must be a string' })
-  @IsOptional()
-  mainImage?: string;
+  // mainImage убран - берется из media where is_cover = true
 
   @IsArray({ message: 'Category IDs must be an array' })
   @IsOptional()

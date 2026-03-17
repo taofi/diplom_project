@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Sequelize, Transaction } from 'sequelize';
 import { Product, ProductType } from '../../db/models/product.model';
 import { ProductMedia } from '../../db/models/product-media.model';
 import { ProductTranslation } from '../../db/models/product-translation.model';
@@ -12,6 +13,7 @@ import type { FindOptions } from 'sequelize';
 import { Op } from 'sequelize';
 import {
   ProductWithRelations,
+  ProductWithComputedFields,
   CreateProductDto,
   UpdateProductDto,
   ProductQueryParams,
@@ -33,11 +35,12 @@ type ProductWhereOptions = {
 
 /**
  * Интерфейс для создания Product в БД
+ * price и mainImage убраны - они вычисляемые
  */
 interface ProductCreateData {
   name: string;
   description: string | null;
-  price: number;
+  // price убран - вычисляется как MIN(licenses.price)
   discount_price: number | null;
   sku: string | null;
   type: ProductType;
@@ -45,7 +48,7 @@ interface ProductCreateData {
   stock: number;
   is_active: boolean;
   is_featured: boolean;
-  main_image: string | null;
+  // main_image убран - берется из media where is_cover = true
   seller_id: number;
 }
 
@@ -66,6 +69,7 @@ export class ProductRepository {
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
     private readonly fileService: FileService,
+    private readonly sequelize: Sequelize,
   ) {}
 
   async findAll(options?: FindOptions<Product>): Promise<Product[]> {
@@ -92,6 +96,24 @@ export class ProductRepository {
     });
 
     if (!product) return null;
+
+    // Вычисляем price как минимальную цену из лицензий
+    if (product.licenses && product.licenses.length > 0) {
+      const prices = product.licenses.map((l) => Number(l.price));
+      (product as unknown as ProductWithComputedFields).price = Math.min(...prices);
+    } else {
+      // Товар без лицензий не может быть продан
+      (product as unknown as ProductWithComputedFields).price = 0;
+    }
+
+    // Получаем main_image из медиа где is_cover = true
+    if (product.media && product.media.length > 0) {
+      const coverMedia = product.media.find((m) => m.is_cover);
+      const url = coverMedia?.url;
+      (product as unknown as ProductWithComputedFields).main_image = url ? String(url) : '';
+    } else {
+      (product as unknown as ProductWithComputedFields).main_image = '';
+    }
 
     // Добавляем типизированные связи
     return product as unknown as ProductWithRelations;
@@ -172,11 +194,37 @@ export class ProductRepository {
       offset,
       limit,
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
-      include: [{ model: Category }],
+      include: [
+        { model: Category },
+        { model: ProductMedia },
+        { model: ProductLicense },
+      ],
+    });
+
+    // Вычисляем price и main_image для каждого товара
+    const rows = result.rows.map((product): ProductWithComputedFields => {
+      // price = MIN(licenses.price)
+      if (product.licenses && product.licenses.length > 0) {
+        const prices = product.licenses.map((l) => Number(l.price));
+        product.price = Math.min(...prices);
+      } else {
+        // Товар без лицензий не может быть продан
+        product.price = 0;
+      }
+
+      // main_image = media where is_cover = true
+      if (product.media && product.media.length > 0) {
+        const coverMedia = product.media.find((m) => m.is_cover);
+        product.main_image = coverMedia ? String(coverMedia.url) : '';
+      } else {
+        product.main_image = '';
+      }
+
+      return product as ProductWithComputedFields;
     });
 
     return {
-      rows: result.rows as unknown as ProductWithRelations[],
+      rows: rows as unknown as ProductWithRelations[],
       count: result.count,
     };
   }
@@ -188,7 +236,7 @@ export class ProductRepository {
     const createData: ProductCreateData = {
       name: data.name,
       description: data.description ?? null,
-      price: data.price,
+      // price убран - вычисляется как MIN(licenses.price)
       discount_price: data.discountPrice ?? null,
       sku: data.sku ?? null,
       type: data.type,
@@ -196,7 +244,7 @@ export class ProductRepository {
       stock: data.stock ?? 0,
       is_active: data.isActive ?? true,
       is_featured: data.isFeatured ?? false,
-      main_image: data.mainImage ?? null,
+      // main_image убран - берется из media where is_cover = true
       seller_id: sellerId,
     };
 
@@ -256,7 +304,7 @@ export class ProductRepository {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined)
       updateData.description = data.description;
-    if (data.price !== undefined) updateData.price = data.price;
+    // price убран - вычисляется как MIN(licenses.price)
     if (data.discountPrice !== undefined)
       updateData.discount_price = data.discountPrice;
     if (data.sku !== undefined) updateData.sku = data.sku;
@@ -265,7 +313,7 @@ export class ProductRepository {
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;
     if (data.isFeatured !== undefined) updateData.is_featured = data.isFeatured;
-    if (data.mainImage !== undefined) updateData.main_image = data.mainImage;
+    // main_image убран - берется из media where is_cover = true
 
     await product.update(updateData);
 
@@ -363,6 +411,26 @@ export class ProductRepository {
       product_id: productId,
       license_type_id: licenseTypeId,
       price,
+    });
+  }
+
+  async findLicenseById(licenseId: number): Promise<ProductLicense | null> {
+    return this.productLicenseModel.findByPk(licenseId);
+  }
+
+  async deleteLicense(licenseId: number): Promise<void> {
+    await this.sequelize.transaction(async (t) => {
+      const license = await this.productLicenseModel.findByPk(licenseId, { transaction: t });
+      if (!license) {
+        throw new NotFoundException('License not found');
+      }
+      await license.destroy({ transaction: t });
+    });
+  }
+
+  async countLicenses(productId: number): Promise<number> {
+    return this.productLicenseModel.count({
+      where: { product_id: productId },
     });
   }
 }

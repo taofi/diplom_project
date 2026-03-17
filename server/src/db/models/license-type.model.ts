@@ -22,6 +22,9 @@ export class LicenseType extends Model {
   @Column({ type: DataType.STRING(50), allowNull: false })
   declare slug: string; // individual | commercial | extended
 
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare description: string | null; // Описание лицензии
+
   @HasMany(() => LicenseTypeTranslation, 'license_type_id')
   declare translations: LicenseTypeTranslation[];
 

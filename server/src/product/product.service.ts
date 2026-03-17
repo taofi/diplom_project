@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProductRepository } from './repositories/product.repository';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -214,6 +215,35 @@ export class ProductService {
           : undefined,
       })) || []
     );
+  }
+
+  async deleteLicense(id: number, licenseId: number, sellerId: number): Promise<void> {
+    const product = await this.productRepository.findById(id);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    if (product.seller_id !== sellerId) {
+      throw new ForbiddenException(
+        'You can only delete licenses from your own products',
+      );
+    }
+
+    // Check if license exists
+    const license = await this.productRepository.findLicenseById(licenseId);
+    if (!license || license.product_id !== id) {
+      throw new NotFoundException(`License not found for this product`);
+    }
+
+    // Check if this is the last license - cannot delete the last license
+    const licenseCount = await this.productRepository.countLicenses(id);
+    if (licenseCount <= 1) {
+      throw new BadRequestException(
+        'Cannot delete the last license. Product must have at least one license.',
+      );
+    }
+
+    await this.productRepository.deleteLicense(licenseId);
   }
 
   async getMedia(id: number): Promise<MediaInfo[]> {
