@@ -106,5 +106,35 @@
     "title": "Page Not Found",
     "description": "The page you are looking for does not exist or has been moved. Please check the URL or go back to the home page.",
     "backButton": "Go Back"
+  },
+  "admin": {
+    "products": {
+      "title": "Manage Products",
+      "createNew": "Create Product",
+      "edit": "Edit Product",
+      "basicInfo": "Basic Information",
+      "name": "Name",
+      "description": "Description",
+      "type": "Product Type",
+      "fileStock": "File & Stock",
+      "fileUrl": "File URL",
+      "stock": "Stock",
+      "price": "Price",
+      "discountPrice": "Discount Price",
+      "categories": "Categories",
+      "licenses": "Licenses",
+      "addLicense": "Add License",
+      "status": "Status",
+      "active": "Active",
+      "featured": "Featured",
+      "create": "Create Product",
+      "update": "Update Product"
+    }
+  },
+  "product": {
+    "types": {
+      "brush": "Brush",
+      "illustration": "Illustration"
+    }
   }
 }

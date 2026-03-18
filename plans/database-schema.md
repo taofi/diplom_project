@@ -144,33 +144,6 @@ erDiagram
         TIMESTAMP purchased_at "DEFAULT NOW"
     }
 
-    blog_posts {
-        INTEGER id PK "AUTO_INCREMENT"
-        INTEGER author_id FK "NOT NULL -> users.id"
-        BOOLEAN is_published "DEFAULT false"
-        TIMESTAMP published_at "NULL"
-        TIMESTAMP created_at "DEFAULT NOW"
-        TIMESTAMP updated_at "DEFAULT NOW"
-    }
-
-    blog_post_translations {
-        INTEGER id PK "AUTO_INCREMENT"
-        INTEGER blog_post_id FK "NOT NULL -> blog_posts.id"
-        VARCHAR_5 locale "ru или en, NOT NULL"
-        VARCHAR_255 title "NOT NULL"
-        TEXT content "NOT NULL"
-        VARCHAR_255 slug UK "NOT NULL"
-    }
-
-    blog_post_media {
-        INTEGER id PK "AUTO_INCREMENT"
-        INTEGER blog_post_id FK "NOT NULL -> blog_posts.id"
-        ENUM media_type "image/video/youtube, NOT NULL"
-        VARCHAR_500 url "NOT NULL, ссылка или YouTube ID"
-        INTEGER sort_order "DEFAULT 0"
-        VARCHAR_255 caption "NULL"
-    }
-
     chat_rooms {
         INTEGER id PK "AUTO_INCREMENT"
         INTEGER buyer_id FK "NOT NULL -> users.id"
@@ -253,10 +226,6 @@ erDiagram
     users ||--o{ user_products : "владеет товарами"
     product_licenses ||--o{ user_products : "купленная лицензия"
     orders ||--o{ user_products : "из заказа"
-
-    users ||--o{ blog_posts : "автор статей"
-    blog_posts ||--o{ blog_post_translations : "имеет переводы"
-    blog_posts ||--o{ blog_post_media : "имеет медиа"
 
     products ||--o{ chat_rooms : "привязан к чату"
     users ||--o{ chat_rooms : "покупатель"
@@ -522,53 +491,7 @@ erDiagram
 
 ---
 
-### 18. `blog_posts` — Статьи блога
-
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| `id` | `INTEGER` | PK, AUTO_INCREMENT | Уникальный идентификатор |
-| `author_id` | `INTEGER` | FK -> `users.id`, NOT NULL | Автор (admin) |
-| `is_published` | `BOOLEAN` | DEFAULT false | Опубликована ли |
-| `published_at` | `TIMESTAMP` | NULL | Дата публикации |
-| `created_at` | `TIMESTAMP` | DEFAULT NOW() | Дата создания |
-| `updated_at` | `TIMESTAMP` | DEFAULT NOW() | Дата обновления |
-
----
-
-### 19. `blog_post_translations` — Переводы статей
-
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| `id` | `INTEGER` | PK, AUTO_INCREMENT | Уникальный идентификатор |
-| `blog_post_id` | `INTEGER` | FK -> `blog_posts.id`, NOT NULL, ON DELETE CASCADE | Статья |
-| `locale` | `VARCHAR(5)` | NOT NULL | Язык: 'ru' или 'en' |
-| `title` | `VARCHAR(255)` | NOT NULL | Заголовок |
-| `content` | `TEXT` | NOT NULL | Содержание (HTML/Markdown) |
-| `slug` | `VARCHAR(255)` | UNIQUE, NOT NULL | URL-slug для SEO |
-
-**UNIQUE constraint:** (`blog_post_id`, `locale`)
-
----
-
-### 20. `blog_post_media` — Медиафайлы статей блога
-
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| `id` | `INTEGER` | PK, AUTO_INCREMENT | Уникальный идентификатор |
-| `blog_post_id` | `INTEGER` | FK -> `blog_posts.id`, NOT NULL, ON DELETE CASCADE | Статья |
-| `media_type` | `ENUM('image', 'video', 'youtube')` | NOT NULL | Тип медиа |
-| `url` | `VARCHAR(500)` | NOT NULL | Ссылка на файл или YouTube video ID |
-| `sort_order` | `INTEGER` | DEFAULT 0 | Порядок отображения |
-| `caption` | `VARCHAR(255)` | NULL | Подпись к медиа |
-
-> **Типы медиа:**
-> - `image` — загруженное изображение (url = ссылка на файл)
-> - `video` — загруженное видео (url = ссылка на файл)
-> - `youtube` — видео с YouTube (url = YouTube video ID, например `dQw4w9WgXcQ`)
-
----
-
-### 21. `chat_rooms` — Комнаты чатов
+### 18. `chat_rooms` — Комнаты чатов
 
 | Поле | Тип | Ограничения | Описание |
 |------|-----|-------------|----------|
@@ -665,7 +588,6 @@ erDiagram
 |-----------|----------|
 | **Лицензии** | Добавлены `license_types`, `license_type_translations`, `product_licenses` — цена привязана к лицензии, не к товару |
 | **Медиа товара** | Добавлена `product_media` — неограниченное кол-во изображений и видео для товара |
-| **Медиа блога** | Добавлена `blog_post_media` — изображения, видео и YouTube-ссылки для статей |
 | **Промокоды** | `max_uses = NULL` = безлимитный; добавлена `promo_code_usages` для истории использований |
 | **Корзина и заказ** | Привязаны к `product_license_id` (не `product_id`) |
 | **Без количества** | В `order_items` и `cart_items` нет поля `quantity` — цифровые товары по 1 шт. |
@@ -685,8 +607,6 @@ erDiagram
 | `orders` | `idx_orders_status` | `status` |
 | `order_items` | `idx_oi_order_id` | `order_id` |
 | `user_products` | `idx_up_user_id` | `user_id` |
-| `blog_post_translations` | `idx_bpt_slug` | `slug` |
-| `blog_post_media` | `idx_bpm_post_sort` | `blog_post_id`, `sort_order` |
 | `chat_rooms` | `idx_cr_buyer` | `buyer_id` |
 | `chat_rooms` | `idx_cr_seller` | `seller_id` |
 | `chat_rooms` | `idx_cr_product` | `product_id` |

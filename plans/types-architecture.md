@@ -36,9 +36,6 @@ server/src/types/
 │   ├── index.ts
 │   ├── chat-room.types.ts
 │   └── chat-message.types.ts
-├── blog/
-│   ├── index.ts
-│   └── blog-post.types.ts
 └── common/
     ├── index.ts
     ├── pagination.types.ts     # Пагинация
@@ -91,7 +88,7 @@ EntityBase (id, createdAt, updatedAt)
     │                         │    (seller, categories, translations, media, licenses)
     │                         │
     ├── UserBase ─────────────┼──► UserWithRelations
-    │                         │    (products, orders, cart_items, blog_posts)
+    │                         │    (products, orders, cart_items)
     │                         │
     ├── OrderBase ────────────┼──► OrderWithRelations  
     │                         │    (user, order_items, payment, promo_code)

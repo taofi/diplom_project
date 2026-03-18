@@ -31,11 +31,6 @@ export { Payment, PaymentStatus } from './payment.model';
 // User Products (Library)
 export { UserProduct } from './user-product.model';
 
-// Blog
-export { BlogPost } from './blog-post.model';
-export { BlogPostTranslation } from './blog-post-translation.model';
-export { BlogPostMedia, BlogMediaType } from './blog-post-media.model';
-
 // Chat
 export { ChatRoom, ChatRoomStatus } from './chat-room.model';
 export { ChatMessage, MessageType } from './chat-message.model';

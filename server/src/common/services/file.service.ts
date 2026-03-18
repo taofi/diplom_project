@@ -4,7 +4,6 @@ import * as path from 'path';
 
 export enum MediaFolder {
   PRODUCT = 'product',
-  BLOG = 'blog',
 }
 
 export interface FileUploadResult {
@@ -38,7 +37,7 @@ export class FileService {
   /**
    * Сохранить файл
    * @param file - Загруженный файл
-   * @param folder - Папка (product, blog)
+   * @param folder - Папка (product)
    * @param entityId - ID сущности
    */
   saveFile(

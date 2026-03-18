@@ -143,7 +143,6 @@ graph LR
 **Назначение:** Навигационное меню с ссылками:
 - Главная (`/`)
 - Каталог (`/catalog`)
-- Блог (`/blog`) - резервная
 - Контакты (`/contacts`) - резервная
 
 #### `front/src/components/Logo.tsx`
@@ -378,7 +377,7 @@ graph TB
 ```
 common.* - общие (loading, error, save, cancel...)
 site.* - сайт (title)
-nav.* - навигация (home, catalog, blog, contacts...)
+nav.* - навигация (home, catalog, contacts...)
 auth.* - авторизация (login, register, logout...)
 profile.* - профиль (title, name, email, role...)
 catalog.* - каталог (search, filter, sort...)

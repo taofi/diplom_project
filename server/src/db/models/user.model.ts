@@ -15,7 +15,6 @@ import { Product } from './product.model';
 import { CartItem } from './cart-item.model';
 import { Order } from './order.model';
 import { UserProduct } from './user-product.model';
-import { BlogPost } from './blog-post.model';
 import { ChatRoom } from './chat-room.model';
 import { ChatMessage } from './chat-message.model';
 import { ChatOffer } from './chat-offer.model';
@@ -73,9 +72,6 @@ export class User extends Model {
 
   @HasMany(() => UserProduct, 'user_id')
   declare user_products: UserProduct[];
-
-  @HasMany(() => BlogPost, 'author_id')
-  declare blog_posts: BlogPost[];
 
   @HasMany(() => ChatRoom, 'buyer_id')
   declare buyer_chat_rooms: ChatRoom[];

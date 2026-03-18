@@ -24,7 +24,8 @@
     "db:seed": "sequelize-cli db:seed:all",
     "db:seed:undo": "sequelize-cli db:seed:undo:all",
     "db:create": "sequelize-cli db:create",
-    "db:drop": "sequelize-cli db:drop"
+    "db:drop": "sequelize-cli db:drop",
+    "migration": "sequelize-cli db:migrate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
