@@ -10,6 +10,8 @@ import { getLicenseTypes } from '@/lib/api-license-type';
 import { ProductType } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
 import type { LicenseTypeResponse } from '@/types/license-type';
+import { ProductForm } from '@/components/admin/ProductForm';
+import { LoadingSpinner } from '@/components/admin/LoadingSpinner';
 
 interface LicenseFormItem {
   id: string;
@@ -167,12 +169,12 @@ export default function NewProductPage() {
     }
   };
 
+  const handleCancel = () => {
+    router.back();
+  };
+
   if (fetchingData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">{t('common.loading')}</div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -184,262 +186,51 @@ export default function NewProductPage() {
           </h1>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('admin.products.basicInfo')}</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('admin.products.name')} *
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('admin.products.description')}
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {t('admin.products.type')} *
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as ProductType)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value={ProductType.BRUSH}>{t('product.types.brush')}</option>
-                    <option value={ProductType.ILLUSTRATION}>{t('product.types.illustration')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    SKU
-                  </label>
-                  <input
-                    type="text"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* File & Stock */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('admin.products.fileStock')}</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('admin.products.fileUrl')} *
-                </label>
-                <input
-                  type="url"
-                  value={fileUrl}
-                  onChange={(e) => setFileUrl(e.target.value)}
-                  required
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {t('admin.products.price')} *
-                  </label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                    min={0}
-                    step={0.01}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {t('admin.products.stock')}
-                  </label>
-                  <input
-                    type="number"
-                    value={stock}
-                    onChange={(e) => setStock(Number(e.target.value))}
-                    min={0}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {t('admin.products.discountPrice')}
-                  </label>
-                  <input
-                    type="number"
-                    value={discountPrice}
-                    onChange={(e) => setDiscountPrice(e.target.value)}
-                    min={0}
-                    step={0.01}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Categories */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('admin.products.categories')}</h2>
-            
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => toggleCategory(category.id)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    selectedCategories.includes(category.id)
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Licenses */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">{t('admin.products.licenses')}</h2>
-              <button
-                type="button"
-                onClick={addLicense}
-                className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90"
-              >
-                {t('admin.products.addLicense')}
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {licenses.map((license, index) => (
-                <div key={license.id} className="flex gap-3 items-start">
-                  <div className="flex-1">
-                    <select
-                      value={license.licenseTypeId}
-                      onChange={(e) => updateLicense(license.id, 'licenseTypeId', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      {licenseTypes.map((lt) => (
-                        <option key={lt.id} value={lt.id}>
-                          {lt.name || lt.slug}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      value={license.price}
-                      onChange={(e) => updateLicense(license.id, 'price', e.target.value)}
-                      placeholder={t('admin.products.price')}
-                      min={0}
-                      step={0.01}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeLicense(license.id)}
-                    disabled={licenses.length === 1}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('admin.products.status')}</h2>
-            
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 text-primary"
-                />
-                <span>{t('admin.products.active')}</span>
-              </label>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="w-4 h-4 text-primary"
-                />
-                <span>{t('admin.products.featured')}</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? t('common.loading') : t('admin.products.create')}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              {t('common.cancel')}
-            </button>
-          </div>
-        </form>
+        <ProductForm
+          // Basic info
+          name={name}
+          onNameChange={setName}
+          description={description}
+          onDescriptionChange={setDescription}
+          type={type}
+          onTypeChange={setType}
+          sku={sku}
+          onSkuChange={setSku}
+          
+          // File & stock
+          fileUrl={fileUrl}
+          onFileUrlChange={setFileUrl}
+          price={price}
+          onPriceChange={setPrice}
+          stock={stock}
+          onStockChange={setStock}
+          discountPrice={discountPrice}
+          onDiscountPriceChange={setDiscountPrice}
+          
+          // Categories
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onToggleCategory={toggleCategory}
+          
+          // Licenses
+          licenseTypes={licenseTypes}
+          licenses={licenses}
+          onAddLicense={addLicense}
+          onUpdateLicense={updateLicense}
+          onRemoveLicense={removeLicense}
+          
+          // Status
+          isActive={isActive}
+          onIsActiveChange={setIsActive}
+          isFeatured={isFeatured}
+          onIsFeaturedChange={setIsFeatured}
+          
+          // Form
+          error={error}
+          loading={loading}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
       </div>
     </div>
   );

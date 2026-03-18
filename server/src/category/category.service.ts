@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize';
 import { Category } from '../db/models/category.model';
@@ -7,6 +7,7 @@ import { ProductCategory } from '../db/models/product-category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import type { CategoryResponse } from '../types/category';
+import { SEQUELIZE_TOKEN } from '../db/database.module';
 
 interface CategoryTranslationRaw {
   category_id: number;
@@ -23,6 +24,7 @@ export class CategoryService {
     private readonly translationModel: typeof CategoryTranslation,
     @InjectModel(ProductCategory)
     private readonly productCategoryModel: typeof ProductCategory,
+    @Inject(SEQUELIZE_TOKEN)
     private readonly sequelize: Sequelize,
   ) {}
 

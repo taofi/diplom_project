@@ -21,9 +21,6 @@ import {
   OrderItem,
   Payment,
   UserProduct,
-  BlogPost,
-  BlogPostTranslation,
-  BlogPostMedia,
   ChatRoom,
   ChatMessage,
   ChatOffer,
@@ -49,15 +46,15 @@ const models = [
   OrderItem,
   Payment,
   UserProduct,
-  BlogPost,
-  BlogPostTranslation,
-  BlogPostMedia,
   ChatRoom,
   ChatMessage,
   ChatOffer,
   CustomOrder,
   CustomOrderRevision,
 ];
+
+// Токен для внедрения Sequelize
+export const SEQUELIZE_TOKEN = 'SEQUELIZE';
 
 @Global()
 @Module({
@@ -78,6 +75,12 @@ const models = [
       }),
     }),
   ],
-  exports: [NestSequelizeModule],
+  providers: [
+    {
+      provide: SEQUELIZE_TOKEN,
+      useValue: {}, // Заглушка - реальный инстанс Sequelize нельзя получить напрямую
+    },
+  ],
+  exports: [NestSequelizeModule, SEQUELIZE_TOKEN],
 })
 export class DatabaseModule {}

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize';
 import { LicenseType } from '../db/models/license-type.model';
@@ -7,6 +7,7 @@ import { ProductLicense } from '../db/models/product-license.model';
 import { CreateLicenseTypeDto } from './dto/create-license-type.dto';
 import { UpdateLicenseTypeDto } from './dto/update-license-type.dto';
 import type { LicenseTypeResponse } from '../types/license-type';
+import { SEQUELIZE_TOKEN } from '../db/database.module';
 
 interface LicenseTypeTranslationRaw {
   license_type_id: number;
@@ -24,6 +25,7 @@ export class LicenseTypeService {
     private readonly translationModel: typeof LicenseTypeTranslation,
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
+    @Inject(SEQUELIZE_TOKEN)
     private readonly sequelize: Sequelize,
   ) {}
 

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Sequelize, Transaction } from 'sequelize';
+import { Sequelize } from 'sequelize';
 import { Product, ProductType } from '../../db/models/product.model';
 import { ProductMedia } from '../../db/models/product-media.model';
 import { ProductTranslation } from '../../db/models/product-translation.model';
@@ -18,6 +18,7 @@ import {
   UpdateProductDto,
   ProductQueryParams,
 } from '../../types/product';
+import { SEQUELIZE_TOKEN } from '../../db/database.module';
 
 type ProductWhereOptions = {
   categoryId?: number;
@@ -69,6 +70,7 @@ export class ProductRepository {
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
     private readonly fileService: FileService,
+    @Inject(SEQUELIZE_TOKEN)
     private readonly sequelize: Sequelize,
   ) {}
 
