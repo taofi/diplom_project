@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
+import { Button, Input, FormField, Alert, Card } from '@/components/ui';
 
 interface RegisterPageProps {
   params: { lang: string };
@@ -39,79 +40,72 @@ export default function RegisterPage({ params }: RegisterPageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center w-full px-6">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-sm p-8">
+        <Card padding="lg">
+          <h1 className="text-2xl font-bold mb-6 text-center text-primary">
+            {t('auth.registerTitle')}
+          </h1>
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
+            <Alert variant="error" message={error} className="mb-4" />
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <label htmlFor="name" className="block text-sm font-medium mb-2">
-                {t('auth.name')}
-              </label>
-              <input
-                id="name"
+            <FormField label={t('auth.name')} required>
+              <Input
                 type="text"
+                name="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                onChange={setName}
+                placeholder={t('auth.namePlaceholder')}
                 required
               />
-            </div>
+            </FormField>
 
-            <div className="mb-6">
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                {t('auth.email')}
-              </label>
-              <input
-                id="email"
+            <FormField label={t('auth.email')} required>
+              <Input
                 type="email"
+                name="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                onChange={setEmail}
+                placeholder={t('auth.emailPlaceholder')}
                 required
               />
-            </div>
+            </FormField>
 
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                {t('auth.password')}
-              </label>
-              <input
-                id="password"
+            <FormField label={t('auth.password')} required>
+              <Input
                 type="password"
+                name="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                onChange={setPassword}
+                placeholder={t('auth.passwordPlaceholder')}
                 minLength={8}
+                showPasswordToggle
                 required
               />
-            </div>
+            </FormField>
 
-            <div className="mb-6">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
-                {t('auth.confirmPassword')}
-              </label>
-              <input
-                id="confirmPassword"
+            <FormField label={t('auth.confirmPassword')} required>
+              <Input
                 type="password"
+                name="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                onChange={setConfirmPassword}
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 minLength={8}
+                showPasswordToggle
                 required
               />
-            </div>
+            </FormField>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              loading={isLoading}
+              fullWidth
+              className="mt-4"
             >
-              {isLoading ? t('common.loading') : t('auth.registerButton')}
-            </button>
+              {t('auth.registerButton')}
+            </Button>
           </form>
 
           <p className="mt-6 text-center text-gray-600">
@@ -120,7 +114,7 @@ export default function RegisterPage({ params }: RegisterPageProps) {
               {t('auth.login')}
             </a>
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   );

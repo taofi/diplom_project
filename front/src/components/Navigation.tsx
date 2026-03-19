@@ -10,7 +10,6 @@ export function Navigation() {
     <nav className="flex items-center gap-8 px-8">
       <NavButton href={`/${locale}`} text={t('nav.home')} />
       <NavButton href={`/${locale}/catalog`} text={t('nav.catalog')} />
-      <NavButton href={`/${locale}/blog`} text={t('nav.blog')} />
       <NavButton href={`/${locale}/contacts`} text={t('nav.contacts')} />
     </nav>
   );

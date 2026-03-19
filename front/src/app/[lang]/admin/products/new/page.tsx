@@ -11,7 +11,7 @@ import { ProductType } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
 import type { LicenseTypeResponse } from '@/types/license-type';
 import { ProductForm } from '@/components/admin/ProductForm';
-import { LoadingSpinner } from '@/components/admin/LoadingSpinner';
+import { Spinner } from '@/components/ui';
 
 interface LicenseFormItem {
   id: string;
@@ -82,7 +82,7 @@ export default function NewProductPage() {
 
   // Check if user is admin
   useEffect(() => {
-    if (!user || (!user.role.includes('admin') && !user.role.includes('author'))) {
+    if (!user || (!user.roles.includes('admin') && !user.roles.includes('author'))) {
       router.push(`/${locale}/login`);
     }
   }, [user, locale, router]);
@@ -174,7 +174,7 @@ export default function NewProductPage() {
   };
 
   if (fetchingData) {
-    return <LoadingSpinner />;
+    return <Spinner size="lg" />;
   }
 
   return (

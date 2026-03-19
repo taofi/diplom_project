@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/context/i18n/I18nContext';
+import { Button } from '@/components/ui';
 
 interface FormButtonsProps {
   loading: boolean;
@@ -12,21 +13,13 @@ export function FormButtons({ loading, onCancel }: FormButtonsProps) {
 
   return (
     <div className="flex gap-4">
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
-      >
+      <Button type="submit" loading={loading}>
         {loading ? t('common.loading') : t('admin.products.create')}
-      </button>
+      </Button>
       
-      <button
-        type="button"
-        onClick={onCancel}
-        className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-      >
+      <Button type="button" variant="secondary" onClick={onCancel}>
         {t('common.cancel')}
-      </button>
+      </Button>
     </div>
   );
 }

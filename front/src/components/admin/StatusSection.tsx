@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/context/i18n/I18nContext';
+import { Checkbox, Section } from '@/components/ui';
 
 interface StatusSectionProps {
   isActive: boolean;
@@ -18,30 +19,22 @@ export function StatusSection({
   const { t } = useI18n();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold mb-4">{t('admin.products.status')}</h2>
-      
+    <Section title={t('admin.products.status')}>
       <div className="flex gap-6">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => onIsActiveChange(e.target.checked)}
-            className="w-4 h-4 text-primary"
-          />
-          <span>{t('admin.products.active')}</span>
-        </label>
+        <Checkbox
+          name="isActive"
+          label={t('admin.products.active')}
+          checked={isActive}
+          onChange={onIsActiveChange}
+        />
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isFeatured}
-            onChange={(e) => onIsFeaturedChange(e.target.checked)}
-            className="w-4 h-4 text-primary"
-          />
-          <span>{t('admin.products.featured')}</span>
-        </label>
+        <Checkbox
+          name="isFeatured"
+          label={t('admin.products.featured')}
+          checked={isFeatured}
+          onChange={onIsFeaturedChange}
+        />
       </div>
-    </div>
+    </Section>
   );
 }

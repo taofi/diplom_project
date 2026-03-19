@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/context/i18n/I18nContext';
+import { Input, FormField, Section } from '@/components/ui';
 
 interface FileStockSectionProps {
   fileUrl: string;
@@ -26,68 +27,54 @@ export function FileStockSection({
   const { t } = useI18n();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold mb-4">{t('admin.products.fileStock')}</h2>
-      
+    <Section title={t('admin.products.fileStock')}>
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            {t('admin.products.fileUrl')} *
-          </label>
-          <input
+        <FormField label={t('admin.products.fileUrl')} required>
+          <Input
             type="url"
+            name="fileUrl"
             value={fileUrl}
-            onChange={(e) => onFileUrlChange(e.target.value)}
+            onChange={onFileUrlChange}
             required
             placeholder="https://..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           />
-        </div>
+        </FormField>
 
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t('admin.products.price')} *
-            </label>
-            <input
+          <FormField label={t('admin.products.price')} required>
+            <Input
               type="number"
+              name="price"
               value={price}
-              onChange={(e) => onPriceChange(e.target.value)}
+              onChange={onPriceChange}
               required
               min={0}
               step={0.01}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t('admin.products.stock')}
-            </label>
-            <input
+          <FormField label={t('admin.products.stock')}>
+            <Input
               type="number"
+              name="stock"
               value={stock}
-              onChange={(e) => onStockChange(Number(e.target.value))}
+              onChange={(value) => onStockChange(Number(value))}
               min={0}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t('admin.products.discountPrice')}
-            </label>
-            <input
+          <FormField label={t('admin.products.discountPrice')}>
+            <Input
               type="number"
+              name="discountPrice"
               value={discountPrice}
-              onChange={(e) => onDiscountPriceChange(e.target.value)}
+              onChange={onDiscountPriceChange}
               min={0}
               step={0.01}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
+          </FormField>
         </div>
       </div>
-    </div>
+    </Section>
   );
 }

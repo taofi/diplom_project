@@ -8,6 +8,8 @@
     "edit": "Редактировать",
     "back": "Назад",
     "next": "Далее",
+    "previous": "Назад",
+    "search": "Поиск",
     "submit": "Отправить"
   },
   "site": {
@@ -44,6 +46,10 @@
     "registerTitle": "Создание аккаунта",
     "loginButton": "Войти",
     "registerButton": "Зарегистрироваться",
+    "emailPlaceholder": "example@email.com",
+    "passwordPlaceholder": "Введите пароль",
+    "namePlaceholder": "Введите ваше имя",
+    "confirmPasswordPlaceholder": "Повторите пароль",
     "title": "Профиль",
     "role": "Роль",
     "locale": "Язык",
@@ -71,6 +77,7 @@
     "from": "От",
     "to": "До",
     "all": "Все",
+    "allCategories": "Все категории",
     "brushes": "Кисти",
     "illustrations": "Иллюстрации",
     "noProducts": "Товары не найдены",
@@ -128,7 +135,14 @@
       "active": "Активен",
       "featured": "Рекомендуемый",
       "create": "Создать товар",
-      "update": "Обновить товар"
+      "update": "Обновить товар",
+      "search": "Поиск товаров",
+      "allStatuses": "Все статусы",
+      "inactive": "Неактивен",
+      "confirmDelete": "Вы уверены, что хотите удалить этот товар?",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "noProducts": "Товары не найдены"
     }
   },
   "product": {

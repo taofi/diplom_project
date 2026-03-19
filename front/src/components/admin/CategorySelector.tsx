@@ -2,6 +2,7 @@
 
 import { useI18n } from '@/context/i18n/I18nContext';
 import type { CategoryResponse } from '@/types/category';
+import { Button, Section } from '@/components/ui';
 
 interface CategorySelectorProps {
   categories: CategoryResponse[];
@@ -17,25 +18,20 @@ export function CategorySelector({
   const { t } = useI18n();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold mb-4">{t('admin.products.categories')}</h2>
-      
+    <Section title={t('admin.products.categories')}>
       <div className="flex flex-wrap gap-2">
         {categories.map((category) => (
-          <button
+          <Button
             key={category.id}
             type="button"
+            variant={selectedCategories.includes(category.id) ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => onToggle(category.id)}
-            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-              selectedCategories.includes(category.id)
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
           >
             {category.name}
-          </button>
+          </Button>
         ))}
       </div>
-    </div>
+    </Section>
   );
 }

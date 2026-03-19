@@ -309,7 +309,7 @@ export async function addProductLicense(
 //   const { user } = useAuth();
 //   const { locale } = useI18n();
 // 
-//   const isAuthorOrAdmin = user?.role === 'author' || user?.role === 'admin';
+//   const isAuthorOrAdmin = user?.roles?.includes('author') || user?.roles?.includes('admin');
 // 
 //   const fetchProducts = async (params?: ProductParams) => {
 //     return getProducts({ ...params, language: locale });

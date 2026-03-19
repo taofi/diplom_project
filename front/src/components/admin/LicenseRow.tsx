@@ -2,6 +2,7 @@
 
 import { useI18n } from '@/context/i18n/I18nContext';
 import type { LicenseTypeResponse } from '@/types/license-type';
+import { Select, Input, Button } from '@/components/ui';
 
 interface LicenseRowProps {
   license: {
@@ -24,42 +25,43 @@ export function LicenseRow({
 }: LicenseRowProps) {
   const { t } = useI18n();
 
+  const typeOptions = licenseTypes.map(lt => ({
+    value: lt.id,
+    label: lt.name || lt.slug,
+  }));
+
   return (
     <div className="flex gap-3 items-start">
       <div className="flex-1">
-        <select
+        <Select
+          name={`licenseType-${license.id}`}
           value={license.licenseTypeId}
-          onChange={(e) => onUpdate(license.id, 'licenseTypeId', Number(e.target.value))}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          {licenseTypes.map((lt) => (
-            <option key={lt.id} value={lt.id}>
-              {lt.name || lt.slug}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => onUpdate(license.id, 'licenseTypeId', Number(value))}
+          options={typeOptions}
+        />
       </div>
       
       <div className="flex-1">
-        <input
+        <Input
           type="number"
+          name={`price-${license.id}`}
           value={license.price}
-          onChange={(e) => onUpdate(license.id, 'price', e.target.value)}
+          onChange={(value) => onUpdate(license.id, 'price', value)}
           placeholder={t('admin.products.price')}
           min={0}
           step={0.01}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onRemove(license.id)}
         disabled={!canRemove}
-        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-3"
       >
         ✕
-      </button>
+      </Button>
     </div>
   );
 }

@@ -5,11 +5,34 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { NavButton } from './NavButton';
 
 export function UserActions() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAdminOrAuthor } = useAuth();
   const { t } = useI18n();
-  
+  console.log(isAdminOrAuthor)
   return (
     <div className="flex items-center gap-4">
+      {/* Admin Panel */}
+      {isAdminOrAuthor && (
+        <NavButton 
+          href="/admin/products" 
+          text={t('nav.dashboard')}
+          icon={
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+              className="w-6 h-6"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+          }
+        />
+      )}
+
       {/* Cart */}
       <NavButton 
         href="/cart" 

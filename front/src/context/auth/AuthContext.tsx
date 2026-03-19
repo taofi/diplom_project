@@ -21,6 +21,9 @@ interface AuthContextType extends AuthState {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  isAdmin: boolean;
+  isAuthor: boolean;
+  isAdminOrAuthor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -115,9 +118,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setState((prev) => ({ ...prev, user }));
   };
 
+  // Role helpers
+  const isAdmin = state.user?.roles?.includes('admin') ?? false;
+  const isAuthor = state.user?.roles?.includes('author') ?? false;
+  const isAdminOrAuthor = isAdmin || isAuthor;
+
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, logout, updateUser }}
+      value={{ ...state, login, register, logout, updateUser, isAdmin, isAuthor, isAdminOrAuthor }}
     >
       {children}
     </AuthContext.Provider>

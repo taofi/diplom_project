@@ -3,16 +3,16 @@
 import { useAuth } from '@/context/auth/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useI18n } from '@/context/i18n/I18nContext';
-import { Hero } from '@/components/Hero';
+import { Button, Card } from '@/components/ui';
 
 function ProfileContent() {
-  const { user, logout } = useAuth();
-  const { t } = useI18n();
+  const { user, logout, isAdmin } = useAuth();
+  const { t, locale } = useI18n();
 
   return (
     <div className="w-full">
-      <div className="max-w-4xl mx-auto py-12 px-6">
-        <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="max-w-4xl  mx-auto py-12 px-6">
+        <Card padding="lg">
           <h2 className="text-2xl font-bold mb-6 text-center text-primary">
             {t('profile.profileInformation')}
           </h2>
@@ -30,7 +30,7 @@ function ProfileContent() {
             
             <div className="flex justify-between py-3 border-b border-gray-100">
               <span className="font-medium text-gray-600">{t('profile.role')}:</span>
-              <span className="text-gray-900">{user?.role}</span>
+              <span className="text-gray-900">{user?.roles?.join(', ')}</span>
             </div>
             
             <div className="flex justify-between py-3 border-b border-gray-100">
@@ -40,14 +40,21 @@ function ProfileContent() {
           </div>
 
           <div className="mt-8 text-center">
-            <button
-              onClick={logout}
-              className="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 transition-colors"
-            >
+            {isAdmin && (
+              <a
+                href={`/${locale}/admin/products`}
+                className="inline-block mr-4"
+              >
+                <Button variant="primary">
+                  {t('nav.dashboard')}
+                </Button>
+              </a>
+            )}
+            <Button variant="danger" onClick={logout}>
               {t('auth.logout')}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

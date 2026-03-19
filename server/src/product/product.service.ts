@@ -18,7 +18,8 @@ export class ProductService {
 
   async findAll(query: ProductQueryDto) {
     // Only return active products for public queries unless user is seller
-    if (!query.sellerId) {
+    // Но если isActive явно передан в запросе - используем его значение
+    if (query.isActive === undefined && !query.sellerId) {
       query.isActive = true;
     }
 

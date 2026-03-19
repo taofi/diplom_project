@@ -6,8 +6,21 @@ import { getProducts, type ProductQueryParams } from '@/lib/api-product';
 import { ProductType } from '@/types/product';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/types/product';
+import { Button, Input, Select, Card, Spinner } from '@/components/ui';
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc';
+
+const sortOptions = [
+  { value: 'newest', label: 'catalog.sortNewest' },
+  { value: 'price_asc', label: 'catalog.sortPriceAsc' },
+  { value: 'price_desc', label: 'catalog.sortPriceDesc' },
+];
+
+const typeOptions = [
+  { value: '', label: 'catalog.all' },
+  { value: ProductType.BRUSH, label: 'catalog.brushes' },
+  { value: ProductType.ILLUSTRATION, label: 'catalog.illustrations' },
+];
 
 export default function CatalogPage() {
   const { t, locale } = useI18n();
@@ -17,8 +30,8 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<ProductType | ''>('');
-  const [minPrice, setMinPrice] = useState<string>('');
-  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -125,37 +138,30 @@ export default function CatalogPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar - Filters */}
           <aside className="w-full lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+            <Card padding="md" className="sticky top-4">
               <h2 className="text-lg font-semibold mb-4">{t('catalog.filter')}</h2>
               
               {/* Search */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  {t('catalog.search')}
-                </label>
-                <input
+                <Input
                   type="text"
+                  name="search"
+                  label={t('catalog.search')}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={setSearchQuery}
                   placeholder={t('catalog.searchPlaceholder')}
-                  className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               {/* Type Filter */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  {t('catalog.type')}
-                </label>
-                <select
+                <Select
+                  name="type"
+                  label={t('catalog.type')}
                   value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value as ProductType | '')}
-                  className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">{t('catalog.all')}</option>
-                  <option value={ProductType.BRUSH}>{t('catalog.brushes')}</option>
-                  <option value={ProductType.ILLUSTRATION}>{t('catalog.illustrations')}</option>
-                </select>
+                  onChange={(value) => setSelectedType(value as ProductType | '')}
+                  options={typeOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
+                />
               </div>
 
               {/* Price Range */}
@@ -164,32 +170,29 @@ export default function CatalogPage() {
                   {t('catalog.priceRange')}
                 </label>
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="number"
+                    name="minPrice"
                     value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
+                    onChange={setMinPrice}
                     placeholder={t('catalog.from')}
-                    className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-gray-400">-</span>
-                  <input
+                  <Input
                     type="number"
+                    name="maxPrice"
                     value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
+                    onChange={setMaxPrice}
                     placeholder={t('catalog.to')}
-                    className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
 
               {/* Reset Button */}
-              <button
-                onClick={handleReset}
-                className="w-full px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary/10 transition-colors"
-              >
+              <Button variant="outline" fullWidth onClick={handleReset}>
                 {t('common.cancel')}
-              </button>
-            </div>
+              </Button>
+            </Card>
           </aside>
 
           {/* Main Content */}
@@ -199,21 +202,19 @@ export default function CatalogPage() {
               <span className="text-gray-600">
                 {products.length} {t('nav.products')}
               </span>
-              <select
+              <Select
+                name="sort"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="newest">{t('catalog.sortNewest')}</option>
-                <option value="price_asc">{t('catalog.sortPriceAsc')}</option>
-                <option value="price_desc">{t('catalog.sortPriceDesc')}</option>
-              </select>
+                onChange={(value) => setSortBy(value as SortOption)}
+                options={sortOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
+                className="w-auto"
+              />
             </div>
 
             {/* Products Grid */}
             {loading && products.length === 0 ? (
               <div className="flex justify-center py-12">
-                <div className="text-gray-500">{t('common.loading')}</div>
+                <Spinner size="lg" />
               </div>
             ) : products.length === 0 ? (
               <div className="flex justify-center py-12">
@@ -230,13 +231,13 @@ export default function CatalogPage() {
                 {/* Load More */}
                 {hasMore && (
                   <div className="flex justify-center mt-8">
-                    <button
+                    <Button
                       onClick={handleLoadMore}
                       disabled={loading}
-                      className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                      loading={loading}
                     >
                       {loading ? t('common.loading') : t('catalog.loadMore')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </>
