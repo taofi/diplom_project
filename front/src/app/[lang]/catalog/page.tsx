@@ -41,13 +41,15 @@ export default function CatalogPage() {
   // Fetch products
   const fetchProducts = useCallback(async (pageNum: number = 1, isNewSearch: boolean = false) => {
     setLoading(true);
-    
+
     const params: ProductQueryParams = {
       page: pageNum,
       limit,
       language: locale,
       isActive: true,
     };
+
+
 
     // Search
     if (searchQuery) {

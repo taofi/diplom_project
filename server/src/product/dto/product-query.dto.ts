@@ -63,4 +63,8 @@ export class ProductQueryDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';
+
+  @IsOptional()
+  @IsString()
+  language?: string;
 }

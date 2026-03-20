@@ -7,17 +7,20 @@ import { uploadTempMedia, isValidMediaType, UploadResult } from '@/lib/api-uploa
 import { toastError, toastSuccess } from '@/lib/toast';
 import { MediaItemCard } from './MediaItemCard';
 import { MediaDropZone } from './MediaDropZone';
+import type { UpdateMediaItem } from '@/types/product';
 
 export interface MediaItem {
   url: string;
   tempUrl?: string;
   isCover: boolean;
   isNew: boolean;
+  id?: number; // ID медиа для существующих элементов
 }
 
 interface MediaUploaderProps {
   value: MediaItem[];
   onChange: (items: MediaItem[]) => void;
+  onMediaChange?: (changes: { updatedMedia: UpdateMediaItem[]; deletedMediaIds: number[] }) => void;
   maxItems?: number;
   maxSize?: number; // в MB
 }
@@ -25,6 +28,7 @@ interface MediaUploaderProps {
 export function MediaUploader({
   value = [],
   onChange,
+  onMediaChange,
   maxItems = 10,
   maxSize = 5,
 }: MediaUploaderProps) {
@@ -126,18 +130,29 @@ export function MediaUploader({
 
   const handleRemove = useCallback(
     (index: number) => {
+      const removedItem = value[index];
       const newItems = value.filter((_, i) => i !== index);
+      
       // Если удалили cover, сделать первое изображение cover
       if (
-        value[index].isCover &&
+        removedItem.isCover &&
         newItems.length > 0 &&
         !newItems[0].isCover
       ) {
         newItems[0].isCover = true;
       }
+      
       onChange(newItems);
+      
+      // Вызвать колбек изменений для существующих медиа
+      if (onMediaChange && removedItem.id && !removedItem.isNew) {
+        onMediaChange({
+          updatedMedia: [],
+          deletedMediaIds: [removedItem.id],
+        });
+      }
     },
-    [value, onChange],
+    [value, onChange, onMediaChange],
   );
 
   const handleSetCover = useCallback(
@@ -147,8 +162,21 @@ export function MediaUploader({
         isCover: i === index,
       }));
       onChange(newItems);
+
+      // Вызвать колбек изменений для существующих медиа
+      if (onMediaChange) {
+        const changedItem = value[index];
+        
+        // Если изменяемое медиа уже существует (не новое), отправляем изменение
+        if (changedItem.id && !changedItem.isNew) {
+          onMediaChange({
+            updatedMedia: [{ id: changedItem.id, isCover: true }],
+            deletedMediaIds: [],
+          });
+        }
+      }
     },
-    [value, onChange],
+    [value, onChange, onMediaChange],
   );
 
   const canAddMore = value.length < maxItems;

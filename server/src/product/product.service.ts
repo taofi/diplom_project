@@ -11,6 +11,7 @@ import { ProductQueryDto } from './dto/product-query.dto';
 import { AddMediaDto } from './dto/add-media.dto';
 import { AddLicenseDto } from './dto/add-license.dto';
 import { UploadsService } from '../uploads/uploads.service';
+import { ProductMediaService } from './product-media.service';
 import type { MediaInfo, LicenseInfo } from '../types/product';
 import {
   createProductListItemResponse,
@@ -19,17 +20,86 @@ import {
   ProductDetailResponse,
 } from '../types/product/product-response.types';
 
+// Тип для результата обработки временных файлов
+interface ProcessedFilesResult {
+  fileUrl: string | null;
+  mediaData: { url: string; isCover: boolean }[];
+}
+
 @Injectable()
 export class ProductService {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly uploadsService: UploadsService,
+    private readonly productMediaService: ProductMediaService,
   ) {}
+
+  /**
+   * Обработать временные файлы и переместить их в постоянное хранилище
+   * @param sellerId - ID продавца
+   * @param productId - ID продукта
+   * @param dto - DTO с временными файлами (tempFileUrl, tempMediaUrls, fileUrl)
+   * @returns информация о перемещенных файлах
+   */
+  private processTempFiles(
+    sellerId: number,
+    productId: number,
+    dto: { tempFileUrl?: string; tempMediaUrls?: { url: string; isCover?: boolean }[]; fileUrl?: string },
+  ): ProcessedFilesResult {
+    // 1. Проверить наличие временных файлов
+    const isTempFileUrl = dto.tempFileUrl || dto.fileUrl?.includes('/temp/');
+    const hasTempMedia = dto.tempMediaUrls && dto.tempMediaUrls.length > 0;
+
+    if (!isTempFileUrl && !hasTempMedia) {
+      return { fileUrl: null, mediaData: [] };
+    }
+
+    // 2. Определить tempFileUrl
+    const tempFileUrl = dto.tempFileUrl || (dto.fileUrl?.includes('/temp/') ? dto.fileUrl : undefined);
+
+    // 3. Извлечь массив URL из tempMediaUrls
+    const tempMediaUrls = dto.tempMediaUrls?.map((m) => m.url) || [];
+
+    // Processing temp files
+
+    // 4. Переместить файлы
+    const movedFiles = this.uploadsService.moveProductFiles(
+      sellerId,
+      productId,
+      tempFileUrl,
+      tempMediaUrls,
+    );
+
+    // 5. Определить информацию об обложке из входных данных
+    // Проверяем, была ли информация об isCover во входных данных
+    const hasCoverInfo = dto.tempMediaUrls && dto.tempMediaUrls.some((m) => m.isCover !== undefined);
+
+    // 6. Создать массив mediaData с определением isCover
+    const mediaData: { url: string; isCover: boolean }[] = movedFiles.media.map((media, index) => {
+      // Если есть явная информация об обложке - используем её
+      if (hasCoverInfo) {
+        const originalMedia = dto.tempMediaUrls?.[index];
+        return { url: media.url, isCover: originalMedia?.isCover ?? false };
+      }
+      
+      // Если нет информации об isCover - первое медиа становится обложкой по умолчанию
+      return { url: media.url, isCover: index === 0 };
+    });
+
+    // Files processed
+
+    return {
+      fileUrl: movedFiles.file?.url || null,
+      mediaData,
+    };
+  }
 
   async findAll(query: ProductQueryDto): Promise<{
     data: ProductListItemResponse[];
     meta: { total: number; page: number; limit: number; totalPages: number };
   }> {
+    // DEBUG: Логирование языка
+    
     // Only return active products for public queries unless user is seller
     // Но если isActive явно передан в запросе - используем его значение
     if (query.isActive === undefined && !query.sellerId) {
@@ -38,8 +108,13 @@ export class ProductService {
 
     // Используем оптимизированный метод для списка (без media массива)
     const result = await this.productRepository.findAllForList(query);
+    
+    // DEBUG: Проверяем что получили
+    console.log('[DEBUG findAll] result count:', result.count);
+    
+    // Передаем язык для получения name и description из translations
     return {
-      data: result.rows.map(createProductListItemResponse),
+      data: result.rows.map((p) => createProductListItemResponse(p, query.language)),
       meta: {
         total: result.count,
         page: query.page || 1,
@@ -49,12 +124,38 @@ export class ProductService {
     };
   }
 
-  async findById(id: number): Promise<ProductDetailResponse> {
+  async findById(id: number, language?: string): Promise<ProductDetailResponse> {
     // Используем полный метод с отношениями для детального просмотра
     const product = await this.productRepository.findByIdWithFullRelations(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
+    
+    // DEBUG: Логирование для отладки языка
+    console.log('[DEBUG findById] language param:', language);
+    console.log('[DEBUG findById] translations count:', product.translations?.length);
+    if (product.translations && product.translations.length > 0) {
+      product.translations.forEach((t, i) => {
+        console.log(`[DEBUG findById] translation[${i}]: language=${t.language}, name=${t.name}`);
+      });
+    }
+    
+    // Применяем перевод для указанного языка
+    // name и description теперь берутся из translations в createProductDetailResponse
+    
+    // Передаем язык для получения name и description из translations
+    return createProductDetailResponse(product, language);
+  }
+
+  /**
+   * Получить товар со всеми переводами для админ-панели
+   */
+  async findByIdWithAllTranslations(id: number): Promise<ProductDetailResponse> {
+    const product = await this.productRepository.findByIdWithFullRelations(id);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+    // Возвращаем продукт со всеми переводами - они уже включены в response
     return createProductDetailResponse(product);
   }
 
@@ -68,8 +169,9 @@ export class ProductService {
     query.sellerId = sellerId;
     // Используем оптимизированный метод для списка
     const result = await this.productRepository.findAllForList(query);
+    // Передаем язык для получения name и description из translations
     return {
-      data: result.rows.map(createProductListItemResponse),
+      data: result.rows.map((p) => createProductListItemResponse(p, query.language)),
       meta: {
         total: result.count,
         page: query.page || 1,
@@ -80,43 +182,21 @@ export class ProductService {
   }
 
   async create(sellerId: number, createProductDto: CreateProductDto) {
-    // DEBUG: Логирование для отладки создания товара
-    console.log('[DEBUG create product] sellerId:', sellerId);
-    console.log('[DEBUG create product] dto:', JSON.stringify(createProductDto, null, 2));
-    
-    // Check if SKU already exists
-    if (createProductDto.sku) {
-      const existingProduct = await this.productRepository.findBySku(
-        createProductDto.sku,
-      );
-      if (existingProduct) {
-        throw new ForbiddenException('Product with this SKU already exists');
-      }
-    }
-
-    // Проверяем, есть ли временные файлы для перемещения
-    // Поддерживаем два варианта:
-    // 1. Явные поля tempFileUrl и tempMediaUrls
-    // 2. fileUrl содержит /temp/ - значит это временный файл
-    const isTempFileUrl =
-      createProductDto.fileUrl?.includes('/temp/') ||
-      createProductDto.tempFileUrl;
-    const hasTempMedia =
-      createProductDto.tempMediaUrls &&
-      createProductDto.tempMediaUrls.length > 0;
-    const hasTempFiles = isTempFileUrl || hasTempMedia;
+    // Creating product
+    // SKU удален - больше не проверяем уникальность
 
     // Определяем fileUrl для создания продукта
     const fileUrl = createProductDto.tempFileUrl || createProductDto.fileUrl;
-    
+
     if (!fileUrl) {
       throw new BadRequestException('File URL or temp file URL is required');
     }
 
     // Создаем продукт с временным URL файла
-    // Убираем tempMediaUrls из объекта для репозитория
-    const { tempMediaUrls: _tempMediaUrls, ...createData } =
-      createProductDto as any;
+    // Убираем tempMediaUrls и tempFileUrl из объекта для репозитория
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { tempMediaUrls: _tempM, tempFileUrl: _tempF, ...createData } = createProductDto;
+    void _tempM; void _tempF;
     const product = await this.productRepository.create(
       {
         ...createData,
@@ -125,66 +205,27 @@ export class ProductService {
       sellerId,
     );
 
-    // Если есть временные файлы - перемещаем их
-    // Определяем какой URL передавать - если fileUrl содержит /temp/, используем его
-    const tempFileUrl =
-      createProductDto.tempFileUrl ||
-      (createProductDto.fileUrl?.includes('/temp/')
-        ? createProductDto.fileUrl
-        : undefined);
-    
-    // tempMediaUrls уже массив объектов { url, isCover } - извлекаем только URL
-    const tempMediaUrls = createProductDto.tempMediaUrls?.map((m) => m.url);
-    
-    if (hasTempFiles) {
-      console.log('[DEBUG] Has temp files, moving...');
-      console.log('[DEBUG] tempFileUrl:', tempFileUrl);
-      console.log('[DEBUG] tempMediaUrls:', tempMediaUrls);
-      // Переместить файлы из temp в permanent
-      const movedFiles = this.uploadsService.moveProductFiles(
-        sellerId,
-        product.id,
-        tempFileUrl,
-        tempMediaUrls,
-      );
-      console.log('[DEBUG] movedFiles:', JSON.stringify(movedFiles, null, 2));
+    // Обрабатываем временные файлы с помощью унифицированной функции
+    const processedFiles = this.processTempFiles(
+      sellerId,
+      product.id,
+      createProductDto,
+    );
 
-      // Обновить file_url если был перемещен
-      if (movedFiles.file) {
-        await this.productRepository.update(product.id, {
-          fileUrl: movedFiles.file.url,
-        });
-      }
+    // Обновить file_url если файл был перемещен
+    if (processedFiles.fileUrl) {
+      await this.productRepository.update(product.id, {
+        fileUrl: processedFiles.fileUrl,
+      });
+    }
 
-      // Создать записи в product_media для перемещенных медиа
-      console.log('[DEBUG] Adding media, count:', movedFiles.media.length);
-      
-      // Определяем какой файл является обложкой
-      // Если во входных данных была информация об isCover - используем её
-      let coverFilename: string | undefined;
-      if (createProductDto.tempMediaUrls) {
-        const coverItem = createProductDto.tempMediaUrls.find((m) => m.isCover);
-        if (coverItem) {
-          // Извлекаем только имя файла из URL
-          coverFilename = coverItem.url.split('/').pop();
-        }
-      }
-      console.log('[DEBUG] coverFilename:', coverFilename);
-      
-      for (const media of movedFiles.media) {
-        // Определяем isCover: либо из входных данных, либо первое медиа
-        // Сравниваем по имени файла
-        const mediaFilename = media.url.split('/').pop();
-        const isCover = coverFilename 
-          ? mediaFilename?.includes(coverFilename.split('/').pop() || '') 
-          : movedFiles.media[0]?.url === media.url;
-        console.log('[DEBUG] Adding media:', media.url, 'isCover:', isCover);
-        await this.productRepository.addMedia(product.id, {
-          url: media.url,
-          mediaType: 'image', // По умолчанию
-          isCover: isCover,
-        });
-      }
+    // Создать записи в product_media для перемещенных медиа
+    for (const media of processedFiles.mediaData) {
+      await this.productRepository.addMedia(product.id, {
+        url: media.url,
+        mediaType: 'image',
+        isCover: media.isCover,
+      });
     }
 
     return this.findById(product.id);
@@ -205,17 +246,65 @@ export class ProductService {
       throw new ForbiddenException('You can only update your own products');
     }
 
-    // Check if SKU is being changed to an existing one
-    if (updateProductDto.sku && updateProductDto.sku !== product.sku) {
-      const existingProduct = await this.productRepository.findBySku(
-        updateProductDto.sku,
-      );
-      if (existingProduct && existingProduct.id !== id) {
-        throw new ForbiddenException('Product with this SKU already exists');
+    // SKU удален - больше не проверяем уникальность
+
+    // Обрабатываем временные файлы с помощью унифицированной функции
+    const processedFiles = this.processTempFiles(
+      sellerId,
+      id,
+      updateProductDto,
+    );
+
+    // Обновить file_url если файл был перемещен
+    if (processedFiles.fileUrl) {
+      updateProductDto.fileUrl = processedFiles.fileUrl;
+    }
+
+    // Если добавляются новые медиа - обрабатываем обложки
+    if (processedFiles.mediaData.length > 0) {
+      // Проверяем, есть ли среди новых медиа хотя бы одна обложка
+      const hasNewCover = processedFiles.mediaData.some((m) => m.isCover);
+      
+      // Если есть новая обложка - сбрасываем все существующие обложки
+      if (hasNewCover) {
+        await this.productRepository.clearMediaCovers(id);
+      }
+      
+      // Создать записи в product_media для перемещенных медиа
+      for (const media of processedFiles.mediaData) {
+        await this.productRepository.addMedia(id, {
+          url: media.url,
+          mediaType: 'image',
+          isCover: media.isCover,
+        });
       }
     }
 
-    return this.productRepository.update(id, updateProductDto);
+    // Обработка обновления isCover для существующих медиа
+    if (updateProductDto.updatedMedia && updateProductDto.updatedMedia.length > 0) {
+      await this.productMediaService.updateMediaCovers(id, updateProductDto.updatedMedia);
+    }
+
+    // Обработка удаления медиа
+    if (updateProductDto.deletedMediaIds && updateProductDto.deletedMediaIds.length > 0) {
+      await this.productMediaService.deleteMediaBatch(id, updateProductDto.deletedMediaIds);
+    }
+
+    // Обработка лицензий
+    if (updateProductDto.licenses && updateProductDto.licenses.length > 0) {
+      // Удаляем старые лицензии и добавляем новые
+      await this.productRepository.deleteAllLicenses(id);
+      for (const license of updateProductDto.licenses) {
+        await this.productRepository.addLicense(id, license.licenseTypeId, license.price);
+      }
+    }
+
+    // Убираем tempMediaUrls и tempFileUrl из DTO перед сохранением в репозиторий
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { tempMediaUrls: _dm, tempFileUrl: _df, updatedMedia: _um, deletedMediaIds: _dmi, licenses: _lic, ...cleanDto } = updateProductDto as UpdateProductDto & { tempMediaUrls?: { url: string; isCover?: boolean }[]; tempFileUrl?: string; updatedMedia?: { id: number; isCover?: boolean }[]; deletedMediaIds?: number[]; licenses?: { licenseTypeId: number; price: number }[] };
+    void _dm; void _df; void _um; void _dmi; void _lic;
+
+    return this.productRepository.update(id, cleanDto as UpdateProductDto);
   }
 
   async delete(id: number, sellerId: number) {
@@ -374,10 +463,10 @@ export class ProductService {
 
     // Сначала сбрасываем все is_cover для этого продукта
     await this.productRepository.clearMediaCovers(id);
-    
+
     // Устанавливаем указанное медиа как cover
     await this.productRepository.setMediaCover(mediaId, true);
-    
+
     return this.getMedia(id);
   }
 

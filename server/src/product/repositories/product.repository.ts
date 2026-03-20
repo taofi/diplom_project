@@ -31,23 +31,17 @@ type ProductWhereOptions = {
   type?: ProductType;
   seller_id?: number;
   price?: { [Op.gte]?: number; [Op.lte]?: number };
-  [Op.or]?: Array<{
-    name?: { [Op.iLike]: string };
-    description?: { [Op.iLike]: string };
-    sku?: { [Op.iLike]: string };
-  }>;
+  // Поиск по name/description перенесен в translations
 };
 
 /**
  * Интерфейс для создания Product в БД
  * price и mainImage убраны - они вычисляемые
+ * name, description, sku убраны - перенесены в product_translations
  */
 interface ProductCreateData {
-  name: string;
-  description: string | null;
   // price убран - вычисляется как MIN(licenses.price)
   discount_price: number | null;
-  sku: string | null;
   type: ProductType;
   file_url: string;
   stock: number;
@@ -180,9 +174,8 @@ export class ProductRepository {
 
   /**
    * Получить список продуктов для отображения (оптимизированный запрос)
-   * Включает: licenses, categories
+   * Включает: licenses, categories, translations
    * НЕ включает: media массив (только main_image вычисляется)
-   * НЕ включает: translations
    */
   async findAllForList(
     query: ProductQueryParams = {},
@@ -192,7 +185,7 @@ export class ProductRepository {
       limit = 10,
       categoryId,
       isActive,
-      search,
+      // search убран - поиск по name/description перенесен в translations
       type,
       sellerId,
       isFeatured,
@@ -236,13 +229,7 @@ export class ProductRepository {
       }
     }
 
-    if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
-        { sku: { [Op.iLike]: `%${search}%` } },
-      ];
-    }
+    // Поиск по name/description убран - нужно искать через translations
 
     const result = await this.productModel.findAndCountAll({
       where,
@@ -253,16 +240,25 @@ export class ProductRepository {
         { model: Category },
         { model: ProductLicense, include: [{ model: LicenseType }] },
         // Загружаем только media с is_cover = true для main_image
-        { 
-          model: ProductMedia, 
+        {
+          model: ProductMedia,
           where: { is_cover: true },
           required: false,
         },
+        // Загружаем translations для получения name/description
+        { model: ProductTranslation, as: 'translations' },
       ],
     });
 
+    // DEBUG: Проверяем что пришло из базы
+    console.log('[DEBUG product.repository] result.rows[0]:', JSON.stringify(result.rows[0]?.toJSON()));
+    console.log('[DEBUG product.repository] translations:', result.rows[0]?.translations);
+
     // Вычисляем price и main_image для каждого товара
     const rows = result.rows.map((product): ProductWithFullRelations => {
+      // DEBUG: проверяем translations для каждого продукта
+      console.log('[DEBUG product.repository] product.id:', product.id, 'translations:', JSON.stringify(product.translations));
+
       // price = MIN(licenses.price)
       if (product.licenses && product.licenses.length > 0) {
         const prices = product.licenses.map((l) => Number(l.price));
@@ -392,12 +388,10 @@ export class ProductRepository {
     data: CreateProductDto,
     sellerId: number,
   ): Promise<ProductWithRelations> {
+    // name и description теперь создаются через translations
     const createData: ProductCreateData = {
-      name: data.name,
-      description: data.description ?? null,
       // price убран - вычисляется как MIN(licenses.price)
       discount_price: data.discountPrice ?? null,
-      sku: data.sku ?? null,
       type: data.type,
       file_url: data.fileUrl ?? '',
       stock: data.stock ?? 0,
@@ -429,6 +423,7 @@ export class ProductRepository {
           shortDescription: translation.shortDescription || '',
           language: (translation.language as Language) || Language.ENGLISH,
         } as any);
+
       }
     }
 
@@ -460,13 +455,10 @@ export class ProductRepository {
     // Update basic fields
     const updateData: ProductUpdateData = {};
 
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined)
-      updateData.description = data.description;
+    // name, description, sku перенесены в translations - больше не обновляем здесь
     // price убран - вычисляется как MIN(licenses.price)
     if (data.discountPrice !== undefined)
       updateData.discount_price = data.discountPrice;
-    if (data.sku !== undefined) updateData.sku = data.sku;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.fileUrl !== undefined) updateData.file_url = data.fileUrl;
     if (data.stock !== undefined) updateData.stock = data.stock;
@@ -487,17 +479,41 @@ export class ProductRepository {
       }
     }
 
-    // Update translations if provided
+    // Update translations if provided - upsert instead of delete + create
     if (data.translations !== undefined) {
-      await this.productTranslationModel.destroy({ where: { productId: id } });
       for (const translation of data.translations) {
-        await this.productTranslationModel.create({
-          productId: id,
-          name: translation.name || '',
-          description: translation.description || '',
-          shortDescription: translation.shortDescription || '',
-          language: (translation.language as Language) || Language.ENGLISH,
-        } as any);
+        const lang = (translation.language as Language) || Language.ENGLISH;
+        
+        // Проверяем, существует ли перевод для этого языка
+        const existingTranslation = await this.productTranslationModel.findOne({
+          where: { productId: id, language: lang },
+        });
+        
+        if (existingTranslation) {
+          // Обновляем существующий перевод
+          await existingTranslation.update({
+            name: translation.name || '',
+            description: translation.description || '',
+            shortDescription: translation.shortDescription || '',
+          });
+        } else {
+          // Создаем новый перевод - используем product_id для базы данных
+          await this.productTranslationModel.create({
+            productId: id,
+            name: translation.name || '',
+            description: translation.description || '',
+            shortDescription: translation.shortDescription || '',
+            language: lang,
+          } as any);
+
+
+
+        // DEBUG: Проверяем что создалось
+        console.log('[DEBUG createTranslation] created with productId:', id);
+
+        // DEBUG: Проверяем что создалось
+        console.log('[DEBUG createTranslation] created with productId:', id);
+        }
       }
     }
 
@@ -603,6 +619,12 @@ export class ProductRepository {
 
   async countLicenses(productId: number): Promise<number> {
     return this.productLicenseModel.count({
+      where: { product_id: productId },
+    });
+  }
+
+  async deleteAllLicenses(productId: number): Promise<void> {
+    await this.productLicenseModel.destroy({
       where: { product_id: productId },
     });
   }

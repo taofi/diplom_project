@@ -12,6 +12,7 @@ import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
+import { normalizeLanguage } from '../../product/utils/language.utils';
 
 // Re-export типов из product.types.ts
 export type {
@@ -34,15 +35,16 @@ export { ProductType as ProductTypeEnum, MediaType as MediaTypeEnum } from './pr
 /**
  * Базовые поля Product (snake_case - как в базе данных)
  * Переименовано для избежания конфликта с product.types.ts
+ * name, description перенесены в product_translations
+ * sku удален
  */
 export interface ProductFieldsResponse extends EntityBase {
   id: number;
   seller_id: number;
-  name: string;
-  description: string | null;
+  // name и description теперь в translations
   price: number;
   discount_price: number | null;
-  sku: string | null;
+  // sku удален
   type: import('./product.types').ProductType;
   file_url: string;
   stock: number;
@@ -61,7 +63,8 @@ export interface ProductFieldsResponse extends EntityBase {
  * Product для списка (camelCase)
  * - main_image: вычисляется из media where is_cover = true
  * - НЕТ массива media
- * - НЕТ массива translations
+ * - name, description берутся из translations
+ * - sku удален
  */
 export interface ProductListItemResponse {
   id: number;
@@ -70,7 +73,7 @@ export interface ProductListItemResponse {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  sku: string | null;
+  // sku удален
   type: import('./product.types').ProductType;
   fileUrl: string;
   stock: number;
@@ -104,6 +107,7 @@ export type ProductWithFullRelations = ProductFieldsResponse & {
  * - main_image (вычисляется из media where is_cover = true)
  * - ВСЕ licenses
  * - ВСЕ categories
+ * - sku удален
  */
 export interface ProductDetailResponse {
   id: number;
@@ -112,7 +116,7 @@ export interface ProductDetailResponse {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  sku: string | null;
+  // sku удален
   type: import('./product.types').ProductType;
   fileUrl: string;
   stock: number;
@@ -138,9 +142,11 @@ export interface ProductDetailResponse {
  * - Вычисляет price = MIN(licenses.price)
  * - Вычисляет main_image из media where is_cover = true
  * - НЕ включает массив media
+ * - name и description берутся из translations
  */
 export function createProductListItemResponse(
   product: ProductWithFullRelations,
+  language?: string,
 ): ProductListItemResponse {
   // Вычисляем price как минимальную цену из лицензий
   let price = 0;
@@ -156,16 +162,36 @@ export function createProductListItemResponse(
     mainImage = coverMedia ? String(coverMedia.url) : '';
   }
 
+  // Получаем name и description из translations
+  let name = '';
+  let description: string | null = null;
+
+  // Работаем с translations - используем toJSON() для получения dataValues
+  const translations = product.translations;
+
+  if (translations && translations.length > 0) {
+    const translationsData = translations.map((t) => t.toJSON());
+    const normalizedLang = normalizeLanguage(language);
+    const translation = translationsData.find((t: { language?: string; name?: string; description?: string }) =>
+      String(t.language).toLowerCase() === normalizedLang.toLowerCase()
+    ) || translationsData[0];
+
+    if (translation) {
+      name = translation.name || '';
+      description = translation.description || null;
+    }
+  }
+
   const response: ProductListItemResponse = {
     id: product.id,
     sellerId: product.seller_id,
-    name: product.name,
-    description: product.description,
+    name,
+    description,
     price,
     discountPrice: product.discount_price
       ? Number(product.discount_price)
       : null,
-    sku: product.sku,
+    // sku удален
     type: product.type,
     fileUrl: product.file_url,
     stock: product.stock,
@@ -212,9 +238,11 @@ export function createProductListItemResponse(
  * - Вычисляет main_image из media where is_cover = true
  * - Включает ВСЕ licenses
  * - Включает ВСЕ categories
+ * - name и description берутся из translations по языку
  */
 export function createProductDetailResponse(
   product: ProductWithFullRelations,
+  language?: string,
 ): ProductDetailResponse {
   // Вычисляем price как минимальную цену из лицензий
   let price = 0;
@@ -230,16 +258,34 @@ export function createProductDetailResponse(
     mainImage = coverMedia ? String(coverMedia.url) : '';
   }
 
+  // Получаем name и description из translations
+  let name = '';
+  let description: string | null = null;
+
+  const translations = product.translations;
+  if (translations && translations.length > 0) {
+    const translationsData = translations.map((t) => t.toJSON());
+    const normalizedLang = normalizeLanguage(language);
+    const translation = translationsData.find((t: { language?: string; name?: string; description?: string }) =>
+      String(t.language).toLowerCase() === normalizedLang.toLowerCase()
+    ) || translationsData[0];
+
+    if (translation) {
+      name = translation.name || '';
+      description = translation.description || null;
+    }
+  }
+
   const response: ProductDetailResponse = {
     id: product.id,
     sellerId: product.seller_id,
-    name: product.name,
-    description: product.description,
+    name,
+    description,
     price,
     discountPrice: product.discount_price
       ? Number(product.discount_price)
       : null,
-    sku: product.sku,
+    // sku удален
     type: product.type,
     fileUrl: product.file_url,
     stock: product.stock,
@@ -321,9 +367,10 @@ export function createProductListResponseForResponse(
   total: number,
   page: number,
   limit: number,
+  language?: string,
 ): ProductListResponseInternal {
   return {
-    data: products.map(createProductListItemResponse),
+    data: products.map((p) => createProductListItemResponse(p, language)),
     meta: {
       total,
       page,

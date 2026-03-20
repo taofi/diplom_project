@@ -43,20 +43,14 @@ export class Product extends Model {
   @Column({ type: DataType.STRING(500), allowNull: false })
   declare file_url: string;
 
-  @Column({ type: DataType.STRING(255), allowNull: false })
-  declare name: string;
-
-  @Column({ type: DataType.TEXT, allowNull: true })
-  declare description: string;
+  // name и description перенесены в product_translations
+  // sku удален
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false, defaultValue: 0 })
   declare price: number;
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: true })
   declare discount_price: number;
-
-  @Column({ type: DataType.STRING(100), allowNull: true })
-  declare sku: string;
 
   @Default(0)
   @Column({ type: DataType.INTEGER, allowNull: false })

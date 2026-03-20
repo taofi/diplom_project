@@ -4,13 +4,14 @@
  */
 
 import type { EntityBase } from '../base/entity-base';
-import type { Language } from '../../common/enums/language.enum';
+import { Language } from '../../common/enums/language.enum';
 import type { User } from '../../db/models/user.model';
 import type { Category } from '../../db/models/category.model';
 import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
+import { normalizeLanguage } from '../../product/utils/language.utils';
 
 // =======================
 // ENUMS
@@ -55,19 +56,20 @@ export interface LicenseDto {
 /**
  * DTO для создания продукта (camelCase)
  * price вычисляется как MIN(licenses.price)
+ * name и description теперь передаются только в translations
  */
 export interface CreateProductDto {
-  name: string;
-  description?: string;
+  // name и description перенесены в translations
   // price убран - вычисляется как MIN(licenses.price)
   discountPrice?: number;
-  sku?: string;
+  // sku удален
   type: ProductType;
   fileUrl?: string;
   // Временный URL файла (будет перемещен при создании продукта)
   tempFileUrl?: string;
   // Временные URL медиа (будут перемещены при создании продукта)
-  tempMediaUrls?: string[];
+  // Может быть массив URL или массив объектов { url, isCover }
+  tempMediaUrls?: { url: string; isCover?: boolean }[];
   stock?: number;
   isActive?: boolean;
   isFeatured?: boolean;
@@ -84,6 +86,13 @@ export interface CreateProductDto {
 export type UpdateProductDto = Partial<Omit<CreateProductDto, 'price' | 'mainImage'>> & {
   categoryIds?: number[];
   translations?: TranslationDto[];
+  // Поддержка временных файлов при обновлении
+  tempFileUrl?: string;
+  tempMediaUrls?: { url: string; isCover?: boolean }[];
+  // Обновленные медиа (изменение isCover для существующих)
+  updatedMedia?: { id: number; isCover?: boolean }[];
+  // ID удаленных медиа
+  deletedMediaIds?: number[];
 };
 
 // =======================
@@ -92,15 +101,16 @@ export type UpdateProductDto = Partial<Omit<CreateProductDto, 'price' | 'mainIma
 
 /**
  * Базовые поля Product (snake_case - как в базе данных)
+ * name, description перенесены в product_translations
+ * sku удален
  */
 export interface ProductFields extends EntityBase {
   id: number;
   seller_id: number;
-  name: string;
-  description: string | null;
+  // name и description теперь в translations
   price: number;
   discount_price: number | null;
-  sku: string | null;
+  // sku удален
   type: ProductType;
   file_url: string;
   stock: number;
@@ -192,6 +202,8 @@ export interface LicenseInfo {
 
 /**
  * Product для ответа API (camelCase)
+ * name, description берутся из translations по языку
+ * sku удален из ответа
  */
 export interface ProductResponse {
   id: number;
@@ -200,7 +212,7 @@ export interface ProductResponse {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  sku: string | null;
+  // sku удален
   type: ProductType;
   fileUrl: string;
   stock: number;
@@ -280,20 +292,40 @@ export interface ProductListResponse {
 
 /**
  * Создать ProductResponse из сущности с отношениями
+ * name и description берутся из translations
  */
 export function createProductResponse(
   product: ProductWithRelations,
+  language?: string,
 ): ProductResponse {
+  // Получаем name и description из translations
+  let name = '';
+  let description: string | null = null;
+
+  const translations = product.translations;
+  if (translations && translations.length > 0) {
+    const translationsData = translations.map((t) => t.toJSON());
+    const normalizedLang = normalizeLanguage(language) as Language;
+    const translation = translationsData.find((t: { language?: string }) =>
+      String(t.language).toLowerCase() === normalizedLang.toLowerCase()
+    ) || translationsData[0];
+
+    if (translation) {
+      name = translation.name || '';
+      description = translation.description || null;
+    }
+  }
+
   const response: ProductResponse = {
     id: product.id,
     sellerId: product.seller_id,
-    name: product.name,
-    description: product.description,
+    name,
+    description,
     price: Number(product.price),
     discountPrice: product.discount_price
       ? Number(product.discount_price)
       : null,
-    sku: product.sku,
+    // sku удален
     type: product.type,
     fileUrl: product.file_url,
     stock: product.stock,
@@ -368,9 +400,10 @@ export function createProductListResponse(
   total: number,
   page: number,
   limit: number,
+  language?: string,
 ): ProductListResponse {
   return {
-    data: products.map(createProductResponse),
+    data: products.map((p) => createProductResponse(p, language)),
     meta: {
       total,
       page,

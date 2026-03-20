@@ -41,13 +41,8 @@ class LicenseDto {
 }
 
 export class CreateProductDto {
-  @IsString({ message: 'Name must be a string' })
-  @IsNotEmpty({ message: 'Name is required' })
-  name: string;
-
-  @IsString({ message: 'Description must be a string' })
-  @IsOptional()
-  description?: string;
+  // name и description перенесены в массив translations
+  // sku удален
 
   // price убран - теперь вычисляется как MIN(licenses.price)
 
@@ -55,10 +50,6 @@ export class CreateProductDto {
   @IsOptional()
   @Min(0)
   discountPrice?: number;
-
-  @IsString({ message: 'SKU must be a string' })
-  @IsOptional()
-  sku?: string;
 
   @IsString({ message: 'Type must be a string' })
   @IsNotEmpty({ message: 'Type is required' })

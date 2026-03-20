@@ -7,6 +7,8 @@ import { ProductType, MediaType } from './enums';
 
 /**
  * Базовые поля продукта
+ * name, description теперь берутся из translations
+ * sku удален
  */
 export interface ProductBase extends EntityBase, Timestamped {
   sellerId: number;
@@ -14,7 +16,7 @@ export interface ProductBase extends EntityBase, Timestamped {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  sku: string | null;
+  // sku удален
   type: ProductType;
   fileUrl: string;
   stock: number;
@@ -54,14 +56,22 @@ export interface AddMediaDto {
 }
 
 /**
+ * DTO для обновления медиа при редактировании продукта
+ */
+export interface UpdateMediaItem {
+  id: number;
+  isCover?: boolean;
+}
+
+/**
  * DTO для создания продукта
+ * name и description теперь передаются только в translations
  */
 export interface CreateProductDto {
-  name: string;
-  description?: string;
+  // name и description перенесены в translations
   price: number;
   discountPrice?: number;
-  sku?: string;
+  // sku удален
   type: ProductType;
   // Основной файл продукта
   fileUrl?: string;
@@ -75,6 +85,7 @@ export interface CreateProductDto {
   isFeatured?: boolean;
   mainImage?: string;
   categoryIds?: number[];
+  // Переводы для продукта (поддержка mu-lingua)
   translations?: TranslationDto[];
   licenses?: LicenseDto[];
 }
@@ -85,4 +96,8 @@ export interface CreateProductDto {
 export type UpdateProductDto = Partial<CreateProductDto> & {
   categoryIds?: number[];
   translations?: TranslationDto[];
+  // Обновленные медиа (изменение isCover)
+  updatedMedia?: UpdateMediaItem[];
+  // ID удаленных медиа
+  deletedMediaIds?: number[];
 };

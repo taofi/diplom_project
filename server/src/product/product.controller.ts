@@ -52,8 +52,16 @@ export class ProductController {
   }
 
   @Get(':id')
-  async findById(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.findById(id);
+  async findById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('language') language?: string,
+  ) {
+    return this.productService.findById(id, language);
+  }
+
+  @Get(':id/translations')
+  async findByIdWithAllTranslations(@Param('id', ParseIntPipe) id: number) {
+    return this.productService.findByIdWithAllTranslations(id);
   }
 
   @Post()

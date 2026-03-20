@@ -141,6 +141,7 @@
       "categories": "Categories",
       "licenses": "Licenses",
       "addLicense": "Add License",
+      "licenseRequired": "At least one license is required",
       "status": "Status",
       "active": "Active",
       "featured": "Featured",

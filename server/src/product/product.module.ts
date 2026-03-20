@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
+import { ProductMediaService } from './product-media.service';
 import { ProductRepository } from './repositories/product.repository';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Product } from '../db/models/product.model';
@@ -28,7 +29,7 @@ import { UploadsModule } from '../uploads/uploads.module';
     UploadsModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, ProductRepository],
-  exports: [ProductService, ProductRepository, SequelizeModule],
+  providers: [ProductService, ProductMediaService, ProductRepository],
+  exports: [ProductService, ProductMediaService, ProductRepository, SequelizeModule],
 })
 export class ProductModule {}

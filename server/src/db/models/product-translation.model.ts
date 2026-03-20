@@ -37,6 +37,7 @@ export class ProductTranslation extends Model<ProductTranslation> {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
+    field: 'product_id',
   })
   productId: number;
 

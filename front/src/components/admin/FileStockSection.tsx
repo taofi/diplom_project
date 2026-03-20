@@ -4,12 +4,14 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { FormField, Section } from '@/components/ui';
 import { FileUploader } from './FileUploader';
 import { MediaUploader, type MediaItem } from './MediaUploader';
+import type { UpdateMediaItem } from '@/types/product';
 
 interface FileStockSectionProps {
   fileUrl: string;
   onFileUrlChange: (value: string) => void;
   media: MediaItem[];
   onMediaChange: (items: MediaItem[]) => void;
+  onMediaChangeWithTracking?: (changes: { updatedMedia: UpdateMediaItem[]; deletedMediaIds: number[] }) => void;
 }
 
 export function FileStockSection({
@@ -17,6 +19,7 @@ export function FileStockSection({
   onFileUrlChange,
   media,
   onMediaChange,
+  onMediaChangeWithTracking,
 }: FileStockSectionProps) {
   const { t } = useI18n();
 
@@ -27,6 +30,7 @@ export function FileStockSection({
         <MediaUploader
           value={media}
           onChange={onMediaChange}
+          onMediaChange={onMediaChangeWithTracking}
           maxItems={10}
           maxSize={5}
         />

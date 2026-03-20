@@ -84,13 +84,14 @@ function buildLanguageParam(language?: string): string | undefined {
  */
 export async function getProducts(params?: ProductParams): Promise<ProductListResponse> {
   const queryParams = { ...params };
-  
+
   // Добавляем язык в запрос если указан
   if (params?.language) {
     queryParams.language = params.language;
   }
-  
-  const response = await api.get<ProductListResponse>('/products', { params: queryParams });
+
+
+
   return response.data;
 }
 
@@ -102,7 +103,21 @@ export async function getProducts(params?: ProductParams): Promise<ProductListRe
  */
 export async function getProductById(id: number, language?: string): Promise<ProductResponse> {
   const params = language ? { language } : {};
+  console.log('[FRONT DEBUG getProductById] id:', id, 'language:', language, 'params:', params);
   const response = await api.get<ProductResponse>(`/products/${id}`, { params });
+  console.log('[FRONT DEBUG getProductById] response.name:', response.data.name);
+  return response.data;
+}
+
+/**
+ * Получить товар со всеми переводами для админ-панели
+ * @param productId - ID товара
+ * @returns Товар с массивом всех переводов (ru + en)
+ */
+export async function getProductWithAllTranslations(
+  productId: number
+): Promise<ProductResponse> {
+  const response = await api.get<ProductResponse>(`/products/${productId}/translations`);
   return response.data;
 }
 
@@ -218,6 +233,7 @@ export async function updateProduct(
   language?: string
 ): Promise<ProductResponse> {
   const params = language ? { language } : {};
+  console.log('[FRONT DEBUG updateProduct] id:', id, 'data:', data, 'language:', language, 'params:', params);
   const response = await api.patch<ProductResponse>(`/products/${id}`, data, { params });
   return response.data;
 }

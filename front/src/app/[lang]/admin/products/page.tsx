@@ -9,7 +9,7 @@ import { getProducts, deleteProduct, activateProduct, deactivateProduct } from '
 import { ProductType } from '@/types/product';
 import type { ProductQueryParams, ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Card, Spinner } from '@/components/ui';
+import { Button, Card, Spinner, ConfirmModal } from '@/components/ui';
 import { AdminProductCard } from '@/components/admin/AdminProductCard';
 import { ProductFilters, type FilterValues } from '@/components/admin/ProductFilters';
 
@@ -23,6 +23,11 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 12, totalPages: 1 });
+
+  // State для модального окна удаления
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Локальный state для категорий
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
@@ -120,20 +125,35 @@ export default function AdminProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, currentFilters]);
 
-  // Handle delete
-  const handleDelete = async (productId: number) => {
-    if (!confirm(t('admin.products.confirmDelete'))) {
-      return;
-    }
+  // Handle delete - открытие модального окна
+  const handleDeleteClick = (productId: number) => {
+    setProductToDelete(productId);
+    setDeleteModalOpen(true);
+  };
 
+  // Подтверждение удаления
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
     try {
-      await deleteProduct(productId);
+      await deleteProduct(productToDelete);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
       // Обновляем список после удаления
       doFetchProducts(pagination.page);
     } catch (err) {
       console.error('Failed to delete product:', err);
       setError('Failed to delete product');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Отмена удаления
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setProductToDelete(null);
   };
 
   // Handle activate/deactivate
@@ -207,7 +227,7 @@ export default function AdminProductsPage() {
                   product={product}
                   onEdit={handleEdit}
                   onToggleActive={handleToggleActive}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteClick}
                 />
               ))}
             </div>
@@ -237,6 +257,19 @@ export default function AdminProductsPage() {
           </>
         )}
       </div>
+
+      {/* Модальное окно подтверждения удаления */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title={t('admin.products.delete') || 'Удалить товар'}
+        message={t('admin.products.confirmDelete') || 'Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.'}
+        confirmText={t('common.delete') || 'Удалить'}
+        cancelText={t('common.cancel') || 'Отмена'}
+        variant="danger"
+        loading={isDeleting}
+      />
     </div>
   );
 }

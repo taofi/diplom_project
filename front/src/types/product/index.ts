@@ -29,7 +29,8 @@ export type {
   UpdateProductDto, 
   TranslationDto, 
   LicenseDto,
-  AddMediaDto
+  AddMediaDto,
+  UpdateMediaItem
 } from './product.types';
 
 // Query types
@@ -168,7 +169,7 @@ export function createProductBase(product: Partial<ProductBase>): ProductBase {
     description: product.description ?? null,
     price: product.price ?? 0,
     discountPrice: product.discountPrice ?? null,
-    sku: product.sku ?? null,
+    // sku удален
     type: product.type ?? ProductType.BRUSH,
     fileUrl: product.fileUrl ?? '',
     stock: product.stock ?? 0,
