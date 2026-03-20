@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'; // Добавлен icon
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -25,6 +25,7 @@ const sizeClasses: Record<ButtonSize, string> = {
   sm: 'px-3 py-1 text-sm',
   md: 'px-4 py-2',
   lg: 'px-6 py-3',
+  icon: 'h-9 w-9', // Квадратный размер для иконок
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -62,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading && (
           <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
+            className={`animate-spin h-4 w-4 ${size === 'icon' ? '' : '-ml-1 mr-2'}`}
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"

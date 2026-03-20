@@ -11,6 +11,7 @@ import { LicenseManager } from './LicenseManager';
 import { StatusSection } from './StatusSection';
 import { FormButtons } from './FormButtons';
 import { ErrorMessage } from './ErrorMessage';
+import type { MediaItem } from './MediaUploader';
 
 interface LicenseFormItem {
   id: string;
@@ -26,37 +27,31 @@ interface ProductFormProps {
   onDescriptionChange: (value: string) => void;
   type: ProductType;
   onTypeChange: (value: ProductType) => void;
-  sku: string;
-  onSkuChange: (value: string) => void;
-  
-  // File & stock
+
+  // File, media & stock
   fileUrl: string;
   onFileUrlChange: (value: string) => void;
-  price: string;
-  onPriceChange: (value: string) => void;
-  stock: number;
-  onStockChange: (value: number) => void;
-  discountPrice: string;
-  onDiscountPriceChange: (value: string) => void;
-  
+  media: MediaItem[];
+  onMediaChange: (items: MediaItem[]) => void;
+
   // Categories
   categories: CategoryResponse[];
   selectedCategories: number[];
   onToggleCategory: (categoryId: number) => void;
-  
+
   // Licenses
   licenseTypes: LicenseTypeResponse[];
   licenses: LicenseFormItem[];
   onAddLicense: () => void;
   onUpdateLicense: (id: string, field: 'licenseTypeId' | 'price', value: string | number) => void;
   onRemoveLicense: (id: string) => void;
-  
+
   // Status
   isActive: boolean;
   onIsActiveChange: (value: boolean) => void;
   isFeatured: boolean;
   onIsFeaturedChange: (value: boolean) => void;
-  
+
   // Form
   error: string;
   loading: boolean;
@@ -72,37 +67,31 @@ export function ProductForm({
   onDescriptionChange,
   type,
   onTypeChange,
-  sku,
-  onSkuChange,
-  
-  // File & stock
+
+  // File, media & stock
   fileUrl,
   onFileUrlChange,
-  price,
-  onPriceChange,
-  stock,
-  onStockChange,
-  discountPrice,
-  onDiscountPriceChange,
-  
+  media,
+  onMediaChange,
+
   // Categories
   categories,
   selectedCategories,
   onToggleCategory,
-  
+
   // Licenses
   licenseTypes,
   licenses,
   onAddLicense,
   onUpdateLicense,
   onRemoveLicense,
-  
+
   // Status
   isActive,
   onIsActiveChange,
   isFeatured,
   onIsFeaturedChange,
-  
+
   // Form
   error,
   loading,
@@ -122,19 +111,13 @@ export function ProductForm({
         onDescriptionChange={onDescriptionChange}
         type={type}
         onTypeChange={onTypeChange}
-        sku={sku}
-        onSkuChange={onSkuChange}
       />
       
       <FileStockSection
         fileUrl={fileUrl}
         onFileUrlChange={onFileUrlChange}
-        price={price}
-        onPriceChange={onPriceChange}
-        stock={stock}
-        onStockChange={onStockChange}
-        discountPrice={discountPrice}
-        onDiscountPriceChange={onDiscountPriceChange}
+        media={media}
+        onMediaChange={onMediaChange}
       />
       
       <CategorySelector

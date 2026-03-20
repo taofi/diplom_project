@@ -6,8 +6,10 @@ import {
   setRefreshToken,
   removeTokens,
 } from './cookies';
+import { toastError, getErrorMessage } from './toast';
+import { translateError } from './i18n-error';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -53,6 +55,9 @@ api.interceptors.request.use(
   },
   (error: AxiosError) => Promise.reject(error)
 );
+
+// Коды ошибок, для которых НЕ показываем toast (они обрабатываются автоматически)
+const IGNORED_ERROR_CODES = [401];
 
 // Response interceptor - обрабатываем 401 и refresh
 api.interceptors.response.use(
@@ -114,8 +119,21 @@ api.interceptors.response.use(
       }
     }
 
+    // Показываем toast для остальных ошибок
+    const status = error.response?.status;
+    if (status && !IGNORED_ERROR_CODES.includes(status)) {
+      const rawMessage = getErrorMessage(error);
+      const translatedMessage = translateError(rawMessage);
+      toastError('Ошибка', translatedMessage);
+    }
+
     return Promise.reject(error);
   }
 );
+
+// Product API functions
+import * as productApi from './api-product';
+
+export { productApi };
 
 export default api;

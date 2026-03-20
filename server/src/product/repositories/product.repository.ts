@@ -7,6 +7,7 @@ import { ProductTranslation } from '../../db/models/product-translation.model';
 import { ProductLicense } from '../../db/models/product-license.model';
 import { ProductCategory } from '../../db/models/product-category.model';
 import { Category } from '../../db/models/category.model';
+import { LicenseType } from '../../db/models/license-type.model';
 import { Language } from '../../common/enums/language.enum';
 import { FileService, MediaFolder } from '../../common/services/file.service';
 import type { FindOptions } from 'sequelize';
@@ -18,6 +19,9 @@ import {
   UpdateProductDto,
   ProductQueryParams,
 } from '../../types/product';
+import {
+  ProductWithFullRelations,
+} from '../../types/product/product-response.types';
 import { SEQUELIZE_TOKEN } from '../../db/database.module';
 
 type ProductWhereOptions = {
@@ -92,7 +96,7 @@ export class ProductRepository {
       include: [
         { model: ProductMedia },
         { model: ProductTranslation },
-        { model: ProductLicense, include: [Category] },
+        { model: ProductLicense },
         { model: Category },
       ],
     });
@@ -129,6 +133,159 @@ export class ProductRepository {
       where: { sku },
       ...options,
     });
+  }
+
+  /**
+   * Получить продукт по ID с полными отношениями
+   * Включает: translations, media, licenses, categories
+   * main_image вычисляется из media where is_cover = true
+   */
+  async findByIdWithFullRelations(
+    id: number,
+  ): Promise<ProductWithFullRelations | null> {
+    const product = await this.productModel.findByPk(id, {
+      include: [
+        { model: ProductMedia },
+        { model: ProductTranslation },
+        { model: ProductLicense, include: [{ model: LicenseType }] },
+        { model: Category },
+      ],
+    });
+
+    if (!product) return null;
+
+    // Вычисляем price как минимальную цену из лицензий
+    if (product.licenses && product.licenses.length > 0) {
+      const prices = product.licenses.map((l) => Number(l.price));
+      (product as unknown as ProductWithComputedFields).price = Math.min(
+        ...prices,
+      );
+    } else {
+      (product as unknown as ProductWithComputedFields).price = 0;
+    }
+
+    // Получаем main_image из медиа где is_cover = true
+    if (product.media && product.media.length > 0) {
+      const coverMedia = product.media.find((m) => m.is_cover);
+      const url = coverMedia?.url;
+      (product as unknown as ProductWithComputedFields).main_image = url
+        ? String(url)
+        : '';
+    } else {
+      (product as unknown as ProductWithComputedFields).main_image = '';
+    }
+
+    return product as unknown as ProductWithFullRelations;
+  }
+
+  /**
+   * Получить список продуктов для отображения (оптимизированный запрос)
+   * Включает: licenses, categories
+   * НЕ включает: media массив (только main_image вычисляется)
+   * НЕ включает: translations
+   */
+  async findAllForList(
+    query: ProductQueryParams = {},
+  ): Promise<{ rows: ProductWithFullRelations[]; count: number }> {
+    const {
+      page = 1,
+      limit = 10,
+      categoryId,
+      isActive,
+      search,
+      type,
+      sellerId,
+      isFeatured,
+      minPrice,
+      maxPrice,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+    } = query;
+
+    const offset = (page - 1) * limit;
+
+    const where: ProductWhereOptions = {};
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (isActive !== undefined) {
+      where.is_active = isActive;
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (sellerId) {
+      where.seller_id = sellerId;
+    }
+
+    if (isFeatured !== undefined) {
+      where.is_featured = isFeatured;
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) {
+        where.price[Op.gte] = minPrice;
+      }
+      if (maxPrice !== undefined) {
+        where.price[Op.lte] = maxPrice;
+      }
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } },
+        { sku: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    const result = await this.productModel.findAndCountAll({
+      where,
+      offset,
+      limit,
+      order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
+      include: [
+        { model: Category },
+        { model: ProductLicense, include: [{ model: LicenseType }] },
+        // Загружаем только media с is_cover = true для main_image
+        { 
+          model: ProductMedia, 
+          where: { is_cover: true },
+          required: false,
+        },
+      ],
+    });
+
+    // Вычисляем price и main_image для каждого товара
+    const rows = result.rows.map((product): ProductWithFullRelations => {
+      // price = MIN(licenses.price)
+      if (product.licenses && product.licenses.length > 0) {
+        const prices = product.licenses.map((l) => Number(l.price));
+        (product as unknown as ProductWithComputedFields).price = Math.min(...prices);
+      } else {
+        (product as unknown as ProductWithComputedFields).price = 0;
+      }
+
+      // main_image из media где is_cover = true
+      if (product.media && product.media.length > 0) {
+        const coverMedia = product.media.find((m) => m.is_cover);
+        (product as unknown as ProductWithComputedFields).main_image = coverMedia ? String(coverMedia.url) : '';
+      } else {
+        (product as unknown as ProductWithComputedFields).main_image = '';
+      }
+
+      return product as unknown as ProductWithFullRelations;
+    });
+
+    return {
+      rows,
+      count: result.count,
+    };
   }
 
   async findAndCountAll(
@@ -242,7 +399,7 @@ export class ProductRepository {
       discount_price: data.discountPrice ?? null,
       sku: data.sku ?? null,
       type: data.type,
-      file_url: data.fileUrl,
+      file_url: data.fileUrl ?? '',
       stock: data.stock ?? 0,
       is_active: data.isActive ?? true,
       is_featured: data.isFeatured ?? false,
@@ -369,7 +526,7 @@ export class ProductRepository {
    * Delete all media files for a product from disk
    */
   private deleteAllMediaFiles(productId: number): void {
-    this.fileService.deleteFolderFiles(MediaFolder.PRODUCT, productId);
+    this.fileService.deleteMediaFolderFiles(MediaFolder.PRODUCT, productId);
   }
 
   async addMedia(
@@ -402,6 +559,20 @@ export class ProductRepository {
     }
 
     await media.destroy();
+  }
+
+  async clearMediaCovers(productId: number): Promise<void> {
+    await this.productMediaModel.update(
+      { is_cover: false },
+      { where: { product_id: productId } },
+    );
+  }
+
+  async setMediaCover(mediaId: number, isCover: boolean): Promise<void> {
+    await this.productMediaModel.update(
+      { is_cover: isCover },
+      { where: { id: mediaId } },
+    );
   }
 
   async addLicense(

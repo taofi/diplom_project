@@ -11,6 +11,7 @@ import { ProductCategory } from '../db/models/product-category.model';
 import { Category } from '../db/models/category.model';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../db/database.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DatabaseModule } from '../db/database.module';
       Category,
     ]),
     AuthModule,
+    UploadsModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductRepository],

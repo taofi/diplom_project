@@ -19,6 +19,33 @@ export class AuthService {
     private tokenService: TokenService,
   ) {}
 
+  // Вспомогательная функция для нормализации ролей
+  private normalizeRoles(roles: unknown): string[] {
+    if (!roles) return [UserRole.USER];
+    
+    let roleArray: string[];
+    
+    if (Array.isArray(roles)) {
+      roleArray = roles.map(r => {
+        if (typeof r === 'string') {
+          // Если элемент содержит запятую, разбиваем на массив
+          if (r.includes(',')) {
+            return r.split(',').map(item => item.trim());
+          }
+          return r.trim();
+        }
+        return String(r);
+      }).flat();
+    } else if (typeof roles === 'string') {
+      roleArray = roles.split(',').map(r => r.trim());
+    } else {
+      roleArray = [UserRole.USER];
+    }
+    
+    // Убираем дубликаты и пустые значения
+    return [...new Set(roleArray.filter(r => r))];
+  }
+
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = await this.userModel.findOne({
       where: { email: dto.email },
@@ -29,13 +56,16 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+    
+    // Нормализуем роли перед сохранением
+    const normalizedRoles = this.normalizeRoles(dto.roles);
 
     const user = await this.userModel.create({
       email: dto.email,
       password_hash: passwordHash,
       name: dto.name,
       locale: dto.locale || 'ru',
-      role: dto.roles || [UserRole.USER],
+      role: normalizedRoles,
     });
 
     const tokens = await this.tokenService.generateTokens({
@@ -76,10 +106,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Нормализуем роли перед отправкой
+    const normalizedRoles = this.normalizeRoles(user.role);
+
     const tokens = await this.tokenService.generateTokens({
       sub: user.id,
       email: user.email,
-      roles: user.role,
+      roles: normalizedRoles,
     });
 
     return {
@@ -87,7 +120,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        roles: user.role,
+        roles: normalizedRoles,
         locale: user.locale,
         avatar_url: user.avatar_url,
       },
@@ -124,11 +157,14 @@ export class AuthService {
         throw new UnauthorizedException('User not found');
       }
 
+      // Нормализуем роли перед отправкой
+      const normalizedRoles = this.normalizeRoles(user.role);
+
       // Generate new tokens
       const tokens = await this.tokenService.generateTokens({
         sub: user.id,
         email: user.email,
-        roles: user.role,
+        roles: normalizedRoles,
       });
 
       return {
@@ -166,6 +202,9 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    // Нормализуем роль и присваиваем обратно
+    user.role = this.normalizeRoles(user.role) as UserRole[];
+    
     return user;
   }
 }

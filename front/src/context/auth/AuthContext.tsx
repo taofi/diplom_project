@@ -10,11 +10,18 @@ import {
 import { User, AuthState } from './types';
 import {
   getAccessToken,
+  getRefreshToken,
   setAccessToken,
   setRefreshToken,
   removeTokens,
+  refreshAccessToken,
 } from '@/lib/cookies';
-import api from '@/lib/api';
+import {
+  getCurrentUser,
+  loginUser,
+  registerUser,
+  logoutUser,
+} from '@/lib/api-auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -41,17 +48,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = getAccessToken();
+      let token = getAccessToken();
+
+      // Если есть refreshToken, пробуем обновить токены
+      if (!token && getRefreshToken()) {
+        const newTokens = await refreshAccessToken();
+        if (newTokens) {
+          setAccessToken(newTokens.accessToken);
+          setRefreshToken(newTokens.refreshToken);
+          token = newTokens.accessToken;
+        }
+      }
 
       if (token) {
         try {
-          const response = await api.get('/auth/me');
+          const user = await getCurrentUser();
           setState({
-            user: response.data,
+            user,
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch {
+        } catch (error: unknown) {
+          // Если 401 - пробуем refresh токен
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 401) {
+            const newTokens = await refreshAccessToken();
+            if (newTokens) {
+              setAccessToken(newTokens.accessToken);
+              setRefreshToken(newTokens.refreshToken);
+              try {
+                const user = await getCurrentUser();
+                setState({
+                  user,
+                  isAuthenticated: true,
+                  isLoading: false,
+                });
+                return;
+              } catch {
+                // Если все равно не удалось - очищаем
+              }
+            }
+          }
           removeTokens();
           setState({
             user: null,
@@ -68,8 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    const { user, accessToken, refreshToken } = response.data;
+    const { user, accessToken, refreshToken } = await loginUser(email, password);
 
     setAccessToken(accessToken);
     setRefreshToken(refreshToken);
@@ -82,12 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await api.post('/auth/register', {
-      email,
-      password,
-      name,
-    });
-    const { user, accessToken, refreshToken } = response.data;
+    const { user, accessToken, refreshToken } = await registerUser(email, password, name);
 
     setAccessToken(accessToken);
     setRefreshToken(refreshToken);
@@ -101,7 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
+      await logoutUser();
     } catch {
       // Игнорируем ошибку logout
     } finally {

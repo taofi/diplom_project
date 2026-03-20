@@ -63,7 +63,13 @@ export interface CreateProductDto {
   discountPrice?: number;
   sku?: string;
   type: ProductType;
-  fileUrl: string;
+  // Основной файл продукта
+  fileUrl?: string;
+  // Временный URL файла (будет перемещен при создании)
+  tempFileUrl?: string;
+  // Временные URL медиа (будут перемещены при создании)
+  // Может быть массив URL или массив объектов { url, isCover }
+  tempMediaUrls?: { url: string; isCover?: boolean }[];
   stock?: number;
   isActive?: boolean;
   isFeatured?: boolean;

@@ -11,8 +11,6 @@ interface BasicInfoSectionProps {
   onDescriptionChange: (value: string) => void;
   type: ProductType;
   onTypeChange: (value: ProductType) => void;
-  sku: string;
-  onSkuChange: (value: string) => void;
 }
 
 const typeOptions = [
@@ -27,8 +25,6 @@ export function BasicInfoSection({
   onDescriptionChange,
   type,
   onTypeChange,
-  sku,
-  onSkuChange,
 }: BasicInfoSectionProps) {
   const { t } = useI18n();
 
@@ -54,26 +50,15 @@ export function BasicInfoSection({
           />
         </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label={t('admin.products.type')} required>
-            <Select
-              name="type"
-              value={type}
-              onChange={(value) => onTypeChange(value as ProductType)}
-              options={typeOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
-              required
-            />
-          </FormField>
-
-          <FormField label="SKU">
-            <Input
-              type="text"
-              name="sku"
-              value={sku}
-              onChange={onSkuChange}
-            />
-          </FormField>
-        </div>
+        <FormField label={t('admin.products.type')} required>
+          <Select
+            name="type"
+            value={type}
+            onChange={(value) => onTypeChange(value as ProductType)}
+            options={typeOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
+            required
+          />
+        </FormField>
       </div>
     </Section>
   );

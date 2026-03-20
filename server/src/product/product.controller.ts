@@ -137,7 +137,7 @@ export class ProductController {
     if (!product) {
       throw new BadRequestException('Product not found');
     }
-    if (product.seller_id !== sellerId) {
+    if (product.sellerId !== sellerId) {
       throw new BadRequestException(
         'You can only upload media to your own products',
       );
@@ -150,12 +150,14 @@ export class ProductController {
     }
 
     // Save file to product media folder
-    const result = this.fileService.saveFile(
+    const result = this.fileService.saveMediaFile(
       {
         originalname: file.originalname,
         buffer: file.buffer,
         size: file.size,
         mimetype: file.mimetype,
+        path: file.path,
+        filename: file.filename,
       },
       MediaFolder.PRODUCT,
       id,
@@ -193,6 +195,35 @@ export class ProductController {
     @CurrentUserId() sellerId: number,
   ) {
     return this.productService.deleteMedia(id, mediaId, sellerId);
+  }
+
+  @Patch(':id/media/:mediaId/cover')
+  @UseGuards(JwtAuthGuard)
+  async setMediaAsCover(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('mediaId', ParseIntPipe) mediaId: number,
+    @CurrentUserId() sellerId: number,
+  ) {
+    return this.productService.setMediaAsCover(id, mediaId, sellerId);
+  }
+
+  @Patch(':id/file')
+  @UseGuards(JwtAuthGuard)
+  async updateFile(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() sellerId: number,
+    @Body() body: { fileUrl: string },
+  ) {
+    return this.productService.updateFile(id, sellerId, body.fileUrl);
+  }
+
+  @Delete(':id/file')
+  @UseGuards(JwtAuthGuard)
+  async deleteFile(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() sellerId: number,
+  ) {
+    return this.productService.deleteFile(id, sellerId);
   }
 
   @Get(':id/licenses')

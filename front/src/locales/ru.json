@@ -92,7 +92,16 @@
     "networkError": "Ошибка сети",
     "unknownError": "Неизвестная ошибка",
     "registrationFailed": "Ошибка регистрации. Попробуйте ещё раз.",
-    "passwordsDoNotMatch": "Пароли не совпадают"
+    "passwordsDoNotMatch": "Пароли не совпадают",
+    "emailAlreadyExists": "Email уже существует",
+    "passwordTooShort": "Пароль слишком короткий",
+    "canOnlyDeactivateOwnProducts": "Вы можете деактивировать только свои товары",
+    "canOnlyActivateOwnProducts": "Вы можете активировать только свои товары",
+    "canOnlyDeleteOwnProducts": "Вы можете удалить только свои товары",
+    "canOnlyUpdateOwnProducts": "Вы можете обновить только свои товары",
+    "productNotFound": "Товар не найден",
+    "validationFailed": "Ошибка валидации",
+    "requiredField": "Обязательное поле"
   },
   "home": {
     "welcome": "Добро пожаловать на нашу платформу",
@@ -124,6 +133,7 @@
       "description": "Описание",
       "type": "Тип товара",
       "fileStock": "Файл и склад",
+      "sourceFile": "Исходный файл",
       "fileUrl": "URL файла",
       "stock": "Количество",
       "price": "Цена",
@@ -142,7 +152,14 @@
       "confirmDelete": "Вы уверены, что хотите удалить этот товар?",
       "deactivate": "Деактивировать",
       "activate": "Активировать",
-      "noProducts": "Товары не найдены"
+      "noProducts": "Товары не найдены",
+      "media": "Изображения",
+      "file": "Файл продукта",
+      "fileHelp": "Загрузите основной файл продукта (PSD, AI, PDF, ZIP и т.д.)",
+      "cover": "Главное",
+      "setAsCover": "Сделать главным",
+      "replace": "Заменить",
+      "noMedia": "Нет загруженных изображений"
     }
   },
   "product": {

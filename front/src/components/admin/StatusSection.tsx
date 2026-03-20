@@ -30,7 +30,7 @@ export function StatusSection({
 
         <Checkbox
           name="isFeatured"
-          label={t('admin.products.featured')}
+          label={t('admin.products.inactive')}
           checked={isFeatured}
           onChange={onIsFeaturedChange}
         />

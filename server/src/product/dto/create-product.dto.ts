@@ -64,9 +64,20 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'Type is required' })
   type: ProductType;
 
+  // Основной файл продукта
   @IsString({ message: 'File URL must be a string' })
-  @IsNotEmpty({ message: 'File URL is required' })
-  fileUrl: string;
+  @IsOptional()
+  fileUrl?: string;
+
+  // Временный URL файла (будет перемещен при создании продукта)
+  @IsString({ message: 'Temp file URL must be a string' })
+  @IsOptional()
+  tempFileUrl?: string;
+
+  // Временные URL медиа (будут перемещены при создании продукта)
+  // Может быть массив URL (строк) или массив объектов { url, isCover }
+  @IsOptional()
+  tempMediaUrls?: { url: string; isCover?: boolean }[];
 
   @IsNumber({}, { message: 'Stock must be a number' })
   @IsOptional()

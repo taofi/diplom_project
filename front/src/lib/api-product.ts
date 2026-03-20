@@ -8,6 +8,7 @@
 import api from './api';
 import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
+import { toastSuccess } from './toast';
 import type {
   ProductResponse,
   ProductListResponse,

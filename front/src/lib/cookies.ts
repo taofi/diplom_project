@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import { refreshTokens } from './api-auth';
 
 const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
@@ -6,7 +7,7 @@ const CSRF_KEY = 'csrf_token';
 
 const cookieOptions = {
   path: '/',
-  sameSite: 'strict' as const,
+  sameSite: 'lax' as const,
   secure: process.env.NODE_ENV === 'production',
 };
 
@@ -40,4 +41,14 @@ export const removeTokens = (): void => {
   Cookies.remove(TOKEN_KEY, { path: '/' });
   Cookies.remove(REFRESH_KEY, { path: '/' });
   Cookies.remove(CSRF_KEY, { path: '/' });
+};
+
+// Функция для ручного обновления токенов (используется при инициализации)
+export const refreshAccessToken = async (): Promise<{ accessToken: string; refreshToken: string } | null> => {
+  const refreshTokenValue = getRefreshToken();
+  if (!refreshTokenValue) {
+    return null;
+  }
+
+  return refreshTokens(refreshTokenValue);
 };

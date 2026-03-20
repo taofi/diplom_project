@@ -90,4 +90,18 @@ export class User extends Model {
 
   @HasMany(() => CustomOrder, 'seller_id')
   declare seller_custom_orders: CustomOrder[];
+
+  // Явная сериализация для JSONB поля role
+  toJSON(): Record<string, unknown> {
+    const values: Record<string, unknown> = { ...super.toJSON() };
+    // Гарантируем, что role всегда массив
+    if (values.role && typeof values.role === 'string') {
+      try {
+        values.role = JSON.parse(values.role as string);
+      } catch {
+        values.role = [values.role];
+      }
+    }
+    return values;
+  }
 }

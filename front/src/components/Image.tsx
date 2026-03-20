@@ -1,9 +1,10 @@
 'use client';
 
-import Image from 'next/image';
+import Image, { StaticImageData } from 'next/image';
 import { useState } from 'react';
+import noimage from '../../public/noimage.png'; 
 
-const SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 interface ServerImageProps {
   src: string | null | undefined;
@@ -19,62 +20,49 @@ export function ServerImage({
   src,
   alt,
   fill = false,
-  width,
-  height,
+  width = 200,
+  height = 200,
   className = '',
   priority = false,
 }: ServerImageProps) {
+  // 1. Управляем только состоянием загрузки и фактом ошибки
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  // Если src null, undefined или пустая строка - показываем noimage
+  // 2. Вычисляем путь "на лету" без useEffect
   const isInvalid = !src || src === '' || src === 'null' || src === 'undefined';
-
-  // Fallback на локальный noimage.png
-  const fallbackSrc = '/noimage.png';
-
-  // Полный URL к изображению на сервере
-  const imageSrc = isInvalid ? fallbackSrc : `${SERVER_URL}/public/${src}`;
-
-  if (fill) {
-    return (
-      <div className={`relative ${className}`}>
-        <Image
-          src={imageSrc}
-          alt={alt}
-          fill
-          className={`object-cover transition-opacity duration-300 ${
-            isLoading ? 'opacity-0' : 'opacity-100'
-          }`}
-          onLoad={() => setIsLoading(false)}
-          onError={() => setIsLoading(false)}
-          priority={priority}
-        />
-        {isLoading && (
-          <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-        )}
-      </div>
-    );
-  }
+  const displaySrc = (hasError || isInvalid) ? noimage : `${SERVER_URL}/public/${src}`;
+  // Флаг того, что мы показываем заглушку
+  const isFallback = hasError || isInvalid;
 
   return (
-    <div className={`relative ${className}`} style={{ width, height }}>
+    <div 
+      className={`relative overflow-hidden flex  items-center justify-center  ${className}`} 
+      style={!fill ? { width, height } : { width: '100%', height: '100%' }}
+      key={src} 
+    >
       <Image
-        src={imageSrc}
+        src={displaySrc}
         alt={alt}
-        width={width || 200}
-        height={height || 200}
-        className={`object-cover transition-opacity duration-300 ${
-          isLoading ? 'opacity-0' : 'opacity-100'
-        }`}
+        fill={fill && !isFallback}
+        width={!fill || isFallback ? (isFallback ? width / 2 : width) : undefined}
+        height={!fill || isFallback ? (isFallback ? height / 2 : height) : undefined}
+        unoptimized={!isFallback}
+        className={`transition-opacity duration-300 ${
+          isFallback ? 'object-contain' : 'object-cover'
+        } ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        
         onLoad={() => setIsLoading(false)}
-        onError={() => setIsLoading(false)}
+        onError={() => {
+          console.error("Next.js Image failed to load:", displaySrc);
+          setHasError(true);
+          setIsLoading(false);
+        }}
         priority={priority}
       />
+      
       {isLoading && (
-        <div
-          className="absolute inset-0 bg-gray-200 animate-pulse"
-          style={{ width: width || 200, height: height || 200 }}
-        />
+        <div className="absolute inset-0  animate-pulse z-10" />
       )}
     </div>
   );

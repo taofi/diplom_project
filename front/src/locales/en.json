@@ -92,7 +92,16 @@
     "networkError": "Network error",
     "unknownError": "Unknown error",
     "registrationFailed": "Registration failed. Please try again.",
-    "passwordsDoNotMatch": "Passwords do not match"
+    "passwordsDoNotMatch": "Passwords do not match",
+    "emailAlreadyExists": "Email already exists",
+    "passwordTooShort": "Password is too short",
+    "canOnlyDeactivateOwnProducts": "You can only deactivate your own products",
+    "canOnlyActivateOwnProducts": "You can only activate your own products",
+    "canOnlyDeleteOwnProducts": "You can only delete your own products",
+    "canOnlyUpdateOwnProducts": "You can only update your own products",
+    "productNotFound": "Product not found",
+    "validationFailed": "Validation failed",
+    "requiredField": "Required field"
   },
   "home": {
     "welcome": "Welcome to Our Platform",
@@ -124,6 +133,7 @@
       "description": "Description",
       "type": "Product Type",
       "fileStock": "File & Stock",
+      "sourceFile": "Source File",
       "fileUrl": "File URL",
       "stock": "Stock",
       "price": "Price",
@@ -142,7 +152,14 @@
       "confirmDelete": "Are you sure you want to delete this product?",
       "deactivate": "Deactivate",
       "activate": "Activate",
-      "noProducts": "No products found"
+      "noProducts": "No products found",
+      "media": "Images",
+      "file": "Product file",
+      "fileHelp": "Upload the main product file (PSD, AI, PDF, ZIP, etc.)",
+      "cover": "Cover",
+      "setAsCover": "Set as cover",
+      "replace": "Replace",
+      "noMedia": "No images uploaded"
     }
   },
   "product": {

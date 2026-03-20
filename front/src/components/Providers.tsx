@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { AuthProvider } from '@/context/auth/AuthContext';
 import { I18nProvider } from '@/context/i18n/I18nContext';
+import { ProductProvider } from '@/context/product/ProductContext';
 import { Locale } from '@/context/i18n/types';
 
 interface ProvidersProps {
@@ -13,8 +14,10 @@ export function Providers({ children, initialLocale }: ProvidersProps) {
   return (
     <AuthProvider>
       <I18nProvider initialLocale={initialLocale}>
-      {children}
-    </I18nProvider>
+        <ProductProvider>
+          {children}
+        </ProductProvider>
+      </I18nProvider>
     </AuthProvider>
   );
 }

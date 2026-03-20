@@ -12,6 +12,7 @@ import type { CategoryResponse } from '@/types/category';
 import type { LicenseTypeResponse } from '@/types/license-type';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { Spinner } from '@/components/ui';
+import type { MediaItem } from '@/components/admin/MediaUploader';
 
 interface LicenseFormItem {
   id: string;
@@ -29,10 +30,7 @@ export default function NewProductPage() {
   const [description, setDescription] = useState('');
   const [type, setType] = useState<ProductType>(ProductType.BRUSH);
   const [fileUrl, setFileUrl] = useState('');
-  const [sku, setSku] = useState('');
-  const [stock, setStock] = useState(0);
-  const [price, setPrice] = useState('');
-  const [discountPrice, setDiscountPrice] = useState('');
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
   
@@ -148,15 +146,17 @@ export default function NewProductPage() {
         description: description || undefined,
         type,
         fileUrl,
-        sku: sku || undefined,
-        stock,
-        price: price ? Number(price) : 0,
-        discountPrice: discountPrice ? Number(discountPrice) : undefined,
+        price: 0,
         isActive,
         isFeatured,
         categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
         licenses: validLicenses,
+        // DEBUG: добавляем отладку с isCover
+        tempMediaUrls: media.length > 0 ? media.map(m => ({ url: m.url, isCover: m.isCover })) : undefined,
       };
+
+      // DEBUG: логируем что отправляем
+      console.log('[FRONT DEBUG] createProduct data:', JSON.stringify(productData, null, 2));
 
       const product = await createProduct(productData, locale);
       router.push(`/${locale}/admin/products/${product.id}`);
@@ -178,7 +178,7 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen mt-20 py-8">
       <div className="max-w-4xl mx-auto px-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -194,18 +194,12 @@ export default function NewProductPage() {
           onDescriptionChange={setDescription}
           type={type}
           onTypeChange={setType}
-          sku={sku}
-          onSkuChange={setSku}
           
-          // File & stock
+          // File, media & stock
           fileUrl={fileUrl}
           onFileUrlChange={setFileUrl}
-          price={price}
-          onPriceChange={setPrice}
-          stock={stock}
-          onStockChange={setStock}
-          discountPrice={discountPrice}
-          onDiscountPriceChange={setDiscountPrice}
+          media={media}
+          onMediaChange={setMedia}
           
           // Categories
           categories={categories}
