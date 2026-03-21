@@ -8,7 +8,7 @@ import { getCategories } from '@/lib/api-category';
 import { getProducts, deleteProduct, activateProduct, deactivateProduct } from '@/lib/api-product';
 import type { ProductQueryParams, ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Spinner, ConfirmModal, Select } from '@/components/ui';
+import { Button, Spinner, ConfirmModal, Select, Pagination } from '@/components/ui';
 import { AdminProductCard } from '@/components/admin/AdminProductCard';
 import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
 
@@ -140,7 +140,7 @@ export default function AdminProductsPage() {
 
   const handleToggleActive = async (product: ProductResponse) => {
     try {
-      const isActive = product.is_active ?? product.isActive;
+      const isActive = product.isActive;
       if (isActive) {
         await deactivateProduct(product.id);
       } else {
@@ -232,32 +232,12 @@ export default function AdminProductsPage() {
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2 mt-8">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pagination.page <= 1}
-                      onClick={() => doFetchProducts(pagination.page - 1)}
-                    >
-                      {t('common.previous')}
-                    </Button>
-                    
-                    <div className="flex items-center px-4 h-9 bg-gray-50 rounded-md border text-sm font-medium text-gray-600">
-                      {pagination.page} / {pagination.totalPages}
-                    </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pagination.page >= pagination.totalPages}
-                      onClick={() => doFetchProducts(pagination.page + 1)}
-                    >
-                      {t('common.next')}
-                    </Button>
-                  </div>
-                )}
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={doFetchProducts}
+                  className="mt-8"
+                />
               </>
             )}
           </main>

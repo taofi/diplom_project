@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { getUsers, updateUserRoles, type UserResponse, type UserRole } from '@/lib/api-user';
-import { Button, Spinner, ConfirmModal, CheckboxGroup } from '@/components/ui';
+import { Button, Spinner, ConfirmModal, CheckboxGroup, Pagination } from '@/components/ui';
 
 export function UsersTab() {
   const { t, locale } = useI18n();
@@ -65,14 +65,14 @@ export function UsersTab() {
     }
   }, [debouncedSearch]);
 
-  // Fetch users when page or search changes
+  // Fetch users when search changes (initial load)
   useEffect(() => {
-    fetchUsers(pagination.page);
-  }, [pagination.page, debouncedSearch]);
+    fetchUsers(1);
+  }, [debouncedSearch]);
 
-  // Handle page change
+  // Handle page change - вызывает fetch с новой страницей
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    fetchUsers(newPage);
   };
 
   // Open roles modal
@@ -235,28 +235,12 @@ export function UsersTab() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-6">
-              <Button
-                variant="outline"
-                disabled={pagination.page === 1}
-                onClick={() => handlePageChange(pagination.page - 1)}
-              >
-                {t('common.previous')}
-              </Button>
-              <span className="flex items-center px-4 text-gray-600">
-                {pagination.page} / {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                disabled={pagination.page === pagination.totalPages}
-                onClick={() => handlePageChange(pagination.page + 1)}
-              >
-                {t('common.next')}
-              </Button>
-            </div>
-          )}
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+            className="mt-6"
+          />
         </>
       )}
 

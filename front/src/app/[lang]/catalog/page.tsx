@@ -9,7 +9,7 @@ import { ProductType } from '@/types/product';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Input, Select, Spinner } from '@/components/ui';
+import { Button, Input, Select, Spinner, Pagination } from '@/components/ui';
 import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc';
@@ -234,30 +234,12 @@ export default function CatalogPage() {
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-4 mt-8">
-                    <Button
-                      variant="outline"
-                      disabled={pagination.page <= 1}
-                      onClick={() => doFetchProducts(Number(pagination.page) - 1)}
-                    >
-                      {t('common.previous')}
-                    </Button>
-                    
-                    <span className="text-sm font-medium text-gray-700">
-                      {pagination.page} / {pagination.totalPages}
-                    </span>
-                    
-                    <Button
-                      variant="outline"
-                      disabled={pagination.page >= pagination.totalPages}
-                      onClick={() => doFetchProducts(Number(pagination.page) + 1)}
-                    >
-                      {t('common.next')}
-                    </Button>
-                  </div>
-                )}
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={doFetchProducts}
+                  className="mt-8"
+                />
               </>
             )}
           </main>
