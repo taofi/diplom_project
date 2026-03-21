@@ -1,5 +1,7 @@
 // Users & Auth
-export { User, UserRole } from './user.model';
+export { User, UserRoleEnum } from './user.model';
+export type { UserRoleType } from './user.model';
+export { UserRole as UserRoleModel } from './user-role.model';
 
 // Products
 export { Product, ProductType } from './product.model';

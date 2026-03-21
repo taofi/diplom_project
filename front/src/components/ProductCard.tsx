@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { ServerImage } from './Image';
 import type { ProductResponse } from '@/types/product';
+import { ProductType } from '@/types/product';
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -51,7 +52,9 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             <polyline points="14 2 14 8 20 8" />
             <circle cx="10" cy="13" r="3" />
           </svg>
-          <span className="text-xs font-medium">Иллюстрация</span>
+          <span className="text-xs font-medium">
+            {product.type === ProductType.BRUSH ? 'Кисть' : 'Иллюстрация'}
+          </span>
         </div>
       </div>
 

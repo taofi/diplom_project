@@ -3,7 +3,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
-import { User, UserRole } from '../../db/models/user.model';
+import { User } from '../../db/models/user.model';
+import { UserRole as UserRoleModel } from '../../db/models/user-role.model';
+import { normalizeRoles } from '../utils/normalize-roles';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -11,6 +13,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     @InjectModel(User)
     private userModel: typeof User,
+    @InjectModel(UserRoleModel)
+    private userRoleModel: typeof UserRoleModel,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -19,43 +23,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  // Вспомогательная функция для нормализации ролей
-  private normalizeRoles(roles: unknown): string[] {
-    if (!roles) return [UserRole.USER];
-
-    let roleArray: string[];
-
-    if (Array.isArray(roles)) {
-      roleArray = roles
-        .map((r) => {
-          if (typeof r === 'string') {
-            if (r.includes(',')) {
-              return r.split(',').map((item) => item.trim());
-            }
-            return r.trim();
-          }
-          return String(r);
-        })
-        .flat();
-    } else if (typeof roles === 'string') {
-      roleArray = roles.split(',').map((r) => r.trim());
-    } else {
-      roleArray = [UserRole.USER];
-    }
-
-    return [...new Set(roleArray.filter((r) => r))];
-  }
-
   async validate(payload: { sub: number; email: string; roles: string[] }) {
-    const user = await this.userModel.findByPk(payload.sub);
+    const user = await this.userModel.findByPk(payload.sub, {
+      include: [{ model: this.userRoleModel, as: 'user_roles' }],
+    });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
     // Нормализуем роли перед возвратом
-    const normalizedRoles = this.normalizeRoles(user.role);
-    user.role = normalizedRoles as UserRole[];
+    const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
+    (user as unknown as { role: string[] }).role = normalizedRoles;
 
     return user;
   }

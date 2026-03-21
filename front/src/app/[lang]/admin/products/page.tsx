@@ -8,9 +8,9 @@ import { getCategories } from '@/lib/api-category';
 import { getProducts, deleteProduct, activateProduct, deactivateProduct } from '@/lib/api-product';
 import type { ProductQueryParams, ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Spinner, ConfirmModal } from '@/components/ui';
+import { Button, Spinner, ConfirmModal, Select } from '@/components/ui';
 import { AdminProductCard } from '@/components/admin/AdminProductCard';
-import { ProductFilters, type FilterValues } from '@/components/admin/ProductFilters';
+import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
 
 export default function AdminProductsPage() {
   const { t, locale } = useI18n();
@@ -33,16 +33,16 @@ export default function AdminProductsPage() {
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Статус товара (для фильтрации)
+  const [statusFilter, setStatusFilter] = useState<string>('');
+
   // Категории и фильтры
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
-  const [currentFilters, setCurrentFilters] = useState<FilterValues>({
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     search: '',
     type: '',
-    status: '',
     categoryId: '',
   });
-
-  const limit = 12;
 
   // Проверка прав доступа
   useEffect(() => {
@@ -52,16 +52,16 @@ export default function AdminProductsPage() {
     }
   }, [user, authLoading, locale, router]);
 
-  // Загрузка категорий
+  // Загрузка категорий (только один раз при смене языка)
   useEffect(() => {
-    async function fetchCategories() {
+    const fetchCategories = async () => {
       try {
         const data = await getCategories({ language: locale });
         setCategories(data || []);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
       }
-    }
+    };
     fetchCategories();
   }, [locale]);
 
@@ -72,55 +72,48 @@ export default function AdminProductsPage() {
     
     try {
       const params: ProductQueryParams = {
-        page: pageNum, // Здесь pageNum уже гарантированно число
-        limit,
+        page: pageNum,
+        limit: 12,
         language: locale,
       };
 
-      if (currentFilters.status !== '') {
-        params.isActive = currentFilters.status === 'true';
+      if (statusFilter !== '') {
+        params.isActive = statusFilter === 'true';
       }
-      if (currentFilters.search) {
-        params.search = currentFilters.search;
-      }
-      if (currentFilters.type) {
-        params.type = currentFilters.type;
-      }
-      if (currentFilters.categoryId) {
-        params.categoryId = Number(currentFilters.categoryId);
-      }
+
+      if (searchFilters.search) params.search = searchFilters.search;
+      if (searchFilters.type) params.type = searchFilters.type;
+      if (searchFilters.categoryId) params.categoryId = Number(searchFilters.categoryId);
 
       const result = await getProducts(params);
       
       setProducts(result.data || []);
-      
-      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: принудительно приводим всё к Number
       setPagination({
         total: Number(result.meta?.total) || 0,
         page: Number(result.meta?.page) || pageNum,
-        limit: Number(result.meta?.limit) || limit,
+        limit: Number(result.meta?.limit) || 12,
         totalPages: Number(result.meta?.totalPages) || 1,
       });
     } catch (err) {
       console.error('Failed to fetch products:', err);
-      setError('Failed to load products');
+      setError(t('errors.failedToLoad') || 'Failed to load products');
     } finally {
       setLoading(false);
     }
-  }, [locale, currentFilters]);
+  }, [locale, searchFilters, statusFilter, t]);
 
-  // Сброс на 1 страницу при изменении фильтров
+  // Загрузка при изменении фильтров или инициализации
   useEffect(() => {
-    if (user && (user.roles.includes('admin') || user.roles.includes('author'))) {
+    const canAccess = user && (user.roles.includes('admin') || user.roles.includes('author'));
+    if (canAccess && !authLoading) {
       doFetchProducts(1);
     }
-  }, [user, currentFilters, doFetchProducts]);
+  }, [searchFilters, statusFilter, authLoading, user, doFetchProducts]);
 
-  const handleFilterChange = useCallback((filters: FilterValues) => {
-    setCurrentFilters(filters);
+  const handleSearchChange = useCallback((filters: SearchFilters) => {
+    setSearchFilters(filters);
   }, []);
 
-  // Handlers
   const handleDeleteClick = (productId: number) => {
     setProductToDelete(productId);
     setDeleteModalOpen(true);
@@ -133,7 +126,11 @@ export default function AdminProductsPage() {
       await deleteProduct(productToDelete);
       setDeleteModalOpen(false);
       setProductToDelete(null);
-      doFetchProducts(pagination.page);
+      // Если удалили последний элемент на странице, переходим назад
+      const targetPage = products.length === 1 && pagination.page > 1 
+        ? pagination.page - 1 
+        : pagination.page;
+      doFetchProducts(targetPage);
     } catch (err) {
       setError('Failed to delete product');
     } finally {
@@ -141,15 +138,15 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleToggleActive = async (product: any) => {
+  const handleToggleActive = async (product: ProductResponse) => {
     try {
-      // Поддержка обоих вариантов именования поля активности
       const isActive = product.is_active ?? product.isActive;
       if (isActive) {
         await deactivateProduct(product.id);
       } else {
         await activateProduct(product.id);
       }
+      // Обновляем текущую страницу
       doFetchProducts(pagination.page);
     } catch (err) {
       setError('Failed to update product status');
@@ -168,7 +165,7 @@ export default function AdminProductsPage() {
     <div className="min-h-screen mt-20 py-8">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             {t('admin.products.title')}
           </h1>
@@ -177,61 +174,94 @@ export default function AdminProductsPage() {
           </Button>
         </div>
 
-        {/* Filters */}
-        <ProductFilters
-          categories={categories}
-          onFilterChange={handleFilterChange}
-        />
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg border border-red-200">
+            {error}
           </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow">
-            {t('admin.products.noProducts')}
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {products.map((product) => (
-                <AdminProductCard
-                  key={product.id}
-                  product={product}
-                  onEdit={(id) => router.push(`/${locale}/admin/products/${id}`)}
-                  onToggleActive={handleToggleActive}
-                  onDelete={handleDeleteClick}
-                />
-              ))}
-            </div>
-
-            {/* Pagination - ИСПРАВЛЕНО */}
-            {pagination.totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8">
-                <Button
-                  variant="outline"
-                  disabled={pagination.page <= 1}
-                  onClick={() => doFetchProducts(Number(pagination.page) - 1)}
-                >
-                  {t('common.previous')}
-                </Button>
-                
-                <span className="text-sm font-medium text-gray-700">
-                  {pagination.page} / {pagination.totalPages}
-                </span>
-                
-                <Button
-                  variant="outline"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => doFetchProducts(Number(pagination.page) + 1)}
-                >
-                  {t('common.next')}
-                </Button>
-              </div>
-            )}
-          </>
         )}
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar */}
+          <aside className="w-full lg:w-64 flex-shrink-0">
+            <div className="sticky top-24 space-y-4">
+              <ProductSearch
+                categories={categories}
+                onSearch={handleSearchChange}
+                showReset={true}
+              />
+
+              <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('admin.products.status') || 'Status'}
+                </label>
+                <Select
+                  name="status"
+                  value={statusFilter}
+                  onChange={(val) => setStatusFilter(val)}
+                  options={[
+                    { value: '', label: t('admin.products.allStatuses') || 'All statuses' },
+                    { value: 'true', label: t('admin.products.active') || 'Active' },
+                    { value: 'false', label: t('admin.products.inactive') || 'Inactive' },
+                  ]}
+                />
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1">
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Spinner size="lg" />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-20 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
+                <p className="text-lg">{t('admin.products.noProducts')}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+                  {products.map((product) => (
+                    <AdminProductCard
+                      key={product.id}
+                      product={product}
+                      onEdit={(id) => router.push(`/${locale}/admin/products/${id}`)}
+                      onToggleActive={() => handleToggleActive(product)}
+                      onDelete={handleDeleteClick}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagination.page <= 1}
+                      onClick={() => doFetchProducts(pagination.page - 1)}
+                    >
+                      {t('common.previous')}
+                    </Button>
+                    
+                    <div className="flex items-center px-4 h-9 bg-gray-50 rounded-md border text-sm font-medium text-gray-600">
+                      {pagination.page} / {pagination.totalPages}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagination.page >= pagination.totalPages}
+                      onClick={() => doFetchProducts(pagination.page + 1)}
+                    >
+                      {t('common.next')}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
+        </div>
       </div>
 
       <ConfirmModal

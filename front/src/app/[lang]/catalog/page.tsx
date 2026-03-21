@@ -4,10 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { getProducts, type ProductQueryParams } from '@/lib/api-product';
+import { getCategories } from '@/lib/api-category';
 import { ProductType } from '@/types/product';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/types/product';
-import { Button, Input, Select, Card, Spinner } from '@/components/ui';
+import type { CategoryResponse } from '@/types/category';
+import { Button, Input, Select, Spinner } from '@/components/ui';
+import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc';
 
@@ -17,20 +20,18 @@ const sortOptions = [
   { value: 'price_desc', label: 'catalog.sortPriceDesc' },
 ];
 
-const typeOptions = [
-  { value: '', label: 'catalog.all' },
-  { value: ProductType.BRUSH, label: 'catalog.brushes' },
-  { value: ProductType.ILLUSTRATION, label: 'catalog.illustrations' },
-];
-
 export default function CatalogPage() {
   const { t, locale } = useI18n();
   
   // State
   const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<ProductType | ''>('');
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
+    search: '',
+    type: '',
+    categoryId: '',
+  });
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -43,7 +44,20 @@ export default function CatalogPage() {
   
   const limit = 12;
 
-  // Fetch products - используем useCallback как в админке
+  // Загрузка категорий
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const data = await getCategories({ language: locale });
+        setCategories(data || []);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    }
+    fetchCategories();
+  }, [locale]);
+
+  // Fetch products
   const doFetchProducts = useCallback(async (pageNum: number = 1) => {
     setLoading(true);
 
@@ -54,14 +68,15 @@ export default function CatalogPage() {
       isActive: true,
     };
 
-    // Search
-    if (searchQuery) {
-      params.search = searchQuery;
+    // Search filters from ProductSearch
+    if (searchFilters.search) {
+      params.search = searchFilters.search;
     }
-
-    // Type filter
-    if (selectedType) {
-      params.type = selectedType;
+    if (searchFilters.type) {
+      params.type = searchFilters.type;
+    }
+    if (searchFilters.categoryId) {
+      params.categoryId = Number(searchFilters.categoryId);
     }
 
     // Price range
@@ -91,10 +106,10 @@ export default function CatalogPage() {
     try {
       const response = await getProducts(params);
       
-      // Заменяем данные (как в админке), а не накапливаем
+      // Заменяем данные, а не накапливаем
       setProducts(response.data || []);
       
-      // Обновляем пагинацию с приведением типов как в админке
+      // Обновляем пагинацию
       setPagination({
         total: Number(response.meta?.total) || 0,
         page: Number(response.meta?.page) || pageNum,
@@ -106,22 +121,30 @@ export default function CatalogPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedType, minPrice, maxPrice, sortBy, locale]);
+  }, [searchFilters, minPrice, maxPrice, sortBy, locale]);
 
-  // Сброс на страницу 1 при изменении фильтров (как в админке)
+  // Сброс на страницу 1 при изменении фильтров
   useEffect(() => {
     doFetchProducts(1);
-  }, [searchQuery, selectedType, minPrice, maxPrice, sortBy, locale, doFetchProducts]);
+  }, [searchFilters, minPrice, maxPrice, sortBy, locale]);
 
-  // Обработчик изменения страницы (вызывает fetchProducts)
+  // Обработчик изменения страницы
   const handlePageChange = (newPage: number) => {
     doFetchProducts(newPage);
   };
 
+  // Обработчик поиска от ProductSearch
+  const handleSearchChange = useCallback((filters: SearchFilters) => {
+    setSearchFilters(filters);
+  }, []);
+
   // Reset filters
   const handleReset = () => {
-    setSearchQuery('');
-    setSelectedType('');
+    setSearchFilters({
+      search: '',
+      type: '',
+      categoryId: '',
+    });
     setMinPrice('');
     setMaxPrice('');
     setSortBy('newest');
@@ -142,61 +165,40 @@ export default function CatalogPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar - Filters */}
           <aside className="w-full lg:w-64 flex-shrink-0">
-            <Card padding="md" className="sticky top-4">
-              <h2 className="text-lg font-semibold mb-4">{t('catalog.filter')}</h2>
-              
-              {/* Search */}
-              <div className="mb-6">
-                <Input
-                  type="text"
-                  name="search"
-                  label={t('catalog.search')}
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder={t('catalog.searchPlaceholder')}
-                />
-              </div>
+            <div className="sticky top-4">
+              {/* ProductSearch - единый компонент поиска и фильтрации */}
+              <ProductSearch
+                categories={categories}
+                onSearch={handleSearchChange}
+                showReset={true}
+              />
 
-              {/* Type Filter */}
-              <div className="mb-6">
-                <Select
-                  name="type"
-                  label={t('catalog.type')}
-                  value={selectedType}
-                  onChange={(value) => setSelectedType(value as ProductType | '')}
-                  options={typeOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
-                />
-              </div>
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  {t('catalog.priceRange')}
-                </label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    name="minPrice"
-                    value={minPrice}
-                    onChange={setMinPrice}
-                    placeholder={t('catalog.from')}
-                  />
-                  <span className="text-gray-400">-</span>
-                  <Input
-                    type="number"
-                    name="maxPrice"
-                    value={maxPrice}
-                    onChange={setMaxPrice}
-                    placeholder={t('catalog.to')}
-                  />
+              {/* Price Range - оставляем отдельно */}
+              <div className="mt-4">
+                <div className="p-4 bg-white rounded-lg border border-gray-200">
+                  <label className="block text-sm font-medium mb-2">
+                    {t('catalog.priceRange')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      name="minPrice"
+                      value={minPrice}
+                      onChange={setMinPrice}
+                      placeholder={t('catalog.from')}
+                    />
+                    <span className="text-gray-400">-</span>
+                    <Input
+                      type="number"
+                      name="maxPrice"
+                      value={maxPrice}
+                      onChange={setMaxPrice}
+                      placeholder={t('catalog.to')}
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Reset Button */}
-              <Button variant="outline" fullWidth onClick={handleReset}>
-                {t('common.cancel')}
-              </Button>
-            </Card>
+            </div>
           </aside>
 
           {/* Main Content */}
@@ -232,7 +234,7 @@ export default function CatalogPage() {
                   ))}
                 </div>
 
-                {/* Pagination - как в админке */}
+                {/* Pagination */}
                 {pagination.totalPages > 1 && (
                   <div className="flex justify-center items-center gap-4 mt-8">
                     <Button

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 // Models
 import {
   User,
+  UserRoleModel,
   Product,
   ProductMedia,
   ProductTranslation,
@@ -30,6 +31,7 @@ import {
 
 const models = [
   User,
+  UserRoleModel,
   Product,
   ProductMedia,
   ProductTranslation,

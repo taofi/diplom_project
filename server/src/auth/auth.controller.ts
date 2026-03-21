@@ -61,29 +61,18 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: User) {
-    // Явно нормализуем роли перед отправкой
-    let roles: string[] = [];
-    if (!user.role) {
-      roles = ['user'];
-    } else if (Array.isArray(user.role)) {
-      roles = user.role.map(r => {
-        if (typeof r === 'string' && r.includes(',')) {
-          return r.split(',').map(item => item.trim());
-        }
-        return r;
-      }).flat();
-    } else {
-      roles = [String(user.role)];
-    }
-    
+    // user уже имеет toJSON() который добавляет role из user_roles
+    const userData = user.toJSON();
+    const roles = userData.role as string[];
+
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
       roles,
-      locale: user.locale,
-      avatar_url: user.avatar_url,
-      created_at: user.created_at,
+      locale: userData.locale,
+      avatar_url: userData.avatar_url,
+      created_at: userData.created_at,
     };
   }
 }

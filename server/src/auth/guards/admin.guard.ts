@@ -1,15 +1,15 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '../../db/models/user.model';
+import { UserRoleType } from '../../db/models/user.model';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 interface AuthRequest {
-  user?: { role: UserRole[] | string[] };
+  user?: { role: UserRoleType[] | string[] };
 }
 
 /**
  * Guard for checking if user is admin
- * Use @UseGuards(AdminGuard) or @Roles(UserRole.ADMIN)
+ * Use @UseGuards(AdminGuard) or @Roles(UserRoleEnum.ADMIN)
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -58,7 +58,7 @@ export class AdminGuard implements CanActivate {
     const userRoles = this.normalizeUserRoles(user.role);
 
     // Check for explicitly set roles
-    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<UserRoleType[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );

@@ -19,12 +19,16 @@ import { ChatRoom } from './chat-room.model';
 import { ChatMessage } from './chat-message.model';
 import { ChatOffer } from './chat-offer.model';
 import { CustomOrder } from './custom-order.model';
+import { UserRole as UserRoleModel } from './user-role.model';
 
-export enum UserRole {
+export enum UserRoleEnum {
   ADMIN = 'admin',
   USER = 'user',
   AUTHOR = 'author',
 }
+
+// Тип для роли пользователя (строка, не enum в БД)
+export type UserRoleType = 'admin' | 'user' | 'author';
 
 @Table({ tableName: 'users', timestamps: true })
 export class User extends Model {
@@ -46,10 +50,6 @@ export class User extends Model {
   @Column({ type: DataType.STRING(500), allowNull: true })
   declare avatar_url: string | null;
 
-  @Default(() => [UserRole.USER])
-  @Column(DataType.JSONB)
-  declare role: UserRole[];
-
   @Default('ru')
   @Column({ type: DataType.STRING(5) })
   declare locale: string;
@@ -61,6 +61,8 @@ export class User extends Model {
   declare updated_at: Date;
 
   // Associations
+  @HasMany(() => UserRoleModel)
+  declare user_roles: UserRoleModel[];
   @HasMany(() => Product, 'seller_id')
   declare products: Product[];
 
@@ -91,21 +93,13 @@ export class User extends Model {
   @HasMany(() => CustomOrder, 'seller_id')
   declare seller_custom_orders: CustomOrder[];
 
-  // Явная сериализация для JSONB поля role
+  // Явная сериализация - роли теперь берутся из связанной таблицы user_roles
   toJSON(): Record<string, unknown> {
     const values: Record<string, unknown> = { ...super.toJSON() };
-    // Гарантируем, что role всегда массив
-    if (!values.role) {
-      values.role = ['user'];
-    } else if (typeof values.role === 'string') {
-      try {
-        values.role = JSON.parse(values.role as string);
-      } catch {
-        values.role = [values.role];
-      }
-    } else if (!Array.isArray(values.role)) {
-      values.role = ['user'];
-    }
+    // Убираем user_roles из вывода, возвращаем роли в виде массива
+    const roles = this.user_roles?.map((ur) => ur.role) || ['user'];
+    values.role = roles;
+    delete (values as Record<string, unknown>).user_roles;
     return values;
   }
 }

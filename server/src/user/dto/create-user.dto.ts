@@ -4,9 +4,8 @@ import {
   IsString,
   MinLength,
   IsOptional,
-  IsEnum,
 } from 'class-validator';
-import { UserRole } from '../../db/models/user.model';
+import type { UserRoleType } from '../../db/models/user.model';
 
 export class CreateUserDto {
   @IsEmail({}, { message: 'Email must be valid' })
@@ -30,9 +29,8 @@ export class CreateUserDto {
   @IsOptional()
   address?: string;
 
-  @IsEnum(UserRole, { message: 'Invalid role' })
   @IsOptional()
-  role?: UserRole;
+  role?: UserRoleType;
 
   @IsString({ message: 'Company name must be a string' })
   @IsOptional()

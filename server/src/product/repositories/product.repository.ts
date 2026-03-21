@@ -186,7 +186,7 @@ export class ProductRepository {
       limit = 10,
       categoryId,
       isActive,
-      // search убран - поиск по name/description перенесен в translations
+      search,
       type,
       sellerId,
       isFeatured,
@@ -230,7 +230,17 @@ export class ProductRepository {
       }
     }
 
-    // Поиск по name/description убран - нужно искать через translations
+    // Поиск по translations (ru и en)
+    let translationWhere: Record<string, unknown> | undefined;
+    if (search) {
+      translationWhere = {
+        [Op.or]: [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } },
+        ],
+        language: [Language.RUSSIAN, Language.ENGLISH],
+      };
+    }
 
     const result = await this.productModel.findAndCountAll({
       where,
@@ -248,7 +258,13 @@ export class ProductRepository {
           required: false,
         },
         // Загружаем translations для получения name/description
-        { model: ProductTranslation, as: 'translations' },
+        // При наличии поиска - фильтруем по name/description в обоих языках
+        {
+          model: ProductTranslation,
+          as: 'translations',
+          where: translationWhere,
+          required: !!search, // Если есть поиск, то join обязателен
+        },
       ],
     });
 
@@ -335,12 +351,16 @@ export class ProductRepository {
       }
     }
 
+    // Поиск по translations (ru и en) для админ-панели
+    let translationWhere: Record<string, unknown> | undefined;
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
-        { sku: { [Op.iLike]: `%${search}%` } },
-      ];
+      translationWhere = {
+        [Op.or]: [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } },
+        ],
+        language: [Language.RUSSIAN, Language.ENGLISH],
+      };
     }
 
     const result = await this.productModel.findAndCountAll({
@@ -353,6 +373,13 @@ export class ProductRepository {
         { model: Category },
         { model: ProductMedia },
         { model: ProductLicense },
+        // Загружаем translations для поиска
+        {
+          model: ProductTranslation,
+          as: 'translations',
+          where: translationWhere,
+          required: !!search,
+        },
       ],
     });
 

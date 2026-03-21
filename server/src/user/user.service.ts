@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { User, UserRole } from '../db/models/user.model';
+import { User } from '../db/models/user.model';
+import { UserRole as UserRoleModel } from '../db/models/user-role.model';
+import { normalizeRoles } from '../auth/utils/normalize-roles';
 
 export interface FindAllUsersParams {
   page?: number;
@@ -24,33 +26,14 @@ export class UserService {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+    @InjectModel(UserRoleModel)
+    private readonly userRoleModel: typeof UserRoleModel,
   ) {}
 
-  // Вспомогательная функция для нормализации ролей
-  private normalizeRoles(roles: unknown): string[] {
-    if (!roles) return [UserRole.USER];
-
-    let roleArray: string[];
-
-    if (Array.isArray(roles)) {
-      roleArray = roles
-        .map((r) => {
-          if (typeof r === 'string') {
-            if (r.includes(',')) {
-              return r.split(',').map((item) => item.trim());
-            }
-            return r.trim();
-          }
-          return String(r);
-        })
-        .flat();
-    } else if (typeof roles === 'string') {
-      roleArray = roles.split(',').map((r) => r.trim());
-    } else {
-      roleArray = [UserRole.USER];
-    }
-
-    return [...new Set(roleArray.filter((r) => r))];
+  // Вспомогательная функция для нормализации ролей (используем импортированную)
+  // Удаляем дублирующий метод normalizeRoles из сервиса
+  private normalizeUserRoles(roles: unknown): string[] {
+    return normalizeRoles(roles);
   }
 
   async findAll(params: FindAllUsersParams): Promise<PaginatedUsersResponse> {
@@ -73,12 +56,13 @@ export class UserService {
       limit,
       offset,
       attributes: { exclude: ['password_hash'] },
+      include: [{ model: this.userRoleModel, as: 'user_roles' }],
     });
 
     // Нормализуем роли для каждого пользователя
     const normalizedUsers = rows.map((user) => {
-      const normalizedRoles = this.normalizeRoles(user.role);
-      user.role = normalizedRoles as UserRole[];
+      const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
+      (user as unknown as { role: string[] }).role = normalizedRoles;
       return user;
     });
 
@@ -96,6 +80,7 @@ export class UserService {
   async findById(id: number): Promise<User> {
     const user = await this.userModel.findByPk(id, {
       attributes: { exclude: ['password_hash'] },
+      include: [{ model: this.userRoleModel, as: 'user_roles' }],
     });
 
     if (!user) {
@@ -103,22 +88,28 @@ export class UserService {
     }
 
     // Нормализуем роли
-    const normalizedRoles = this.normalizeRoles(user.role);
-    user.role = normalizedRoles as UserRole[];
+    const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
+    (user as unknown as { role: string[] }).role = normalizedRoles;
 
     return user;
   }
 
   async updateRoles(id: number, roles: string[]): Promise<User> {
-    const user = await this.findById(id);
+    const normalizedRoles = normalizeRoles(roles);
 
-    const normalizedRoles = this.normalizeRoles(roles);
+    // Удаляем старые роли
+    await this.userRoleModel.destroy({ where: { user_id: id } });
 
-    await user.update({ role: normalizedRoles as UserRole[] });
+    // Создаем новые роли
+    for (const role of normalizedRoles) {
+      await this.userRoleModel.create({
+        user_id: id,
+        role,
+      });
+    }
 
-    // Возвращаем пользователя без пароля
-    const updatedUser = await this.findById(id);
-    return updatedUser;
+    // Возвращаем пользователя
+    return this.findById(id);
   }
 
   async updateLocale(id: number, locale: string): Promise<User> {
