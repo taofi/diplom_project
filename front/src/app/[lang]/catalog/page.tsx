@@ -9,16 +9,11 @@ import { ProductType } from '@/types/product';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Input, Select, Spinner, Pagination } from '@/components/ui';
+import { Button, Input, Spinner, Pagination } from '@/components/ui';
 import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
+import { ProductSort, type SortOption } from '@/components/product/ProductSort';
 
-type SortOption = 'newest' | 'price_asc' | 'price_desc';
 
-const sortOptions = [
-  { value: 'newest', label: 'catalog.sortNewest' },
-  { value: 'price_asc', label: 'catalog.sortPriceAsc' },
-  { value: 'price_desc', label: 'catalog.sortPriceDesc' },
-];
 
 export default function CatalogPage() {
   const { t, locale } = useI18n();
@@ -208,12 +203,9 @@ export default function CatalogPage() {
               <span className="text-gray-600">
                 {products.length} {t('nav.products')}
               </span>
-              <Select
-                name="sort"
+              <ProductSort
                 value={sortBy}
-                onChange={(value) => setSortBy(value as SortOption)}
-                options={sortOptions.map(opt => ({ value: opt.value, label: t(opt.label) }))}
-                className="w-auto"
+                onChange={setSortBy}
               />
             </div>
 

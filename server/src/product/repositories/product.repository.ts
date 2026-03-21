@@ -26,7 +26,6 @@ import {
 import { SEQUELIZE_TOKEN } from '../../db/database.module';
 
 type ProductWhereOptions = {
-  categoryId?: number;
   is_active?: boolean;
   is_featured?: boolean;
   type?: ProductType;
@@ -200,9 +199,14 @@ export class ProductRepository {
 
     const where: ProductWhereOptions = {};
 
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
+    // Фильтрация по категории через include (связь many-to-many через ProductCategory)
+    const categoryInclude = categoryId
+      ? {
+          model: Category,
+          where: { id: categoryId },
+          required: true,
+        }
+      : { model: Category };
 
     if (isActive !== undefined) {
       where.is_active = isActive;
@@ -249,7 +253,7 @@ export class ProductRepository {
       distinct: true, // Важно для правильного подсчета count при использовании include
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
       include: [
-        { model: Category },
+        categoryInclude,
         { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
         // Загружаем только media с is_cover = true для main_image
         {
@@ -321,9 +325,14 @@ export class ProductRepository {
 
     const where: ProductWhereOptions = {};
 
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
+    // Фильтрация по категории через include (связь many-to-many через ProductCategory)
+    const categoryInclude = categoryId
+      ? {
+          model: Category,
+          where: { id: categoryId },
+          required: true,
+        }
+      : { model: Category };
 
     if (isActive !== undefined) {
       where.is_active = isActive;
@@ -370,7 +379,7 @@ export class ProductRepository {
       distinct: true, // Важно для правильного подсчета count при использовании include
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
       include: [
-        { model: Category },
+        categoryInclude,
         { model: ProductMedia },
         { model: ProductLicense },
         // Загружаем translations для поиска

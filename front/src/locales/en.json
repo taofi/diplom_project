@@ -141,6 +141,23 @@
   },
   "admin": {
     "title": "Admin Panel",
+    "comingSoon": "Coming soon",
+    "dashboard": {
+      "description": "Manage your application from this panel",
+      "statistics": "Statistics",
+      "statisticsComingSoon": "Statistics will be available here",
+      "sections": "Sections"
+    },
+    "products": {
+      "title": "Manage Products",
+      "description": "Manage products, create new products, edit existing ones"
+    },
+    "categoriesLicenses": {
+      "description": "Manage categories and license types"
+    },
+    "users": {
+      "description": "Manage users and their roles"
+    },
     "comingSoon": "Section coming soon",
     "tabs": {
       "categoriesLicenses": "Categories & Licenses",
@@ -183,7 +200,8 @@
       "roles": {
         "admin": "Administrator",
         "author": "Author",
-        "user": "User"
+        "user": "User",
+        "none": "No roles"
       }
     },
     "common": {

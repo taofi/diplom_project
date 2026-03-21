@@ -11,6 +11,7 @@ import type { CategoryResponse } from '@/types/category';
 import { Button, Spinner, ConfirmModal, Select, Pagination } from '@/components/ui';
 import { AdminProductCard } from '@/components/admin/AdminProductCard';
 import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
+import { ProductSort, type SortOption } from '@/components/product/ProductSort';
 
 export default function AdminProductsPage() {
   const { t, locale } = useI18n();
@@ -43,6 +44,9 @@ export default function AdminProductsPage() {
     type: '',
     categoryId: '',
   });
+
+  // Сортировка
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   // Проверка прав доступа
   useEffect(() => {
@@ -85,6 +89,22 @@ export default function AdminProductsPage() {
       if (searchFilters.type) params.type = searchFilters.type;
       if (searchFilters.categoryId) params.categoryId = Number(searchFilters.categoryId);
 
+      // Sorting
+      switch (sortBy) {
+        case 'price_asc':
+          params.sortBy = 'price';
+          params.sortOrder = 'asc';
+          break;
+        case 'price_desc':
+          params.sortBy = 'price';
+          params.sortOrder = 'desc';
+          break;
+        case 'newest':
+        default:
+          params.sortBy = 'created_at';
+          params.sortOrder = 'desc';
+      }
+
       const result = await getProducts(params);
       
       setProducts(result.data || []);
@@ -100,7 +120,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [locale, searchFilters, statusFilter, t]);
+  }, [locale, searchFilters, statusFilter, sortBy, t]);
 
   // Загрузка при изменении фильтров или инициализации
   useEffect(() => {
@@ -108,7 +128,7 @@ export default function AdminProductsPage() {
     if (canAccess && !authLoading) {
       doFetchProducts(1);
     }
-  }, [searchFilters, statusFilter, authLoading, user, doFetchProducts]);
+  }, [searchFilters, statusFilter, sortBy, authLoading, user, doFetchProducts]);
 
   const handleSearchChange = useCallback((filters: SearchFilters) => {
     setSearchFilters(filters);
@@ -210,6 +230,17 @@ export default function AdminProductsPage() {
 
           {/* Main Content */}
           <main className="flex-1">
+            {/* Sort */}
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-gray-600">
+                {pagination.total} {t('nav.products')}
+              </span>
+              <ProductSort
+                value={sortBy}
+                onChange={setSortBy}
+              />
+            </div>
+
             {loading ? (
               <div className="flex justify-center py-20">
                 <Spinner size="lg" />

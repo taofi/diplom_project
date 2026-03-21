@@ -41,12 +41,14 @@ export class UserService {
     const limit = params.limit || 20;
     const offset = (page - 1) * limit;
 
-    let whereClause: { name?: Record<string, string>; email?: Record<string, string> } | undefined = undefined;
+    let whereClause: Record<string, unknown> | undefined = undefined;
 
     if (params.search) {
       whereClause = {
-        name: { [Op.like]: `%${params.search}%` },
-        email: { [Op.like]: `%${params.search}%` },
+        [Op.or]: [
+          { name: { [Op.like]: `%${params.search}%` } },
+          { email: { [Op.like]: `%${params.search}%` } },
+        ],
       };
     }
 

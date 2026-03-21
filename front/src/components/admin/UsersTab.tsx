@@ -78,7 +78,7 @@ export function UsersTab() {
   // Open roles modal
   const handleOpenRolesModal = (user: UserResponse) => {
     setSelectedUser(user);
-    setSelectedRoles(user.roles || []);
+    setSelectedRoles(user.role || []);
     setRolesModalOpen(true);
   };
 
@@ -125,7 +125,11 @@ export function UsersTab() {
   };
 
   // Get role display
-  const getRoleDisplay = (roles: UserRole[]) => {
+  const getRoleDisplay = (roles: UserRole[] | undefined) => {
+    if (!Array.isArray(roles) || roles.length === 0) {
+      return <span className="text-gray-400 text-sm">{t('admin.users.roles.none')}</span>;
+    }
+
     const roleLabels: Record<UserRole, string> = {
       'admin': t('admin.users.roles.admin'),
       'author': t('admin.users.roles.author'),
@@ -212,7 +216,7 @@ export function UsersTab() {
                       {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getRoleDisplay(user.roles)}
+                      {getRoleDisplay(user.role)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {getLocaleDisplay(user.locale)}

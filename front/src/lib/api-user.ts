@@ -15,10 +15,11 @@ export interface UserResponse {
   id: number;
   email: string;
   name: string;
-  roles: UserRole[];
+  role: UserRole[];
   locale: string;
   avatar_url: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface UsersResponse {
