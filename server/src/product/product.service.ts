@@ -109,8 +109,7 @@ export class ProductService {
     // Используем оптимизированный метод для списка (без media массива)
     const result = await this.productRepository.findAllForList(query);
     
-    // DEBUG: Проверяем что получили
-    console.log('[DEBUG findAll] result count:', result.count);
+
     
     // Передаем язык для получения name и description из translations
     return {
@@ -131,14 +130,7 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     
-    // DEBUG: Логирование для отладки языка
-    console.log('[DEBUG findById] language param:', language);
-    console.log('[DEBUG findById] translations count:', product.translations?.length);
-    if (product.translations && product.translations.length > 0) {
-      product.translations.forEach((t, i) => {
-        console.log(`[DEBUG findById] translation[${i}]: language=${t.language}, name=${t.name}`);
-      });
-    }
+
     
     // Применяем перевод для указанного языка
     // name и description теперь берутся из translations в createProductDetailResponse

@@ -6,33 +6,35 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { useAuth } from '@/context/auth/AuthContext';
 import { getCategories } from '@/lib/api-category';
 import { getProducts, deleteProduct, activateProduct, deactivateProduct } from '@/lib/api-product';
-import { ProductType } from '@/types/product';
 import type { ProductQueryParams, ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Card, Spinner, ConfirmModal } from '@/components/ui';
+import { Button, Spinner, ConfirmModal } from '@/components/ui';
 import { AdminProductCard } from '@/components/admin/AdminProductCard';
 import { ProductFilters, type FilterValues } from '@/components/admin/ProductFilters';
 
 export default function AdminProductsPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
-  // Локальный state для продуктов
+  // Состояние продуктов и пагинации
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 12, totalPages: 1 });
+  const [pagination, setPagination] = useState({ 
+    total: 0, 
+    page: 1, 
+    limit: 12, 
+    totalPages: 1 
+  });
 
-  // State для модального окна удаления
+  // Удаление
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Локальный state для категорий
+  // Категории и фильтры
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
-  
-  // Текущие фильтры
   const [currentFilters, setCurrentFilters] = useState<FilterValues>({
     search: '',
     type: '',
@@ -42,14 +44,15 @@ export default function AdminProductsPage() {
 
   const limit = 12;
 
-  // Check if user is admin or author
+  // Проверка прав доступа
   useEffect(() => {
-    if (user && !user.roles.includes('admin') && !user.roles.includes('author')) {
+    if (authLoading) return;
+    if (!user || (!user.roles.includes('admin') && !user.roles.includes('author'))) {
       router.push(`/${locale}/login`);
     }
-  }, [user, locale, router]);
+  }, [user, authLoading, locale, router]);
 
-  // Fetch categories
+  // Загрузка категорий
   useEffect(() => {
     async function fetchCategories() {
       try {
@@ -62,46 +65,41 @@ export default function AdminProductsPage() {
     fetchCategories();
   }, [locale]);
 
-  // Fetch products с учетом фильтров
+  // Основная функция загрузки данных
   const doFetchProducts = useCallback(async (pageNum: number = 1) => {
     setLoading(true);
-    setError('');
+    setError(null);
     
     try {
-      const params: Record<string, unknown> = {
-        page: pageNum,
+      const params: ProductQueryParams = {
+        page: pageNum, // Здесь pageNum уже гарантированно число
         limit,
         language: locale,
       };
 
-      // Status filter - только если выбран конкретный статус
       if (currentFilters.status !== '') {
         params.isActive = currentFilters.status === 'true';
       }
-      // Если выбраны "все статусы" (пустое значение) - не добавляем isActive
-
-      // Search
       if (currentFilters.search) {
         params.search = currentFilters.search;
       }
-
-      // Type filter
       if (currentFilters.type) {
         params.type = currentFilters.type;
       }
-
-      // Category filter
       if (currentFilters.categoryId) {
         params.categoryId = Number(currentFilters.categoryId);
       }
 
-      const result = await getProducts(params as ProductQueryParams);
+      const result = await getProducts(params);
+      
       setProducts(result.data || []);
+      
+      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: принудительно приводим всё к Number
       setPagination({
-        total: result.meta?.total || 0,
-        page: result.meta?.page || 1,
-        limit: result.meta?.limit || 12,
-        totalPages: result.meta?.totalPages || 1,
+        total: Number(result.meta?.total) || 0,
+        page: Number(result.meta?.page) || pageNum,
+        limit: Number(result.meta?.limit) || limit,
+        totalPages: Number(result.meta?.totalPages) || 1,
       });
     } catch (err) {
       console.error('Failed to fetch products:', err);
@@ -111,82 +109,60 @@ export default function AdminProductsPage() {
     }
   }, [locale, currentFilters]);
 
-  // Обработчик изменения фильтров
-  const handleFilterChange = useCallback((filters: FilterValues) => {
-    setCurrentFilters(filters);
-    // doFetchProducts вызовется через useEffect благодаря изменению currentFilters
-  }, []);
-
-  // При изменении фильтров - загружаем продукты
+  // Сброс на 1 страницу при изменении фильтров
   useEffect(() => {
     if (user && (user.roles.includes('admin') || user.roles.includes('author'))) {
       doFetchProducts(1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentFilters]);
+  }, [user, currentFilters, doFetchProducts]);
 
-  // Handle delete - открытие модального окна
+  const handleFilterChange = useCallback((filters: FilterValues) => {
+    setCurrentFilters(filters);
+  }, []);
+
+  // Handlers
   const handleDeleteClick = (productId: number) => {
     setProductToDelete(productId);
     setDeleteModalOpen(true);
   };
 
-  // Подтверждение удаления
   const handleDeleteConfirm = async () => {
     if (!productToDelete) return;
-    
     setIsDeleting(true);
     try {
       await deleteProduct(productToDelete);
       setDeleteModalOpen(false);
       setProductToDelete(null);
-      // Обновляем список после удаления
       doFetchProducts(pagination.page);
     } catch (err) {
-      console.error('Failed to delete product:', err);
       setError('Failed to delete product');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Отмена удаления
-  const handleDeleteCancel = () => {
-    setDeleteModalOpen(false);
-    setProductToDelete(null);
-  };
-
-  // Handle activate/deactivate
-  const handleToggleActive = async (product: ProductResponse) => {
+  const handleToggleActive = async (product: any) => {
     try {
-      if ((product as unknown as { is_active: boolean }).is_active) {
+      // Поддержка обоих вариантов именования поля активности
+      const isActive = product.is_active ?? product.isActive;
+      if (isActive) {
         await deactivateProduct(product.id);
       } else {
         await activateProduct(product.id);
       }
-      // Обновляем список после изменения статуса
       doFetchProducts(pagination.page);
     } catch (err) {
-      console.error('Failed to toggle product status:', err);
       setError('Failed to update product status');
     }
   };
 
-  // Handle edit
-  const handleEdit = (productId: number) => {
-    router.push(`/${locale}/admin/products/${productId}`);
-  };
-
-  // Handle create new
-  const handleCreateNew = () => {
-    router.push(`/${locale}/admin/products/new`);
-  };
-
-  if (!user || (!user.roles.includes('admin') && !user.roles.includes('author'))) {
-    return <Spinner size="lg" />;
+  if (authLoading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
-
-  const displayError = error;
 
   return (
     <div className="min-h-screen mt-20 py-8">
@@ -196,7 +172,7 @@ export default function AdminProductsPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             {t('admin.products.title')}
           </h1>
-          <Button onClick={handleCreateNew}>
+          <Button onClick={() => router.push(`/${locale}/admin/products/new`)}>
             {t('admin.products.createNew')}
           </Button>
         </div>
@@ -207,48 +183,48 @@ export default function AdminProductsPage() {
           onFilterChange={handleFilterChange}
         />
 
-
-        {/* Loading */}
+        {/* Content */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Spinner size="lg" />
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow">
             {t('admin.products.noProducts')}
           </div>
         ) : (
           <>
-            {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
               {products.map((product) => (
                 <AdminProductCard
                   key={product.id}
                   product={product}
-                  onEdit={handleEdit}
+                  onEdit={(id) => router.push(`/${locale}/admin/products/${id}`)}
                   onToggleActive={handleToggleActive}
                   onDelete={handleDeleteClick}
                 />
               ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination - ИСПРАВЛЕНО */}
             {pagination.totalPages > 1 && (
-              <div className="flex justify-center gap-2">
+              <div className="flex justify-center items-center gap-4 mt-8">
                 <Button
                   variant="outline"
-                  disabled={pagination.page === 1}
-                  onClick={() => doFetchProducts(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  onClick={() => doFetchProducts(Number(pagination.page) - 1)}
                 >
                   {t('common.previous')}
                 </Button>
-                <span className="flex items-center px-4 text-gray-600">
+                
+                <span className="text-sm font-medium text-gray-700">
                   {pagination.page} / {pagination.totalPages}
                 </span>
+                
                 <Button
                   variant="outline"
-                  disabled={pagination.page === pagination.totalPages}
-                  onClick={() => doFetchProducts(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => doFetchProducts(Number(pagination.page) + 1)}
                 >
                   {t('common.next')}
                 </Button>
@@ -258,15 +234,14 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {/* Модальное окно подтверждения удаления */}
       <ConfirmModal
         isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
+        onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title={t('admin.products.delete') || 'Удалить товар'}
-        message={t('admin.products.confirmDelete') || 'Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.'}
-        confirmText={t('common.delete') || 'Удалить'}
-        cancelText={t('common.cancel') || 'Отмена'}
+        title={t('admin.products.delete')}
+        message={t('admin.products.confirmDelete')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         variant="danger"
         loading={isDeleting}
       />

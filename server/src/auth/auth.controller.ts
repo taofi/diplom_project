@@ -61,12 +61,26 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: User) {
-    // Явно формируем объект с roles для фронтенда
+    // Явно нормализуем роли перед отправкой
+    let roles: string[] = [];
+    if (!user.role) {
+      roles = ['user'];
+    } else if (Array.isArray(user.role)) {
+      roles = user.role.map(r => {
+        if (typeof r === 'string' && r.includes(',')) {
+          return r.split(',').map(item => item.trim());
+        }
+        return r;
+      }).flat();
+    } else {
+      roles = [String(user.role)];
+    }
+    
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      roles: user.role,
+      roles,
       locale: user.locale,
       avatar_url: user.avatar_url,
       created_at: user.created_at,

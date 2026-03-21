@@ -1,9 +1,11 @@
 import Cookies from 'js-cookie';
 import { refreshTokens } from './api-auth';
+import { User } from '@/context/auth/types';
 
 const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
 const CSRF_KEY = 'csrf_token';
+const USER_KEY = 'user_data';
 
 const cookieOptions = {
   path: '/',
@@ -51,4 +53,26 @@ export const refreshAccessToken = async (): Promise<{ accessToken: string; refre
   }
 
   return refreshTokens(refreshTokenValue);
+};
+
+// Сохранить данные пользователя в куки
+export const setUserData = (user: User): void => {
+  Cookies.set(USER_KEY, JSON.stringify(user), { ...cookieOptions, expires: 7 });
+};
+
+// Получить данные пользователя из куки
+export const getUserData = (): User | null => {
+  const userData = Cookies.get(USER_KEY);
+  if (!userData) return null;
+  
+  try {
+    return JSON.parse(userData) as User;
+  } catch {
+    return null;
+  }
+};
+
+// Удалить данные пользователя из куки
+export const removeUserData = (): void => {
+  Cookies.remove(USER_KEY, { path: '/' });
 };

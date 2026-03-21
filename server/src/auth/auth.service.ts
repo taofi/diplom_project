@@ -203,8 +203,11 @@ export class AuthService {
     }
 
     // Нормализуем роль и присваиваем обратно
-    user.role = this.normalizeRoles(user.role) as UserRole[];
+    const normalizedRoles = this.normalizeRoles(user.role);
     
+    user.role = normalizedRoles as UserRole[];
+    
+    // Явно возвращаем данные без toJSON() чтобы избежать повторной обработки
     return user;
   }
 }

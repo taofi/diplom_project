@@ -55,6 +55,9 @@ export class UploadsController {
     if (!file) {
       throw new Error('No file provided');
     }
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
 
     const result = this.uploadsService.uploadTempMedia(userId, {
       originalname: file.originalname,

@@ -6,6 +6,7 @@ import { Providers } from "@/components/Providers";
 import { notFound } from "next/navigation";
 import { Locale } from "@/context/i18n/types";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -55,11 +56,16 @@ export default async function LocaleLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`mx-20 ${notoSans.variable} ${pinyonScript.variable}`}>
+      <body className={`${notoSans.variable} ${pinyonScript.variable}`}>
         
         <Providers initialLocale={validLang}>
-          <Header/>
-          {children}
+          <div className="flex flex-col min-h-screen">
+            <Header/>
+            <main className="flex-1 mx-20 ">
+              {children}
+            </main>
+            <Footer/>
+          </div>
         </Providers>
       </body>
     </html>

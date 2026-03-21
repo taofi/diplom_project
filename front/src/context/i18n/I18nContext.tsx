@@ -13,7 +13,6 @@ import en from '@/locales/en.json';
 import ru from '@/locales/ru.json';
 import { useAuth } from '@/context/auth/AuthContext';
 import { detectBrowserLocale } from './utils';
-import api from '@/lib/api';
 
 const translations: Record<Locale, Translations> = { en, ru };
 const LOCALE_KEY = 'locale';
@@ -60,13 +59,8 @@ export function I18nProvider({ children, initialLocale }: I18nProviderProps) {
       expires: 365,
     });
 
-    if (isAuthenticated) {
-      try {
-        await api.patch('/auth/profile', { locale: newLocale });
-      } catch {
-        console.error('Failed to sync locale with server');
-      }
-    }
+    // Синхронизация локали с сервером теперь происходит в AuthContext
+    // через вызов syncLocaleFromDb() при авторизации
   };
 
   const t = useMemo(() => {

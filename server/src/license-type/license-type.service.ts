@@ -30,11 +30,11 @@ export class LicenseTypeService {
   ) {}
 
   async findAll(language?: string): Promise<LicenseTypeResponse[]> {
+    // Always load ALL translations for admin panel, but filter by language for the main name field
     const licenseTypes = await this.licenseTypeModel.findAll({
       include: [
         {
           model: LicenseTypeTranslation,
-          where: language ? { locale: language } : undefined,
           required: false,
         },
       ],
@@ -81,9 +81,12 @@ export class LicenseTypeService {
   }
 
   async create(createDto: CreateLicenseTypeDto, language: string = 'ru'): Promise<LicenseTypeResponse> {
+    // Auto-generate slug from name if not provided
+    const slug = createDto.slug || (createDto.name ? createDto.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : `license-${Date.now()}`);
+
     // Check if slug already exists
     const existing = await this.licenseTypeModel.findOne({
-      where: { slug: createDto.slug },
+      where: { slug },
     });
 
     if (existing) {
@@ -91,7 +94,7 @@ export class LicenseTypeService {
     }
 
     const licenseType = await this.licenseTypeModel.create({
-      slug: createDto.slug,
+      slug,
     });
 
     // Create translation
@@ -168,13 +171,11 @@ export class LicenseTypeService {
       );
     }
 
-    await this.sequelize.transaction(async (t) => {
-      // Delete all translations
-      await this.translationModel.destroy({ where: { license_type_id: id }, transaction: t });
+    // Delete all translations
+    await this.translationModel.destroy({ where: { license_type_id: id } });
 
-      // Delete license type
-      await licenseType.destroy({ transaction: t });
-    });
+    // Delete license type
+    await licenseType.destroy();
   }
 
   async getProductsCount(id: number): Promise<number> {

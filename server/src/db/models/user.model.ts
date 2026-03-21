@@ -95,12 +95,16 @@ export class User extends Model {
   toJSON(): Record<string, unknown> {
     const values: Record<string, unknown> = { ...super.toJSON() };
     // Гарантируем, что role всегда массив
-    if (values.role && typeof values.role === 'string') {
+    if (!values.role) {
+      values.role = ['user'];
+    } else if (typeof values.role === 'string') {
       try {
         values.role = JSON.parse(values.role as string);
       } catch {
         values.role = [values.role];
       }
+    } else if (!Array.isArray(values.role)) {
+      values.role = ['user'];
     }
     return values;
   }

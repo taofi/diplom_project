@@ -83,15 +83,22 @@ function buildLanguageParam(language?: string): string | undefined {
  * @returns PaginatedResult с массивом товаров
  */
 export async function getProducts(params?: ProductParams): Promise<ProductListResponse> {
-  const queryParams = { ...params };
+  const queryParams: Record<string, unknown> = { ...params };
 
   // Добавляем язык в запрос если указан
   if (params?.language) {
     queryParams.language = params.language;
   }
 
+  // Преобразуем page и limit в числа для корректной работы на сервере
+  if (queryParams.page !== undefined) {
+    queryParams.page = Number(queryParams.page);
+  }
+  if (queryParams.limit !== undefined) {
+    queryParams.limit = Number(queryParams.limit);
+  }
 
-
+  const response = await api.get<ProductListResponse>('/products', { params: queryParams });
   return response.data;
 }
 
@@ -103,9 +110,7 @@ export async function getProducts(params?: ProductParams): Promise<ProductListRe
  */
 export async function getProductById(id: number, language?: string): Promise<ProductResponse> {
   const params = language ? { language } : {};
-  console.log('[FRONT DEBUG getProductById] id:', id, 'language:', language, 'params:', params);
   const response = await api.get<ProductResponse>(`/products/${id}`, { params });
-  console.log('[FRONT DEBUG getProductById] response.name:', response.data.name);
   return response.data;
 }
 
@@ -201,7 +206,17 @@ export async function getProductLicenses(productId: number): Promise<LicenseInfo
  * @param params - Параметры запроса
  */
 export async function getMyProducts(params?: ProductParams): Promise<ProductListResponse> {
-  const response = await api.get<ProductListResponse>('/products/my', { params });
+  const queryParams: Record<string, unknown> = { ...params };
+
+  // Преобразуем page и limit в числа для корректной работы на сервере
+  if (queryParams.page !== undefined) {
+    queryParams.page = Number(queryParams.page);
+  }
+  if (queryParams.limit !== undefined) {
+    queryParams.limit = Number(queryParams.limit);
+  }
+
+  const response = await api.get<ProductListResponse>('/products/my', { params: queryParams });
   return response.data;
 }
 
@@ -233,7 +248,6 @@ export async function updateProduct(
   language?: string
 ): Promise<ProductResponse> {
   const params = language ? { language } : {};
-  console.log('[FRONT DEBUG updateProduct] id:', id, 'data:', data, 'language:', language, 'params:', params);
   const response = await api.patch<ProductResponse>(`/products/${id}`, data, { params });
   return response.data;
 }

@@ -13,8 +13,6 @@ export class UploadsService {
    * @param file - Загруженный файл
    */
   uploadTempMedia(userId: number, file: MulterFile): FileUploadResult {
-    console.log('[UploadsService] uploadTempMedia called with:', { userId, file: file?.originalname, mimetype: file?.mimetype });
-    
     // Проверить тип файла (только изображения)
     if (!file?.mimetype?.startsWith('image/')) {
       throw new BadRequestException('Only image files are allowed for media');

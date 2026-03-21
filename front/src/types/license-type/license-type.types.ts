@@ -10,7 +10,7 @@
  * DTO для создания типа лицензии
  */
 export interface CreateLicenseTypeDto {
-  slug: string;
+  slug?: string;
   name: string;
   description?: string;
 }

@@ -2,8 +2,8 @@ import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateLicenseTypeDto {
   @IsString({ message: 'Slug must be a string' })
-  @IsNotEmpty({ message: 'Slug is required' })
-  slug: string;
+  @IsOptional()
+  slug?: string;
 
   @IsString({ message: 'Name must be a string' })
   @IsNotEmpty({ message: 'Name is required' })

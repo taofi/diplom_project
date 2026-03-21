@@ -141,7 +141,7 @@ interface ConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
+  message: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
@@ -190,7 +190,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-gray-600">{message}</p>
+      <div className="text-gray-600">{message}</div>
     </Modal>
   );
 }

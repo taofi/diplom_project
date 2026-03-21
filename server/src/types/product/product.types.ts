@@ -11,6 +11,7 @@ import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
+import type { LicenseTypeTranslation } from '../../db/models/license-type-translation.model';
 import { normalizeLanguage } from '../../product/utils/language.utils';
 
 // =======================
@@ -375,18 +376,31 @@ export function createProductResponse(
   }
 
   if (product.licenses) {
-    response.licenses = product.licenses.map((l) => ({
-      id: l.id,
-      licenseTypeId: l.license_type_id,
-      price: Number(l.price),
-      licenseType: l.license_type
-        ? {
-            id: l.license_type.id,
-            name: l.license_type.slug,
-            slug: l.license_type.slug,
-          }
-        : undefined,
-    }));
+    const normalizedLang = normalizeLanguage(language);
+    response.licenses = product.licenses.map((l) => {
+      let licenseName = l.license_type?.slug || '';
+      if (l.license_type?.translations && l.license_type.translations.length > 0) {
+        const translationsArr: Array<{locale?: string; name?: string}> = l.license_type.translations.map((t) => t.toJSON ? t.toJSON() : t);
+        const translation = translationsArr.find(
+          (t) => t.locale?.toLowerCase() === normalizedLang.toLowerCase()
+        ) || translationsArr[0];
+        if (translation?.name) {
+          licenseName = translation.name;
+        }
+      }
+      return {
+        id: l.id,
+        licenseTypeId: l.license_type_id,
+        price: Number(l.price),
+        licenseType: l.license_type
+          ? {
+              id: l.license_type.id,
+              name: licenseName,
+              slug: l.license_type.slug,
+            }
+          : undefined,
+      };
+    });
   }
 
   return response;

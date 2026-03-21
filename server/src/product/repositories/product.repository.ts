@@ -8,6 +8,7 @@ import { ProductLicense } from '../../db/models/product-license.model';
 import { ProductCategory } from '../../db/models/product-category.model';
 import { Category } from '../../db/models/category.model';
 import { LicenseType } from '../../db/models/license-type.model';
+import { LicenseTypeTranslation } from '../../db/models/license-type-translation.model';
 import { Language } from '../../common/enums/language.enum';
 import { FileService, MediaFolder } from '../../common/services/file.service';
 import type { FindOptions } from 'sequelize';
@@ -89,7 +90,7 @@ export class ProductRepository {
     const product = await this.productModel.findByPk(id, {
       include: [
         { model: ProductMedia },
-        { model: ProductTranslation },
+        { model: ProductTranslation, as: 'translations' },
         { model: ProductLicense },
         { model: Category },
       ],
@@ -140,8 +141,8 @@ export class ProductRepository {
     const product = await this.productModel.findByPk(id, {
       include: [
         { model: ProductMedia },
-        { model: ProductTranslation },
-        { model: ProductLicense, include: [{ model: LicenseType }] },
+        { model: ProductTranslation, as: 'translations' },
+        { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
         { model: Category },
       ],
     });
@@ -235,10 +236,11 @@ export class ProductRepository {
       where,
       offset,
       limit,
+      distinct: true, // Важно для правильного подсчета count при использовании include
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
       include: [
         { model: Category },
-        { model: ProductLicense, include: [{ model: LicenseType }] },
+        { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
         // Загружаем только media с is_cover = true для main_image
         {
           model: ProductMedia,
@@ -250,14 +252,11 @@ export class ProductRepository {
       ],
     });
 
-    // DEBUG: Проверяем что пришло из базы
-    console.log('[DEBUG product.repository] result.rows[0]:', JSON.stringify(result.rows[0]?.toJSON()));
-    console.log('[DEBUG product.repository] translations:', result.rows[0]?.translations);
+
 
     // Вычисляем price и main_image для каждого товара
     const rows = result.rows.map((product): ProductWithFullRelations => {
-      // DEBUG: проверяем translations для каждого продукта
-      console.log('[DEBUG product.repository] product.id:', product.id, 'translations:', JSON.stringify(product.translations));
+
 
       // price = MIN(licenses.price)
       if (product.licenses && product.licenses.length > 0) {
@@ -348,6 +347,7 @@ export class ProductRepository {
       where,
       offset,
       limit,
+      distinct: true, // Важно для правильного подсчета count при использовании include
       order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
       include: [
         { model: Category },
@@ -507,12 +507,6 @@ export class ProductRepository {
           } as any);
 
 
-
-        // DEBUG: Проверяем что создалось
-        console.log('[DEBUG createTranslation] created with productId:', id);
-
-        // DEBUG: Проверяем что создалось
-        console.log('[DEBUG createTranslation] created with productId:', id);
         }
       }
     }

@@ -6,11 +6,35 @@ import { NavButton } from './NavButton';
 
 export function UserActions() {
   const { user, isAuthenticated, isAdminOrAuthor } = useAuth();
-  const { t } = useI18n();
-  console.log(isAdminOrAuthor)
+  const { t, locale } = useI18n();
+  
+  // Check if user is admin (not just author)
+  const isAdmin = user?.roles?.includes('admin') || false;
+  
   return (
     <div className="flex items-center gap-4">
-      {/* Admin Panel */}
+      {/* Admin Panel - Only for admins */}
+      {isAdmin && (
+        <NavButton 
+          href={`/${locale}/admin`} 
+          text={t('nav.adminPanel')}
+          icon={
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+              className="w-6 h-6"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          }
+        />
+      )}
+
+      {/* Products Management - For admin or author */}
       {isAdminOrAuthor && (
         <NavButton 
           href="/admin/products" 

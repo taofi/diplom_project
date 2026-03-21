@@ -4,7 +4,7 @@ import { UserRole } from '../../db/models/user.model';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 interface AuthRequest {
-  user?: { role: UserRole[] };
+  user?: { role: UserRole[] | string[] };
 }
 
 /**
@@ -15,26 +15,38 @@ interface AuthRequest {
 export class AdminGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    // Check for explicitly set roles
-    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+  // Нормализация ролей - преобразует все возможные форматы в массив строк
+  private normalizeUserRoles(roles: unknown): string[] {
+    if (!roles) return [];
 
-    if (requiredRoles && requiredRoles.length > 0) {
-      // If roles are explicitly set, use RolesGuard logic
-      const request = context.switchToHttp().getRequest() as AuthRequest;
-      const user = request.user;
+    let roleArray: string[];
 
-      if (!user) {
-        return false;
-      }
-
-      return requiredRoles.some((role) => user.role.includes(role));
+    // Если это массив
+    if (Array.isArray(roles)) {
+      roleArray = roles
+        .map((r) => {
+          if (typeof r === 'string') {
+            // Если элемент содержит запятую, разбиваем на массив
+            if (r.includes(',')) {
+              return r.split(',').map((item) => item.trim());
+            }
+            return r.trim();
+          }
+          return String(r);
+        })
+        .flat();
+    } else if (typeof roles === 'string') {
+      // Если это строка, разбиваем по запятым
+      roleArray = roles.split(',').map((r) => r.trim());
+    } else {
+      roleArray = [];
     }
 
-    // Default: check if user is admin
+    // Убираем дубликаты и пустые значения
+    return [...new Set(roleArray.filter((r) => r))];
+  }
+
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest() as AuthRequest;
     const user = request.user;
 
@@ -42,6 +54,20 @@ export class AdminGuard implements CanActivate {
       return false;
     }
 
-    return user.role.includes(UserRole.ADMIN);
+    // Нормализуем роли
+    const userRoles = this.normalizeUserRoles(user.role);
+
+    // Check for explicitly set roles
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (requiredRoles && requiredRoles.length > 0) {
+      return requiredRoles.some((role) => userRoles.includes(String(role)));
+    }
+
+    // Default: check if user is admin
+    return userRoles.includes('admin');
   }
 }

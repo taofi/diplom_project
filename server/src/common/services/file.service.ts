@@ -104,6 +104,9 @@ export class FileService {
    * Сохранить временный файл (media) в public/temp/{userId}/
    */
   saveTempMedia(file: MulterFile, userId: number): FileUploadResult {
+    if (!userId) {
+      throw new Error('User ID is required for saving temp media');
+    }
     const targetDir = path.join(this.publicMediaBasePath, MediaFolder.TEMP, userId.toString());
     this.ensureDirectory(targetDir);
 
@@ -131,6 +134,9 @@ export class FileService {
    * Сохранить временный файл (product file) в files/temp/{userId}/
    */
   saveTempFile(file: MulterFile, userId: number): FileUploadResult {
+    if (!userId) {
+      throw new Error('User ID is required for saving temp file');
+    }
     const targetDir = path.join(
       this.filesBasePath,
       FileFolder.TEMP,
@@ -172,8 +178,7 @@ export class FileService {
     // Определить полный путь
     let fullFromPath = fromPath;
 
-    console.log('[FileService] moveFile - fromPath:', fromPath);
-    console.log('[FileService] moveFile - toDir:', toDir);
+
 
     // Если путь относительный, определить базовую директорию
     // Убираем ведующий слеш если есть
@@ -182,21 +187,20 @@ export class FileService {
     if (!path.isAbsolute(cleanFromPath)) {
       if (cleanFromPath.startsWith('media/')) {
         fullFromPath = path.join(process.cwd(), 'public', cleanFromPath);
-        console.log('[FileService] moveFile - media path, fullFromPath:', fullFromPath);
+
       } else if (cleanFromPath.startsWith('files/')) {
         fullFromPath = path.join(process.cwd(), cleanFromPath);
-        console.log('[FileService] moveFile - files path, fullFromPath:', fullFromPath);
+
       } else {
         fullFromPath = path.join(process.cwd(), cleanFromPath);
-        console.log('[FileService] moveFile - other path, fullFromPath:', fullFromPath);
+
       }
     }
 
-    console.log('[FileService] moveFile - checking if file exists:', fullFromPath);
-    console.log('[FileService] moveFile - exists:', fs.existsSync(fullFromPath));
+
 
     if (!fs.existsSync(fullFromPath)) {
-      console.log('[FileService] moveFile - FILE NOT FOUND, returning null');
+
       return null;
     }
 
@@ -213,10 +217,7 @@ export class FileService {
     
     // Проверяем что файл перемещен (исходный должен быть удален)
     if (fs.existsSync(fullFromPath)) {
-      console.log('[FileService] moveFile - source still exists, deleting manually');
       fs.unlinkSync(fullFromPath);
-    } else {
-      console.log('[FileService] moveFile - source file deleted after move');
     }
 
     // Определить URL (без ведущего слеша)
@@ -224,16 +225,14 @@ export class FileService {
     const normalizedToDir = toDir.replace(/\\/g, '/');
     let url: string;
     
-    console.log('[FileService] moveFile - toDir:', toDir);
-    console.log('[FileService] moveFile - normalizedToDir:', normalizedToDir);
-    console.log('[FileService] moveFile - process.cwd():', process.cwd());
+
     
     if (normalizedToDir.includes('public/media') || normalizedToDir.includes('media/product')) {
       // Для media файлов - формируем путь media/product/{id}/filename
       const productMatch = normalizedToDir.match(/media\/product\/(\d+)/);
       if (productMatch) {
         url = `media/product/${productMatch[1]}/${filename}`;
-        console.log('[FileService] moveFile - media url:', url);
+
       } else {
         // Fallback для других случаев
         const relativePath = toDir.replace(path.join(process.cwd(), 'public'), '');
@@ -244,14 +243,14 @@ export class FileService {
       const fileProductMatch = normalizedToDir.match(/files\/product\/(\d+)/);
       if (fileProductMatch) {
         url = `files/product/${fileProductMatch[1]}/${filename}`;
-        console.log('[FileService] moveFile - files url:', url);
+
       } else {
         const relativePath = toDir.replace(process.cwd(), '');
         url = `${relativePath}/${filename}`.replace(/\\/g, '/').replace(/^\//, '');
       }
     } else {
       url = filename;
-      console.log('[FileService] moveFile - fallback url:', url);
+
     }
 
     const stats = fs.statSync(toPath);

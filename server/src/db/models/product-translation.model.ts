@@ -19,19 +19,19 @@ export class ProductTranslation extends Model<ProductTranslation> {
     type: DataType.STRING,
     allowNull: false,
   })
-  name: string;
+  declare name: string;
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  description: string;
+  declare description: string;
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  shortDescription: string;
+  declare shortDescription: string;
 
   @ForeignKey(() => Product)
   @Column({
@@ -39,15 +39,15 @@ export class ProductTranslation extends Model<ProductTranslation> {
     allowNull: false,
     field: 'product_id',
   })
-  productId: number;
+  declare productId: number;
 
   @BelongsTo(() => Product)
-  product: Product;
+  declare product: Product;
 
   @Column({
     type: DataType.ENUM,
     values: Object.values(Language),
     allowNull: false,
   })
-  language: Language;
+  declare language: Language;
 }

@@ -18,7 +18,7 @@ interface EditProductPageProps {
 
 export default function EditProductPage({ params }: EditProductPageProps) {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   const [product, setProduct] = useState<ProductResponse | null>(null);
@@ -36,10 +36,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   // Check if user is admin
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
     if (!user || (!user.roles.includes('admin') && !user.roles.includes('author'))) {
       router.push(`/${locale}/login`);
     }
-  }, [user, locale, router]);
+  }, [user, authLoading, locale, router]);
 
   // Fetch product data with all translations
   useEffect(() => {

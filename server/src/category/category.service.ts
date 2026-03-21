@@ -29,11 +29,11 @@ export class CategoryService {
   ) {}
 
   async findAll(language?: string): Promise<CategoryResponse[]> {
+    // Always load ALL translations for admin panel, but filter by language for the main name field
     const categories = await this.categoryModel.findAll({
       include: [
         {
           model: CategoryTranslation,
-          where: language ? { locale: language } : undefined,
           required: false,
         },
       ],
@@ -121,16 +121,14 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    await this.sequelize.transaction(async (t) => {
-      // Delete all translations
-      await this.translationModel.destroy({ where: { category_id: id }, transaction: t });
+    // Delete all translations
+    await this.translationModel.destroy({ where: { category_id: id } });
 
-      // Delete all product-category relations
-      await this.productCategoryModel.destroy({ where: { category_id: id }, transaction: t });
+    // Delete all product-category relations
+    await this.productCategoryModel.destroy({ where: { category_id: id } });
 
-      // Delete category
-      await category.destroy({ transaction: t });
-    });
+    // Delete category
+    await category.destroy();
   }
 
   async getProductsCount(id: number): Promise<number> {

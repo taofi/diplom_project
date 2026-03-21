@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { getProducts, type ProductQueryParams } from '@/lib/api-product';
 import { ProductType } from '@/types/product';
@@ -33,13 +34,17 @@ export default function CatalogPage() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState({ 
+    total: 0, 
+    page: 1, 
+    limit: 12, 
+    totalPages: 1 
+  });
   
   const limit = 12;
 
-  // Fetch products
-  const fetchProducts = useCallback(async (pageNum: number = 1, isNewSearch: boolean = false) => {
+  // Fetch products - используем useCallback как в админке
+  const doFetchProducts = useCallback(async (pageNum: number = 1) => {
     setLoading(true);
 
     const params: ProductQueryParams = {
@@ -48,8 +53,6 @@ export default function CatalogPage() {
       language: locale,
       isActive: true,
     };
-
-
 
     // Search
     if (searchQuery) {
@@ -88,14 +91,16 @@ export default function CatalogPage() {
     try {
       const response = await getProducts(params);
       
-      if (isNewSearch) {
-        setProducts(response.data);
-      } else {
-        setProducts(prev => [...prev, ...response.data]);
-      }
+      // Заменяем данные (как в админке), а не накапливаем
+      setProducts(response.data || []);
       
-      setHasMore(response.data.length === limit);
-      setPage(pageNum);
+      // Обновляем пагинацию с приведением типов как в админке
+      setPagination({
+        total: Number(response.meta?.total) || 0,
+        page: Number(response.meta?.page) || pageNum,
+        limit: Number(response.meta?.limit) || limit,
+        totalPages: Number(response.meta?.totalPages) || 1,
+      });
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
@@ -103,17 +108,14 @@ export default function CatalogPage() {
     }
   }, [searchQuery, selectedType, minPrice, maxPrice, sortBy, locale]);
 
-  // Initial load and filter changes
+  // Сброс на страницу 1 при изменении фильтров (как в админке)
   useEffect(() => {
-    setPage(1);
-    fetchProducts(1, true);
-  }, [searchQuery, selectedType, minPrice, maxPrice, sortBy, fetchProducts]);
+    doFetchProducts(1);
+  }, [searchQuery, selectedType, minPrice, maxPrice, sortBy, locale, doFetchProducts]);
 
-  // Load more
-  const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      fetchProducts(page + 1, false);
-    }
+  // Обработчик изменения страницы (вызывает fetchProducts)
+  const handlePageChange = (newPage: number) => {
+    doFetchProducts(newPage);
   };
 
   // Reset filters
@@ -230,15 +232,27 @@ export default function CatalogPage() {
                   ))}
                 </div>
 
-                {/* Load More */}
-                {hasMore && (
-                  <div className="flex justify-center mt-8">
+                {/* Pagination - как в админке */}
+                {pagination.totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
                     <Button
-                      onClick={handleLoadMore}
-                      disabled={loading}
-                      loading={loading}
+                      variant="outline"
+                      disabled={pagination.page <= 1}
+                      onClick={() => doFetchProducts(Number(pagination.page) - 1)}
                     >
-                      {loading ? t('common.loading') : t('catalog.loadMore')}
+                      {t('common.previous')}
+                    </Button>
+                    
+                    <span className="text-sm font-medium text-gray-700">
+                      {pagination.page} / {pagination.totalPages}
+                    </span>
+                    
+                    <Button
+                      variant="outline"
+                      disabled={pagination.page >= pagination.totalPages}
+                      onClick={() => doFetchProducts(Number(pagination.page) + 1)}
+                    >
+                      {t('common.next')}
                     </Button>
                   </div>
                 )}

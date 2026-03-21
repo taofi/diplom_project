@@ -10,15 +10,17 @@ import type { CreateProductDto, UpdateProductDto } from '@/types/product';
 
 export default function NewProductPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Check if user is admin
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user || (!user.roles.includes('admin') && !user.roles.includes('author'))) {
       router.push(`/${locale}/login`);
     }
-  }, [user, locale, router]);
+  }, [user, authLoading, locale, router]);
 
   const handleSubmit = async (data: CreateProductDto | UpdateProductDto) => {
     // Type assertion - we know this is CreateProductDto in this context

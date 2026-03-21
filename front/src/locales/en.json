@@ -23,6 +23,7 @@
     "profile": "Profile",
     "login": "Login",
     "dashboard": "Dashboard",
+    "adminPanel": "Admin Panel",
     "settings": "Settings",
     "products": "Products",
     "orders": "Orders",
@@ -85,7 +86,22 @@
     "sortPriceAsc": "Price: Low to High",
     "sortPriceDesc": "Price: High to Low",
     "sortNewest": "Newest First",
-    "loadMore": "Load More"
+    "loadMore": "Load More",
+    "categoryBanners": {
+      "brushes": "Professional Brushes",
+      "brushesDesc": "For digital art and graphic design",
+      "illustrations": "Unique Illustrations",
+      "illustrationsDesc": "Author works for your projects"
+    },
+    "info": {
+      "title": "How It Works",
+      "step1Title": "Choose Product",
+      "step1Desc": "Find brush or illustration in catalog",
+      "step2Title": "Choose License",
+      "step2Desc": "Select the right license for your needs",
+      "step3Title": "Download Files",
+      "step3Desc": "Get instant access after purchase"
+    }
   },
   "errors": {
     "invalidCredentials": "Invalid email or password",
@@ -124,6 +140,60 @@
     "backButton": "Go Back"
   },
   "admin": {
+    "title": "Admin Panel",
+    "comingSoon": "Section coming soon",
+    "tabs": {
+      "categoriesLicenses": "Categories & Licenses",
+      "users": "Users"
+    },
+    "categories": {
+      "title": "Categories",
+      "add": "Add Category",
+      "edit": "Edit Category",
+      "name": "Name",
+      "slug": "Slug",
+      "icon": "Icon",
+      "color": "Color",
+      "productsCount": "Products count",
+      "deleteConfirm": "Are you sure you want to delete this category? It will be removed from all products.",
+      "noCategories": "No categories found"
+    },
+    "licenseTypes": {
+      "title": "License Types",
+      "add": "Add License Type",
+      "edit": "Edit License Type",
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Description",
+      "productsCount": "Products count",
+      "deleteConfirm": "Are you sure you want to delete this license type?",
+      "noLicenseTypes": "No license types found",
+      "cannotDelete": "Cannot delete license type that is used by products"
+    },
+    "users": {
+      "title": "Users",
+      "searchPlaceholder": "Search by name or email...",
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "locale": "Language",
+      "createdAt": "Created",
+      "changeRoles": "Change roles",
+      "noUsers": "No users found",
+      "roles": {
+        "admin": "Administrator",
+        "author": "Author",
+        "user": "User"
+      }
+    },
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "language": "Language",
+      "actions": "Actions"
+    },
     "products": {
       "title": "Manage Products",
       "createNew": "Create Product",
@@ -167,6 +237,88 @@
     "types": {
       "brush": "Brush",
       "illustration": "Illustration"
+    },
+    "license": {
+      "select": "Select license",
+      "individual": "Personal",
+      "commercial": "Commercial",
+      "extended": "Extended"
+    },
+    "addToCart": "Add to cart",
+    "buyNow": "Buy now",
+    "addedToCart": "Product added to cart!",
+    "description": "Description",
+    "featured": "Featured",
+    "instantDownload": "Instant download",
+    "securePayment": "Secure payment"
+  },
+  "footer": {
+    "about": "About",
+    "aboutText": "Nadzin is a store of professional digital goods for artists. We offer quality brushes and illustrations for digital art.",
+    "navigation": "Navigation",
+    "catalog": "Catalog",
+    "aboutLink": "About Us",
+    "contacts": "Contacts",
+    "legal": "Legal",
+    "social": "Follow Us",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie Policy",
+    "copyright": "© 2026 Nadzin. All rights reserved.",
+    "youtube": "YouTube",
+    "instagram": "Instagram",
+    "email": "Email"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: March 2026",
+    "intro": "This Privacy Policy describes how we collect, use, and protect your personal data.",
+    "section1Title": "1. General Provisions",
+    "section1Text": "This Privacy Policy determines the procedure for processing and protecting personal data of users of the Nadzin website.",
+    "section2Title": "2. What Data We Collect",
+    "section2Text": "We collect the following personal data: name, email address, payment information when placing an order.",
+    "section3Title": "3. How We Use Data",
+    "section3Text": "Your data is used for order processing, customer communication, service improvement, and sending newsletters.",
+    "section4Title": "4. Data Protection",
+    "section4Text": "We apply modern data protection methods to ensure the security of your personal information.",
+    "section5Title": "5. Your Rights",
+    "section5Text": "You have the right to access, correct, and delete your personal data. Contact us to exercise these rights.",
+    "section6Title": "6. Contacts",
+    "section6Text": "If you have questions about the privacy policy, contact us by email."
+  },
+  "home": {
+    "latestProducts": "New Arrivals",
+    "viewAll": "View All",
+    "features": {
+      "title": "Why Choose Us",
+      "quality": {
+        "title": "High Quality",
+        "desc": "All products are carefully checked"
+      },
+      "instant": {
+        "title": "Instant Delivery",
+        "desc": "Download files immediately after purchase"
+      },
+      "support": {
+        "title": "24/7 Support",
+        "desc": "Always ready to help with selection"
+      },
+      "license": {
+        "title": "Licenses",
+        "desc": "Choose the right license type"
+      }
     }
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "lastUpdated": "Last updated: March 2026",
+    "intro": "Our cookie policy explains what cookies are and how we use them.",
+    "section1Title": "1. What Are Cookies",
+    "section1Text": "A cookie is a small text file that is stored on your device when visiting a website.",
+    "section2Title": "2. Cookies We Use",
+    "section2Text": "We use necessary cookies for website functionality, analytical cookies for service improvement, and functional cookies to remember your preferences.",
+    "section3Title": "3. Managing Cookies",
+    "section3Text": "You can disable cookies in your browser settings. However, this may affect website functionality.",
+    "section4Title": "4. Third-Party Services",
+    "section4Text": "We may use third-party analytics services such as Google Analytics, which may also set cookies."
   }
 }

@@ -56,20 +56,15 @@ export class JwtAuthGuard implements CanActivate {
     // Validate token and get user
     try {
       const payload = this.jwtService.verify<{ sub: number }>(token);
-      console.log('[JwtAuthGuard] JWT payload:', payload);
       
       if (!payload?.sub) {
         throw new UnauthorizedException('Invalid token payload');
       }
       
       const user = await this.authService.getProfile(payload.sub);
-      console.log('[JwtAuthGuard] User from getProfile:', user?.id, user?.email);
       
-      // Инициализируем user если его нет, затем добавляем sub для совместимости с CurrentUserId декоратором
-      if (!request.user) {
-        (request as unknown as Record<string, unknown>).user = {};
-      }
-      (request.user as unknown as Record<string, unknown>).sub = user.id;
+      // Присваиваем полный объект пользователя в request для использования в декораторах @CurrentUser()
+      request.user = user;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
