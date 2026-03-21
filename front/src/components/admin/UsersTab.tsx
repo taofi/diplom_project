@@ -190,7 +190,7 @@ export function UsersTab() {
                     {t('admin.users.email')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('admin.users.roles')}
+                    {t('admin.users.rolesTitle')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('admin.users.locale')}

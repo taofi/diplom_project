@@ -192,7 +192,7 @@
       "searchPlaceholder": "Search by name or email...",
       "name": "Name",
       "email": "Email",
-      "roles": "Roles",
+      "rolesTitle": "Roles",
       "locale": "Language",
       "createdAt": "Created",
       "changeRoles": "Change roles",
