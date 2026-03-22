@@ -65,7 +65,6 @@ export default function ProductPage() {
       await addItem({
         productId: product.id,
         licenseTypeId: selectedLicense.licenseTypeId,
-        quantity: 1,
       });
       toastSuccess(t('product.addedToCart') || 'Added to cart!');
     } catch (err) {

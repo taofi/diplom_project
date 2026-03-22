@@ -7,11 +7,10 @@ interface CartItemProps {
   item: {
     id: number;
     productLicenseId?: number;
-    quantity: number;
     product?: {
       name: string;
       price: number;
-      media?: Array<{ url: string }>;
+      coverImage?: string | null;
     };
     licenseType?: {
       name: string;
@@ -30,7 +29,7 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
     ? (item.product?.name || `Product #${item.productLicenseId || item.id}`) 
     : `Product #${item.productLicenseId || item.id}`;
   const productPrice = Number(item.product?.price) || 0;
-  const productImage = item.product?.media?.[0]?.url;
+  const productImage = item.product?.coverImage;
 
   return (
     <div className="flex items-center gap-4 p-4 border-b last:border-b-0">
@@ -50,30 +49,12 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
         </p>
       </div>
 
-      {/* Количество */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onQuantityChange(item.id, item.quantity - 1)}
-          disabled={item.quantity <= 1}
-          className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          -
-        </button>
-        <span className="w-12 text-center font-medium">
-          {item.quantity}
-        </span>
-        <button
-          onClick={() => onQuantityChange(item.id, item.quantity + 1)}
-          className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50"
-        >
-          +
-        </button>
-      </div>
+      {/* Больше нет управления количеством - всегда 1 товар */}
 
       {/* Сумма */}
       <div className="w-24 text-right">
         <p className="font-semibold text-gray-900">
-          ${(productPrice * item.quantity).toFixed(2)}
+          ${productPrice.toFixed(2)}
         </p>
       </div>
 

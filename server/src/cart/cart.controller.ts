@@ -27,8 +27,11 @@ export class CartController {
    */
   @Get()
   @UseGuards(JwtAuthGuard)
-  async getCart(@CurrentUserId() userId: number) {
-    return this.cartService.getCart(userId);
+  async getCart(
+    @CurrentUserId() userId: number,
+    @Headers('accept-language') locale?: string,
+  ) {
+    return this.cartService.getCart(userId, locale);
   }
 
   /**
@@ -39,12 +42,14 @@ export class CartController {
   async addItem(
     @CurrentUserId() userId: number,
     @Body() dto: AddCartItemDto,
+    @Headers('accept-language') locale?: string,
   ) {
-    return this.cartService.addItem(userId, dto);
+    return this.cartService.addItem(userId, dto, locale);
   }
 
   /**
    * PATCH /cart/items/:id - Изменить количество товара
+   * (больше не поддерживается - quantity всегда 1)
    */
   @Patch('items/:id')
   @UseGuards(JwtAuthGuard)
@@ -52,8 +57,9 @@ export class CartController {
     @CurrentUserId() userId: number,
     @Param('id', ParseIntPipe) itemId: number,
     @Body('quantity') quantity: number,
+    @Headers('accept-language') locale?: string,
   ) {
-    return this.cartService.updateItemQuantity(userId, itemId, quantity);
+    return this.cartService.updateItemQuantity(userId, itemId, quantity, locale);
   }
 
   /**
@@ -97,8 +103,11 @@ export class CartController {
    */
   @Get('guest')
   @HttpCode(HttpStatus.OK)
-  async getGuestCart(@Headers('x-guest-id') guestId: string): Promise<Array<{id: number; productLicenseId: number; quantity: number}>> {
-    return this.cartService.getGuestCart(guestId);
+  async getGuestCart(
+    @Headers('x-guest-id') guestId: string,
+    @Headers('accept-language') locale?: string,
+  ) {
+    return this.cartService.getFormattedGuestCart(guestId, locale);
   }
 
   /**
@@ -109,8 +118,9 @@ export class CartController {
   async addGuestItem(
     @Headers('x-guest-id') guestId: string,
     @Body() dto: AddCartItemDto,
-  ): Promise<{id: number; productLicenseId: number; quantity: number}> {
-    return this.cartService.addGuestItem(guestId, dto);
+    @Headers('accept-language') locale?: string,
+  ) {
+    return this.cartService.addFormattedGuestItem(guestId, dto, locale);
   }
 
   /**
@@ -122,8 +132,9 @@ export class CartController {
     @Headers('x-guest-id') guestId: string,
     @Param('id', ParseIntPipe) itemId: number,
     @Body('quantity') quantity: number,
-  ): Promise<{id: number; productLicenseId: number; quantity: number}> {
-    return this.cartService.updateGuestItemQuantity(guestId, itemId, quantity);
+    @Headers('accept-language') locale?: string,
+  ) {
+    return this.cartService.updateGuestItemQuantity(guestId, itemId, quantity, locale);
   }
 
   /**
@@ -166,7 +177,12 @@ export class CartController {
   async syncCart(
     @CurrentUserId() userId: number,
     @Body() dto: SyncCartDto,
+    @Headers('accept-language') locale?: string,
   ) {
-    return this.cartService.syncCart(userId, dto.items);
+    return this.cartService.syncCart(
+      userId,
+      dto.items.map((item) => ({ productLicenseId: item.productLicenseId })),
+      locale,
+    );
   }
 }

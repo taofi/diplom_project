@@ -61,9 +61,9 @@ export class OrderService {
       throw new NotFoundException('Cart is empty');
     }
 
-    // Рассчитываем общую сумму
+    // Рассчитываем общую сумму (quantity всегда 1)
     const totalAmount = cartItems.reduce((sum, item) => {
-      return sum + (item.product?.price || 0) * item.quantity;
+      return sum + (item.product?.price || 0);
     }, 0);
 
     // Создаём заказ в транзакции

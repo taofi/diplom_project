@@ -51,20 +51,16 @@
     "passwordPlaceholder": "Enter your password",
     "namePlaceholder": "Enter your name",
     "confirmPasswordPlaceholder": "Repeat your password",
-    "title": "Profile",
     "role": "Role",
     "locale": "Language",
-    "createdAt": "Created at",
-    "profileInformation": "Profile Information"
+    "createdAt": "Created at"
   },
   "profile": {
-    "title": "Profile",
     "profileInformation": "Profile Information",
     "name": "Name",
     "email": "Email",
     "role": "Role",
-    "locale": "Language",
-    "createdAt": "Created at"
+    "locale": "Language"
   },
   "catalog": {
     "title": "Catalog",
@@ -136,21 +132,6 @@
     "total": "Total",
     "checkout": "Proceed to Checkout"
   },
-  "home": {
-    "welcome": "Welcome to Our Platform",
-    "description": "The best solution for your needs",
-    "getStarted": "Get Started",
-    "learnMore": "Learn More",
-    "features": "Features",
-    "lookingForInstructions": "Looking for a starting point or more instructions? Head over to",
-    "templates": "Templates",
-    "or": "or the",
-    "learningCenter": "Learning",
-    "center:": "center.",
-    "deployNow": "Deploy Now",
-    "documentation": "Documentation",
-    "toGetStarted": "To get started, edit this page."
-  },
   "notFound": {
     "title": "Page Not Found",
     "description": "The page you are looking for does not exist or has been moved. Please check the URL or go back to the home page.",
@@ -206,7 +187,23 @@
     },
     "users": {
       "title": "Users",
+      "description": "Manage users and their roles",
       "searchPlaceholder": "Search by name or email...",
+      "name": "Name",
+      "email": "Email",
+      "rolesTitle": "Roles",
+      "locale": "Language",
+      "createdAt": "Created",
+      "changeRoles": "Change roles",
+      "noUsers": "No users found",
+      "roles": {
+        "admin": "Administrator",
+        "author": "Author",
+        "user": "User",
+        "none": "No roles"
+      }
+    },
+    "common": {
       "name": "Name",
       "email": "Email",
       "rolesTitle": "Roles",

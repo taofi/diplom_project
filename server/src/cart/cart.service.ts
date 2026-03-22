@@ -5,21 +5,20 @@ import { ProductLicense } from '../db/models/product-license.model';
 import { Product } from '../db/models/product.model';
 import { CartItemRepository } from './repositories/cart-item.repository';
 import { AddCartItemDto } from './dto/add-cart-item.dto';
-import { Op } from 'sequelize';
+import { TranslationService } from '../translation/translation.service';
 
 export interface CartItemResponse {
   id: number;
   productId: number;
   licenseTypeId: number;
-  quantity: number;
-  product?: {
+  product: {
     id: number;
     name: string;
     price: number;
     slug: string;
-    media?: Array<{ url: string; is_main: boolean }>;
+    coverImage: string | null;
   };
-  licenseType?: {
+  licenseType: {
     id: number;
     name: string;
   };
@@ -29,7 +28,6 @@ export interface CartItemResponse {
 interface GuestCartItem {
   id: number;
   productLicenseId: number;
-  quantity: number;
   createdAt: Date;
 }
 
@@ -51,6 +49,7 @@ export class CartService {
     private readonly productLicenseModel: typeof ProductLicense,
     @InjectModel(Product)
     private readonly productModel: typeof Product,
+    private readonly translationService: TranslationService,
   ) {}
 
   // ============ Guest Cart Methods ============
@@ -64,6 +63,100 @@ export class CartService {
       return [];
     }
     return cart.items;
+  }
+
+  /**
+   * Получить гостевую корзину с форматированными данными (с переводами)
+   */
+  async getFormattedGuestCart(guestId: string, locale?: string): Promise<CartItemResponse[]> {
+    const cart = guestCarts.get(guestId);
+    if (!cart || cart.items.length === 0) {
+      return [];
+    }
+
+    // Загружаем данные о каждом товаре
+    const formattedItems: CartItemResponse[] = [];
+    
+    for (const item of cart.items) {
+      try {
+        const productLicense = await this.getProductLicense(item.productLicenseId);
+        if (productLicense) {
+          const formattedItem = await this.formatCartItemFromLicense(productLicense, locale);
+          formattedItem.id = item.id;
+          formattedItems.push(formattedItem);
+        }
+      } catch (error) {
+        // Пропускаем товары, которые не удалось загрузить
+        console.error('Failed to load product for guest cart item:', error);
+      }
+    }
+
+    return formattedItems;
+  }
+
+  /**
+   * Форматировать элемент корзины из ProductLicense
+   */
+  private async formatCartItemFromLicense(
+    productLicense: ProductLicense & { product?: Product },
+    locale?: string,
+  ): Promise<CartItemResponse> {
+    const product = productLicense.product;
+
+    // Получаем переводы
+    let productName = '';
+    let licenseTypeName = '';
+    let coverImage: string | null = null;
+
+    if (product) {
+      // Получаем перевод продукта
+      const productTranslation = await this.translationService.getProductTranslation(
+        product.id,
+        locale,
+      );
+      if (productTranslation) {
+        productName = productTranslation.name;
+      } else {
+        // Fallback - используем main_image как имя
+        productName = `Product #${product.id}`;
+      }
+
+      // Получаем главное изображение (is_cover = true)
+      coverImage = await this.translationService.getProductCoverImage(product.id);
+      
+      // Fallback на main_image если нет обложки
+      if (!coverImage && product.main_image) {
+        coverImage = product.main_image;
+      }
+    }
+
+    // Получаем перевод типа лицензии
+    if (productLicense.license_type_id) {
+      const licenseTranslation = await this.translationService.getLicenseTypeTranslation(
+        productLicense.license_type_id,
+        locale,
+      );
+      if (licenseTranslation) {
+        licenseTypeName = licenseTranslation.name;
+      }
+    }
+
+    return {
+      id: 0, // Will be set by caller
+      productId: product?.id || 0,
+      licenseTypeId: productLicense.license_type_id || 0,
+      product: {
+        id: product?.id || 0,
+        name: productName,
+        price: productLicense.price || 0,
+        slug: `product-${product?.id}`, // Используем ID вместо slug
+        coverImage,
+      },
+      licenseType: {
+        id: productLicense.license_type_id || 0,
+        name: licenseTypeName,
+      },
+    };
   }
 
   /**
@@ -89,21 +182,20 @@ export class CartService {
       guestCarts.set(guestId, cart);
     }
 
-    // Проверяем, есть ли уже такой товар
+    // Проверяем, есть ли уже такой товар (по правилам плана - не добавляем дубликаты)
     const existingItem = cart.items.find(
       (item) => item.productLicenseId === productLicense.id,
     );
 
     if (existingItem) {
-      existingItem.quantity += dto.quantity;
+      // Товар уже есть, возвращаем существующий (не увеличиваем количество)
       return existingItem;
     }
 
-    // Добавляем новый элемент
+    // Добавляем новый элемент (без quantity - всегда 1)
     const newItem: GuestCartItem = {
       id: guestItemIdCounter++,
       productLicenseId: productLicense.id,
-      quantity: dto.quantity,
       createdAt: new Date(),
     };
     cart.items.push(newItem);
@@ -111,13 +203,36 @@ export class CartService {
   }
 
   /**
+   * Добавить товар в гостевую корзину и вернуть с переводами
+   */
+  async addFormattedGuestItem(
+    guestId: string,
+    dto: AddCartItemDto,
+    locale?: string,
+  ): Promise<CartItemResponse> {
+    const item = await this.addGuestItem(guestId, dto);
+    
+    // Загружаем данные о товаре с переводами
+    const productLicense = await this.getProductLicense(item.productLicenseId);
+    if (!productLicense) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const formattedItem = await this.formatCartItemFromLicense(productLicense, locale);
+    formattedItem.id = item.id;
+    return formattedItem;
+  }
+
+  /**
    * Обновить количество товара в гостевой корзине
+   * (больше не поддерживается - quantity всегда 1)
    */
   async updateGuestItemQuantity(
     guestId: string,
     itemId: number,
     quantity: number,
-  ): Promise<GuestCartItem> {
+    locale?: string,
+  ): Promise<CartItemResponse> {
     const cart = guestCarts.get(guestId);
     if (!cart) {
       throw new NotFoundException('Guest cart not found');
@@ -128,13 +243,21 @@ export class CartService {
       throw new NotFoundException('Cart item not found');
     }
 
+    // Если quantity <= 0, удаляем товар
     if (quantity <= 0) {
       cart.items = cart.items.filter((i) => i.id !== itemId);
       throw new NotFoundException('Cart item removed');
     }
 
-    item.quantity = quantity;
-    return item;
+    // Загружаем данные о товаре с переводами
+    const productLicense = await this.getProductLicense(item.productLicenseId);
+    if (!productLicense) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const formattedItem = await this.formatCartItemFromLicense(productLicense, locale);
+    formattedItem.id = item.id;
+    return formattedItem;
   }
 
   /**
@@ -169,7 +292,8 @@ export class CartService {
     if (!cart) {
       return 0;
     }
-    return cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    // Всегда 1 на товар
+    return cart.items.length;
   }
 
   /**
@@ -177,7 +301,8 @@ export class CartService {
    */
   async syncCart(
     userId: number,
-    guestItems: Array<{ productLicenseId: number; quantity: number }>,
+    guestItems: Array<{ productLicenseId: number }>,
+    locale?: string,
   ): Promise<CartItemResponse[]> {
     // Для каждого элемента гостевой корзины добавляем в пользовательскую
     for (const guestItem of guestItems) {
@@ -187,29 +312,25 @@ export class CartService {
         guestItem.productLicenseId,
       );
 
-      if (existingItem) {
-        // Обновляем количество
-        await existingItem.update({
-          quantity: existingItem.quantity + guestItem.quantity,
-        });
-      } else {
-        // Создаём новый элемент
+      if (!existingItem) {
+        // Создаём новый элемент (quantity всегда 1)
         await this.cartItemRepository.create({
           user_id: userId,
           product_license_id: guestItem.productLicenseId,
-          quantity: guestItem.quantity,
+          quantity: 1,
         });
       }
+      // Если товар уже есть - не добавляем дубликат
     }
 
     // Возвращаем обновлённую корзину
-    return this.getCart(userId);
+    return this.getCart(userId, locale);
   }
 
   /**
    * Получить корзину пользователя
    */
-  async getCart(userId: number): Promise<CartItemResponse[]> {
+  async getCart(userId: number, locale?: string): Promise<CartItemResponse[]> {
     const cartItems = await this.cartItemRepository.findByUserId(userId, {
       include: [
         {
@@ -223,13 +344,13 @@ export class CartService {
       ],
     });
 
-    return this.formatCartItems(cartItems);
+    return this.formatCartItems(cartItems, locale);
   }
 
   /**
    * Добавить товар в корзину
    */
-  async addItem(userId: number, dto: AddCartItemDto): Promise<CartItemResponse> {
+  async addItem(userId: number, dto: AddCartItemDto, locale?: string): Promise<CartItemResponse> {
     // Проверяем, существует ли товар с таким license
     const productLicense = await this.productLicenseModel.findOne({
       where: {
@@ -249,18 +370,26 @@ export class CartService {
     );
 
     if (existingItem) {
-      // Обновляем количество
-      await existingItem.update({ quantity: existingItem.quantity + dto.quantity });
+      // Товар уже есть - возвращаем существующий (не увеличиваем количество)
       await existingItem.reload();
       
-      return this.formatCartItem(existingItem, await this.getProductLicense(productLicense.id));
+      const fullItem = await this.cartItemRepository.findById(existingItem.id, {
+        include: [
+          {
+            model: this.productLicenseModel,
+            include: [{ model: this.productModel }],
+          },
+        ],
+      });
+      
+      return this.formatCartItem(fullItem!, locale);
     }
 
-    // Создаем новый элемент корзины
+    // Создаем новый элемент корзины (quantity всегда 1)
     const cartItem = await this.cartItemRepository.create({
       user_id: userId,
       product_license_id: productLicense.id,
-      quantity: dto.quantity,
+      quantity: 1,
     });
 
     // Загружаем с связями для возврата
@@ -277,16 +406,18 @@ export class CartService {
       throw new NotFoundException('Failed to create cart item');
     }
 
-    return this.formatCartItem(fullItem);
+    return this.formatCartItem(fullItem, locale);
   }
 
   /**
    * Обновить количество товара в корзине
+   * (больше не поддерживается - quantity всегда 1)
    */
   async updateItemQuantity(
     userId: number,
     itemId: number,
     quantity: number,
+    locale?: string,
   ): Promise<CartItemResponse> {
     const cartItem = await this.cartItemRepository.findById(itemId);
 
@@ -299,10 +430,11 @@ export class CartService {
       throw new NotFoundException('Cart item removed');
     }
 
-    await cartItem.update({ quantity });
+    // Все равно всегда устанавливаем 1 (quantity не поддерживается)
+    await cartItem.update({ quantity: 1 });
     await cartItem.reload();
 
-    return this.formatCartItem(cartItem, await this.getProductLicense(cartItem.product_license_id));
+    return this.formatCartItem(cartItem, locale);
   }
 
   /**
@@ -330,7 +462,8 @@ export class CartService {
    */
   async getCartCount(userId: number): Promise<number> {
     const cartItems = await this.cartItemRepository.findByUserId(userId);
-    return cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    // Всегда 1 на товар
+    return cartItems.length;
   }
 
   /**
@@ -345,40 +478,70 @@ export class CartService {
   /**
    * Форматировать элемент корзины
    */
-  private formatCartItem(
+  private async formatCartItem(
     cartItem: CartItem,
-    productLicense?: ProductLicense | null,
-  ): CartItemResponse {
-    const license = productLicense || (cartItem as any).product_license;
+    locale?: string,
+  ): Promise<CartItemResponse> {
+    const license = (cartItem as any).product_license;
     const product = license?.product;
+
+    // Получаем переводы
+    let productName = product?.name || '';
+    let licenseTypeName = '';
+    let coverImage: string | null = null;
+
+    if (product) {
+      // Получаем перевод продукта
+      const productTranslation = await this.translationService.getProductTranslation(
+        product.id,
+        locale,
+      );
+      if (productTranslation) {
+        productName = productTranslation.name;
+      }
+
+      // Получаем главное изображение
+      coverImage = await this.translationService.getProductCoverImage(product.id);
+    }
+
+    // Получаем перевод типа лицензии
+    if (license?.license_type_id) {
+      const licenseTranslation = await this.translationService.getLicenseTypeTranslation(
+        license.license_type_id,
+        locale,
+      );
+      if (licenseTranslation) {
+        licenseTypeName = licenseTranslation.name;
+      }
+    }
 
     return {
       id: cartItem.id,
       productId: product?.id || 0,
       licenseTypeId: license?.license_type_id || 0,
-      quantity: cartItem.quantity,
       product: product
         ? {
             id: product.id,
-            name: product.name,
+            name: productName,
             price: license?.price || 0,
             slug: product.slug,
-            media: [],
+            coverImage,
           }
-        : undefined,
+        : ({} as any),
       licenseType: license
         ? {
             id: license.license_type_id,
-            name: '', // TODO: получить из license type
+            name: licenseTypeName,
           }
-        : undefined,
+        : ({} as any),
     };
   }
 
   /**
    * Форматировать массив элементов корзины
    */
-  private formatCartItems(cartItems: CartItem[]): CartItemResponse[] {
-    return cartItems.map((item) => this.formatCartItem(item));
+  private async formatCartItems(cartItems: CartItem[], locale?: string): Promise<CartItemResponse[]> {
+    // Используем Promise.all для параллельной загрузки переводов
+    return Promise.all(cartItems.map((item) => this.formatCartItem(item, locale)));
   }
 }

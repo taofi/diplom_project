@@ -10,15 +10,8 @@ import type { CartItem, AddToCartPayload } from '@/types/cart/cart.types';
 const GUEST_CART_ID_KEY = 'guest_cart_id';
 const GUEST_CART_EXPIRY = 30; // дней
 
-// Тип для гостевого элемента корзины
-interface GuestCartItem {
-  id: number;
-  productLicenseId: number;
-  quantity: number;
-}
-
 interface CartContextType {
-  items: CartItem[] | GuestCartItem[];
+  items: CartItem[];
   count: number;
   isLoading: boolean;
   isGuest: boolean;
@@ -59,7 +52,7 @@ function getOrCreateGuestCartId(): string {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[] | GuestCartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [guestCartId, setGuestCartId] = useState<string | null>(null);
@@ -87,12 +80,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Загружаем корзину пользователя
         const cartItems = await cartApi.getCart();
         setItems(cartItems);
-        setCount(cartItems.reduce((sum, item) => sum + item.quantity, 0));
+        // Теперь каждый товар = 1
+        setCount(cartItems.length);
       } else if (guestCartId) {
         // Загружаем гостевую корзину
         const guestItems = await cartApi.getGuestCart(guestCartId);
         setItems(guestItems);
-        setCount(guestItems.reduce((sum, item) => sum + item.quantity, 0));
+        // Теперь каждый товар = 1
+        setCount(guestItems.length);
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
@@ -120,8 +115,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const guestItems = await cartApi.getGuestCart(guestId);
       
       if (guestItems.length > 0) {
-        // Синхронизируем с сервером
-        await cartApi.syncCart(guestItems);
+        // Синхронизируем с сервером - добавляем каждый товар в пользовательскую корзину
+        for (const item of guestItems) {
+          await cartApi.addItem({
+            productId: item.productId,
+            licenseTypeId: item.licenseTypeId
+          });
+        }
         
         // Очищаем гостевую корзину
         await cartApi.clearGuestCart(guestId);
@@ -156,6 +156,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = async (itemId: number, quantity: number) => {
+    // Больше не поддерживается - quantity всегда 1
+    // Оставляем для совместимости, но игнорируем
+    if (quantity <= 1) return;
+    
     setIsLoading(true);
     try {
       if (isAuthenticated) {

@@ -1,11 +1,16 @@
 import api from './api';
 import type { CartItem, AddToCartPayload } from '../types/cart/cart.types';
+import Cookies from 'js-cookie';
+
+// Получаем текущий язык из куки
+function getLocale(): string {
+  return Cookies.get('locale') || 'ru';
+}
 
 // Тип для гостевого элемента корзины
 interface GuestCartItem {
   id: number;
   productLicenseId: number;
-  quantity: number;
 }
 
 export const cartApi = {
@@ -13,7 +18,10 @@ export const cartApi = {
    * Получить корзину пользователя
    */
   async getCart(): Promise<CartItem[]> {
-    const response = await api.get<CartItem[]>('/cart');
+    const locale = getLocale();
+    const response = await api.get<CartItem[]>('/cart', {
+      headers: { 'Accept-Language': locale },
+    });
     return response.data;
   },
 
@@ -21,15 +29,22 @@ export const cartApi = {
    * Добавить товар в корзину пользователя
    */
   async addItem(payload: AddToCartPayload): Promise<CartItem> {
-    const response = await api.post<CartItem>('/cart/items', payload);
+    const locale = getLocale();
+    const response = await api.post<CartItem>('/cart/items', payload, {
+      headers: { 'Accept-Language': locale },
+    });
     return response.data;
   },
 
   /**
    * Обновить количество товара в корзине пользователя
+   * (больше не используется - quantity всегда 1)
    */
   async updateItemQuantity(itemId: number, quantity: number): Promise<CartItem> {
-    const response = await api.patch<CartItem>(`/cart/items/${itemId}`, { quantity });
+    const locale = getLocale();
+    const response = await api.patch<CartItem>(`/cart/items/${itemId}`, { quantity }, {
+      headers: { 'Accept-Language': locale },
+    });
     return response.data;
   },
 
@@ -60,9 +75,13 @@ export const cartApi = {
   /**
    * Получить гостевую корзину
    */
-  async getGuestCart(guestId: string): Promise<GuestCartItem[]> {
-    const response = await api.get<GuestCartItem[]>('/cart/guest', {
-      headers: { 'x-guest-id': guestId },
+  async getGuestCart(guestId: string): Promise<CartItem[]> {
+    const locale = getLocale();
+    const response = await api.get<CartItem[]>('/cart/guest', {
+      headers: { 
+        'x-guest-id': guestId,
+        'Accept-Language': locale,
+      },
     });
     return response.data;
   },
@@ -70,9 +89,13 @@ export const cartApi = {
   /**
    * Добавить товар в гостевую корзину
    */
-  async addGuestItem(guestId: string, payload: AddToCartPayload): Promise<GuestCartItem> {
-    const response = await api.post<GuestCartItem>('/cart/guest/items', payload, {
-      headers: { 'x-guest-id': guestId },
+  async addGuestItem(guestId: string, payload: AddToCartPayload): Promise<CartItem> {
+    const locale = getLocale();
+    const response = await api.post<CartItem>('/cart/guest/items', payload, {
+      headers: { 
+        'x-guest-id': guestId,
+        'Accept-Language': locale,
+      },
     });
     return response.data;
   },
@@ -80,9 +103,13 @@ export const cartApi = {
   /**
    * Обновить количество товара в гостевой корзине
    */
-  async updateGuestItemQuantity(guestId: string, itemId: number, quantity: number): Promise<GuestCartItem> {
-    const response = await api.patch<GuestCartItem>(`/cart/guest/items/${itemId}`, { quantity }, {
-      headers: { 'x-guest-id': guestId },
+  async updateGuestItemQuantity(guestId: string, itemId: number, quantity: number): Promise<CartItem> {
+    const locale = getLocale();
+    const response = await api.patch<CartItem>(`/cart/guest/items/${itemId}`, { quantity }, {
+      headers: { 
+        'x-guest-id': guestId,
+        'Accept-Language': locale,
+      },
     });
     return response.data;
   },
@@ -119,7 +146,10 @@ export const cartApi = {
    * Синхронизировать гостевую корзину с пользовательской
    */
   async syncCart(guestItems: GuestCartItem[]): Promise<CartItem[]> {
-    const response = await api.post<CartItem[]>('/cart/sync', { items: guestItems });
+    const locale = getLocale();
+    const response = await api.post<CartItem[]>('/cart/sync', { items: guestItems }, {
+      headers: { 'Accept-Language': locale },
+    });
     return response.data;
   },
 };

@@ -1,13 +1,9 @@
-import { IsNumber, IsString, IsArray, ValidateNested, Min, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GuestCartItemDto {
   @IsNumber({}, { message: 'Product license ID must be a number' })
   productLicenseId: number;
-
-  @IsNumber({}, { message: 'Quantity must be a number' })
-  @Min(1, { message: 'Quantity must be at least 1' })
-  quantity: number;
 }
 
 export class GuestCartDto {
@@ -29,7 +25,5 @@ export class SyncCartDto {
 
 export class UpdateGuestCartItemDto {
   @IsNumber({}, { message: 'Quantity must be a number' })
-  @Min(0, { message: 'Quantity must be at least 0' })
-  @IsOptional()
   quantity?: number;
 }
