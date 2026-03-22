@@ -13,9 +13,14 @@ import { LicenseTypeModule } from './license-type/license-type.module';
 import { CommonModule } from './common/common.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UserModule } from './user/user.module';
+import { CartModule } from './cart/cart.module';
+import { OrderModule } from './order/order.module';
+import { EmailModule } from './email/email.module';
+import { TranslationModule } from './translation/translation.module';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
+import emailConfig from './config/email.config';
 
 @Module({
   imports: [
@@ -26,17 +31,21 @@ import redisConfig from './config/redis.config';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'src/config/.env',
-      load: [databaseConfig, jwtConfig, redisConfig],
+      load: [databaseConfig, jwtConfig, redisConfig, emailConfig],
     }),
     DatabaseModule,
     CommonModule,
     TokenModule,
     AuthModule,
+    EmailModule,
+    CartModule,
+    OrderModule,
     ProductModule,
     CategoryModule,
     LicenseTypeModule,
     UploadsModule,
     UserModule,
+    TranslationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

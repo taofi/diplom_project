@@ -11,10 +11,11 @@ async function bootstrap() {
         format: winston.format.combine(
           winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
           winston.format.colorize(),
-          winston.format.printf(({ timestamp, level, message, context }) => {
-            // Исправление ошибки "unknown" и [object Object]
-            const stringContext = typeof context === 'object' ? JSON.stringify(context) : context;
-            return `[${timestamp}] ${level}: [${stringContext || 'Application'}] ${message}`;
+          winston.format.printf((info) => {
+            const timestamp = (info as { timestamp?: string }).timestamp || '';
+            const level = (info as { level?: string }).level || '';
+            const message = (info as { message?: string }).message || '';
+            return `[${timestamp}] ${level}: ${message}`;
           }),
         ),
       }),
@@ -39,7 +40,7 @@ async function bootstrap() {
     });
 
     app.enableCors({
-      origin: ['http://localhost:4000', 'http://localhost:3000'],
+      origin: ['http://localhost:4000', 'http://localhost:3000', 'http://localhost:3001'],
       credentials: true,
     });
 

@@ -10,6 +10,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { TokenModule } from '../token/token.module';
+import { EmailModule } from '../email/email.module';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 
@@ -28,6 +29,7 @@ import { UserRole as UserRoleModel } from '../db/models/user-role.model';
       }),
     }),
     TokenModule,
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],

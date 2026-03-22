@@ -91,4 +91,68 @@ export class TokenService implements OnModuleInit, OnModuleDestroy {
       secret: this.configService.get<string>('jwt.refreshSecret'),
     });
   }
+
+  // ==================== Verification Codes ====================
+
+  /**
+   * Сохранить код верификации email
+   */
+  async setVerificationCode(email: string, code: string, ttlSeconds: number = 900): Promise<void> {
+    // ttl по умолчанию 15 минут
+    await this.redisClient.set(`verification:${email}`, code, 'EX', ttlSeconds);
+  }
+
+  /**
+   * Получить код верификации email
+   */
+  async getVerificationCode(email: string): Promise<string | null> {
+    return this.redisClient.get(`verification:${email}`);
+  }
+
+  /**
+   * Удалить код верификации email
+   */
+  async deleteVerificationCode(email: string): Promise<void> {
+    await this.redisClient.del(`verification:${email}`);
+  }
+
+  /**
+   * Проверить код верификации email
+   */
+  async verifyCode(email: string, code: string): Promise<boolean> {
+    const storedCode = await this.getVerificationCode(email);
+    return storedCode === code;
+  }
+
+  // ==================== Password Reset ====================
+
+  /**
+   * Сохранить токен сброса пароля
+   */
+  async setPasswordResetToken(email: string, token: string, ttlSeconds: number = 3600): Promise<void> {
+    // ttl по умолчанию 1 час
+    await this.redisClient.set(`password_reset:${email}`, token, 'EX', ttlSeconds);
+  }
+
+  /**
+   * Получить токен сброса пароля
+   */
+  async getPasswordResetToken(email: string): Promise<string | null> {
+    return this.redisClient.get(`password_reset:${email}`);
+  }
+
+  /**
+   * Удалить токен сброса пароля
+   */
+  async deletePasswordResetToken(email: string): Promise<void> {
+    await this.redisClient.del(`password_reset:${email}`);
+  }
+
+  /**
+   * Проверить токен сброса пароля
+   */
+  async verifyPasswordResetToken(email: string, token: string): Promise<boolean> {
+    const storedToken = await this.getPasswordResetToken(email);
+    return storedToken === token;
+  }
 }

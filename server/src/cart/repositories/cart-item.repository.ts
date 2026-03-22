@@ -37,11 +37,11 @@ export class CartItemRepository {
 
   async findByUserAndProduct(
     userId: number,
-    productId: number,
+    productLicenseId: number,
     options?: FindOptions,
   ): Promise<CartItem | null> {
     return this.cartItemModel.findOne({
-      where: { user_id: userId, productId },
+      where: { user_id: userId, product_license_id: productLicenseId },
       ...options,
     });
   }
@@ -68,8 +68,8 @@ export class CartItemRepository {
     return this.cartItemModel.findAndCountAll(options);
   }
 
-  async create(data: AddCartItemDto): Promise<CartItem> {
-    return this.cartItemModel.create(data as any);
+  async create(data: { user_id: number; product_license_id: number; quantity: number }): Promise<CartItem> {
+    return this.cartItemModel.create(data);
   }
 
   async update(id: number, data: Partial<AddCartItemDto>): Promise<CartItem> {

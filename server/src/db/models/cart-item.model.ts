@@ -27,6 +27,9 @@ export class CartItem extends Model {
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare product_license_id: number;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
+  declare quantity: number;
+
   @CreatedAt
   declare created_at: Date;
 

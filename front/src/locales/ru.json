@@ -117,7 +117,24 @@
     "canOnlyUpdateOwnProducts": "Вы можете обновить только свои товары",
     "productNotFound": "Товар не найден",
     "validationFailed": "Ошибка валидации",
-    "requiredField": "Обязательное поле"
+    "requiredField": "Обязательное поле",
+    "addToCartFailed": "Не удалось добавить в корзину",
+    "removeItemFailed": "Не удалось удалить товар",
+    "updateQuantityFailed": "Не удалось обновить количество",
+    "clearCartFailed": "Не удалось очистить корзину"
+  },
+  "cart": {
+    "empty": "Ваша корзина пуста",
+    "emptyDescription": "Добавьте товары, чтобы начать покупки",
+    "continueShopping": "Продолжить покупки",
+    "clearCart": "Очистить корзину",
+    "itemRemoved": "Товар удалён из корзины",
+    "cartCleared": "Корзина очищена",
+    "orderSummary": "Итого",
+    "subtotal": "Подытог",
+    "items": "Товаров",
+    "total": "Итого к оплате",
+    "checkout": "Оформить заказ"
   },
   "home": {
     "welcome": "Добро пожаловать на нашу платформу",

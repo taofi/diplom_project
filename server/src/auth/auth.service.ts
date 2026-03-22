@@ -8,10 +8,20 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 import { TokenService } from '../token/token.service';
+import { EmailService } from '../email/email.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { normalizeRoles } from './utils/normalize-roles';
+
+// Генерация случайного кода
+function generateVerificationCode(length: number = 6): string {
+  return Math.floor(
+    Math.random() * Math.pow(10, length)
+  )
+    .toString()
+    .padStart(length, '0');
+}
 
 @Injectable()
 export class AuthService {
@@ -21,6 +31,7 @@ export class AuthService {
     @InjectModel(UserRoleModel)
     private userRoleModel: typeof UserRoleModel,
     private tokenService: TokenService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
@@ -52,12 +63,33 @@ export class AuthService {
       });
     }
 
+    // Генерируем и сохраняем код верификации
+    const verificationCode = generateVerificationCode();
+    await this.tokenService.setVerificationCode(user.email, verificationCode);
+
+    // Отправляем письмо с кодом верификации
+    try {
+      await this.emailService.sendVerificationCode(
+        user.email,
+        verificationCode,
+        {
+          name: user.name,
+          expires: 15,
+          locale: user.locale,
+        }
+      );
+    } catch (error) {
+      // Логируем ошибку, но не блокируем регистрацию
+      console.error('Failed to send verification email:', error);
+    }
+
     const tokens = await this.tokenService.generateTokens({
       sub: user.id,
       email: user.email,
       roles: normalizedRoles,
     });
-    
+
+    // Возвращаем информацию о необходимости верификации
     return {
       user: {
         id: user.id,

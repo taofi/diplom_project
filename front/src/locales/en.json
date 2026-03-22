@@ -117,7 +117,24 @@
     "canOnlyUpdateOwnProducts": "You can only update your own products",
     "productNotFound": "Product not found",
     "validationFailed": "Validation failed",
-    "requiredField": "Required field"
+    "requiredField": "Required field",
+    "addToCartFailed": "Failed to add to cart",
+    "removeItemFailed": "Failed to remove item",
+    "updateQuantityFailed": "Failed to update quantity",
+    "clearCartFailed": "Failed to clear cart"
+  },
+  "cart": {
+    "empty": "Your cart is empty",
+    "emptyDescription": "Add some products to get started",
+    "continueShopping": "Continue Shopping",
+    "clearCart": "Clear Cart",
+    "itemRemoved": "Item removed from cart",
+    "cartCleared": "Cart cleared",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "items": "Items",
+    "total": "Total",
+    "checkout": "Proceed to Checkout"
   },
   "home": {
     "welcome": "Welcome to Our Platform",

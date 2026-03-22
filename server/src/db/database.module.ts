@@ -73,6 +73,7 @@ export const SEQUELIZE_TOKEN = 'SEQUELIZE';
         models,
         autoLoadModels: true,
         synchronize: true,
+        alter: true,
         logging: process.env.NODE_ENV === 'development' ? console.log : false,
       }),
     }),

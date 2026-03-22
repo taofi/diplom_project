@@ -3,15 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
+import { useCart } from '@/context/cart/CartContext';
 import { getProductById } from '@/lib/api-product';
 import { Gallery, ProductSidebar, ProductInfo } from '@/components/product';
 import { Spinner } from '@/components/ui';
+import { toastSuccess, toastError } from '@/lib/toast';
 import type { ProductResponse, LicenseInfo } from '@/types/product';
 
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
   const { t, locale } = useI18n();
+  const { addItem } = useCart();
 
   const productId = Number(params.id);
 
@@ -55,18 +58,19 @@ export default function ProductPage() {
   };
 
   const handleAddToCart = async () => {
+    if (!selectedLicense || !product) return;
+    
     setIsAddingToCart(true);
     try {
-      // TODO: Добавить API для корзины
-      // await addToCart({ productId, licenseTypeId: selectedLicense.id });
-      console.log('Added to cart:', {
-        productId,
-        licenseId: selectedLicense?.id,
-        price: selectedLicense?.price,
+      await addItem({
+        productId: product.id,
+        licenseTypeId: selectedLicense.licenseTypeId,
+        quantity: 1,
       });
-      alert(t('product.addedToCart') || 'Added to cart!');
+      toastSuccess(t('product.addedToCart') || 'Added to cart!');
     } catch (err) {
       console.error('Failed to add to cart:', err);
+      toastError(t('errors.addToCartFailed') || 'Failed to add to cart');
     } finally {
       setIsAddingToCart(false);
     }

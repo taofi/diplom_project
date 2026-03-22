@@ -2,11 +2,13 @@
 
 import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
+import { useCart } from '@/context/cart/CartContext';
 import { NavButton } from './NavButton';
 
 export function UserActions() {
   const { user, isAuthenticated, isAdminOrAuthor } = useAuth();
   const { t, locale } = useI18n();
+  const { count: cartCount } = useCart();
   
   // Check if user is admin (not just author)
   const isAdmin = user?.roles?.includes('admin') || false;
@@ -61,7 +63,7 @@ export function UserActions() {
       <NavButton 
         href="/cart" 
         text={t('nav.cart')}
-        badge={0}
+        badge={cartCount}
         icon={
           <svg 
             width="24" 
