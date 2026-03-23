@@ -85,7 +85,7 @@ export function PurchasedProducts() {
                     <span className="font-medium">{t('profile.license')}:</span> {product.licenseTypeName}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {t('profile.purchased')}: {new Date(product.purchasedAt).toLocaleDateString()}
+                    {t('profile.purchased')}: {product.purchasedAt ? new Date(product.purchasedAt).toLocaleDateString() : '-'}
                   </p>
                 </div>
               </div>

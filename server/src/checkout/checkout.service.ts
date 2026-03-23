@@ -148,6 +148,7 @@ export class CheckoutService {
               user_id: userContext.userId,
               product_license_id: productLicense.id,
               order_id: newOrder.id,
+              purchased_at: new Date(),
             }, { transaction });
           }
         }

@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { StreamableFile } from '@nestjs/common';
 import {
   FileUploadResult,
   FileDeleteResult,
@@ -472,5 +473,28 @@ export class FileService {
     }
 
     return filename;
+  }
+
+  /**
+   * Получить поток файла для скачивания
+   * @param fileUrl - URL файла (например, "files/product/26/IMG_20250414_200355.jpg")
+   */
+  getFileStream(fileUrl: string): { stream: NodeJS.ReadableStream; filename: string; mimeType: string } {
+    const fullPath = this.getFullPath(fileUrl);
+    
+    if (!fullPath || !fs.existsSync(fullPath)) {
+      throw new NotFoundException(`File not found: ${fileUrl}`);
+    }
+    
+    // Извлекаем имя файла
+    const filename = path.basename(fullPath);
+    
+    // Определяем MIME тип
+    const mimeType = this.getMimeType(filename);
+    
+    // Создаём ReadStream (Node.js stream)
+    const stream = fs.createReadStream(fullPath);
+    
+    return { stream, filename, mimeType };
   }
 }

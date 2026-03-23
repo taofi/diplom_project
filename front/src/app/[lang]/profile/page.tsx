@@ -12,7 +12,7 @@ function ProfileContent() {
 
   return (
     <div className="w-full">
-      <div className="max-w-4xl  mx-auto py-12 px-6">
+      <div className="max-w-4xl  mt-20 mx-auto py-12 px-6">
         <Card padding="lg">
           <h2 className="text-2xl font-bold mb-6 text-center text-primary">
             {t('profile.profileInformation')}

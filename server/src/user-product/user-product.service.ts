@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { StreamableFile } from '@nestjs/common';
-import { createReadStream, existsSync } from 'fs';
-import { join, normalize } from 'path';
+import { createReadStream } from 'fs';
 import { UserProduct } from '../db/models/user-product.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { Product } from '../db/models/product.model';
@@ -12,8 +11,9 @@ import { LicenseTypeTranslation } from '../db/models/license-type-translation.mo
 import { Order } from '../db/models/order.model';
 import { UserProductResponse } from './dto/user-product.dto';
 import { TranslationService } from '../translation/translation.service';
+import { FileService } from '../common/services/file.service';
 
-interface FileInfo {
+interface FileDownloadInfo {
   filename: string;
   mimeType: string;
 }
@@ -36,12 +36,13 @@ export class UserProductService {
     @InjectModel(Order)
     private readonly orderModel: typeof Order,
     private readonly translationService: TranslationService,
+    private readonly fileService: FileService,
   ) {}
 
   /**
    * Получить информацию о файле для скачивания
    */
-  async getFileInfo(userId: number, userProductId: number): Promise<FileInfo | null> {
+  async getFileInfo(userId: number, userProductId: number): Promise<FileDownloadInfo | null> {
     const userProduct = await this.getUserProductById(userId, userProductId);
 
     if (!userProduct) {
@@ -58,34 +59,13 @@ export class UserProductService {
       return null;
     }
 
-    // Извлекаем имя файла из URL
-    const filename = fileUrl.split('/').pop() || 'file';
-
-    // Определяем mime type по расширению файла
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    const mimeTypes: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      svg: 'image/svg+xml',
-      pdf: 'application/pdf',
-      zip: 'application/zip',
-      rar: 'application/x-rar-compressed',
-      '7z': 'application/x-7z-compressed',
-      doc: 'application/msword',
-      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      xls: 'application/vnd.ms-excel',
-      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ppt: 'application/vnd.ms-powerpoint',
-      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    };
-
-    return {
-      filename,
-      mimeType: mimeTypes[ext] || 'application/octet-stream',
-    };
+    // Делегируем получение информации файла в FileService
+    try {
+      const { filename, mimeType } = this.fileService.getFileStream(fileUrl);
+      return { filename, mimeType };
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -136,7 +116,7 @@ export class UserProductService {
         licenseTypeId: licenseType.id,
         licenseTypeName: licenseTypeTranslation?.name || `License #${licenseType.id}`,
         price: Number(productLicense.price),
-        purchasedAt: up.purchased_at,
+        purchasedAt: up.purchased_at || new Date(),
         fileUrl: product.file_url,
       });
     }
@@ -181,18 +161,19 @@ export class UserProductService {
       throw new NotFoundException('File not available for this product');
     }
 
-    // Файлы хранятся в server/files/product/
-    // fileUrl имеет формат "files/product/{id}/{filename}"
-    // Используем normalize для кроссплатформенной совместимости
-    const filePath = normalize(join(process.cwd(), fileUrl));
-
-    // Проверяем, что файл существует перед созданием потока
-    if (!existsSync(filePath)) {
+    // Делегируем получение потока файла в FileService
+    // Сначала проверяем, что файл существует
+    if (!this.fileService.fileExists(fileUrl)) {
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
-
-    // Создаём ReadStream и возвращаем через StreamableFile
-    const readStream = createReadStream(filePath);
+    
+    // Получаем полный путь и создаём поток
+    const fullPath = this.fileService.getFullPath(fileUrl);
+    if (!fullPath) {
+      throw new NotFoundException(`File not found: ${fileUrl}`);
+    }
+    
+    const readStream = createReadStream(fullPath);
     return new StreamableFile(readStream);
   }
 }

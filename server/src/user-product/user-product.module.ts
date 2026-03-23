@@ -11,6 +11,7 @@ import { UserProductController } from './user-product.controller';
 import { UserProductService } from './user-product.service';
 import { TranslationModule } from '../translation/translation.module';
 import { AuthModule } from '../auth/auth.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     TranslationModule,
     AuthModule,
+    CommonModule,
   ],
   controllers: [UserProductController],
   providers: [UserProductService],
