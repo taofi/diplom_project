@@ -30,6 +30,14 @@ import emailConfig from './config/email.config';
       rootPath: join(__dirname, '..', 'public'),
       serveRoot: '/public',
     }),
+    // Serve static files from server/files for product downloads
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'files'),
+      serveRoot: '/files',
+      serveStaticOptions: {
+        fallthrough: true,
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: 'src/config/.env',

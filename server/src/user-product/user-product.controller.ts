@@ -5,8 +5,11 @@ import {
   ParseIntPipe,
   UseGuards,
   Headers,
+  NotFoundException,
+  Res,
   StreamableFile,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { UserProductService } from './user-product.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
@@ -35,9 +38,21 @@ export class UserProductController {
   @Get(':id/download')
   async downloadProduct(
     @CurrentUserId() userId: number,
-    @Param('id', ParseIntPipe) productId: number,
+    @Param('id', ParseIntPipe) userProductId: number,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    return this.userProductService.downloadProduct(userId, productId);
+    // Проверяем, что пользователь приобрёл этот товар
+    const fileInfo = await this.userProductService.getFileInfo(userId, userProductId);
+    if (!fileInfo) {
+      throw new NotFoundException('Product not found or not purchased');
+    }
+
+    // Устанавливаем заголовки
+    res.setHeader('Content-Disposition', `attachment; filename="${fileInfo.filename}"`);
+    res.setHeader('Content-Type', fileInfo.mimeType || 'application/octet-stream');
+    
+    // Получаем StreamableFile
+    return this.userProductService.downloadProduct(userId, userProductId);
   }
 
   private normalizeLocale(locale?: string): string {

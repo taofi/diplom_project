@@ -30,7 +30,9 @@ export function PurchasedProducts() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${product.productName}.zip`;
+      // Используем реальное имя файла из fileUrl, сохраняя оригинальное расширение
+      const fileName = product.fileUrl.split('/').pop() || `${product.productName}.jpg`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
