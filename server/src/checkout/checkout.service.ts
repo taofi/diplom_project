@@ -138,9 +138,9 @@ export class CheckoutService {
         return;
       }
 
-      // Отправляем email с файлами
-      await this.emailService.sendOrderConfirmationWithFiles(email, orderId, locale);
-      console.log(`Order confirmation email sent for order ${orderId} to ${email}`);
+      // Отправляем email с файлами в фоне
+      this.emailService.sendOrderConfirmationWithFiles(email, orderId, locale);
+      console.log(`Order confirmation email sending in background for order ${orderId} to ${email}`);
     } catch (error) {
       // Логируем ошибку, но не блокируем успешный checkout
       console.error(`Failed to send order confirmation email for order ${orderId}:`, error);

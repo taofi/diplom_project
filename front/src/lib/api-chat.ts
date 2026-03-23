@@ -1,0 +1,117 @@
+import api from '../lib/api';
+import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, TempChat } from '../types/chat';
+
+// Re-export types for convenience
+export type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, TempChat } from '../types/chat';
+
+// API endpoints
+const CHAT_API = '/chat';
+
+export const chatApi = {
+  // Temp chat (Redis)
+  initTempChat: async (sellerId: number, productId?: number, userProductId?: number): Promise<TempChat> => {
+    const response = await api.post(`${CHAT_API}/rooms/init`, {
+      sellerId,
+      productId,
+      userProductId,
+    });
+    return response.data;
+  },
+
+  getTempChat: async (id: string): Promise<TempChat | null> => {
+    const response = await api.get(`${CHAT_API}/rooms/temp/${id}`);
+    return response.data;
+  },
+
+  deleteTempChat: async (id: string): Promise<void> => {
+    await api.delete(`${CHAT_API}/rooms/temp/${id}`);
+  },
+
+  // Chat rooms
+  getChatRooms: async (page = 1, limit = 20): Promise<{ rows: ChatRoom[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/rooms`, { params: { page, limit } });
+    return response.data;
+  },
+
+  getChatRoom: async (id: number, page = 1, limit = 50): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
+    const response = await api.get(`${CHAT_API}/rooms/${id}`, { params: { page, limit } });
+    return response.data;
+  },
+
+  // Messages
+  getMessages: async (chatRoomId: number, page = 1, limit = 50): Promise<{ rows: ChatMessage[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/messages`, { params: { page, limit } });
+    return response.data;
+  },
+
+  sendMessage: async (chatRoomId: number, content: string, type = 'text', mediaUrl?: string): Promise<ChatMessage> => {
+    const response = await api.post(`${CHAT_API}/messages`, {
+      chatRoomId,
+      content,
+      type,
+      mediaUrl,
+    });
+    return response.data;
+  },
+
+  // Offers
+  createOffer: async (
+    chatRoomId: number,
+    sellerId: number,
+    description: string,
+    price: number,
+    deadline: string,
+  ): Promise<ChatOffer> => {
+    const response = await api.post(`${CHAT_API}/offers`, {
+      chatRoomId,
+      sellerId,
+      description,
+      price,
+      deadline,
+    });
+    return response.data;
+  },
+
+  acceptOffer: async (offerId: number): Promise<CustomOrder> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/accept`);
+    return response.data;
+  },
+
+  declineOffer: async (offerId: number): Promise<ChatOffer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/decline`);
+    return response.data;
+  },
+
+  getChatOffers: async (chatRoomId: number): Promise<ChatOffer[]> => {
+    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/offers`);
+    return response.data;
+  },
+
+  // Custom orders
+  getUserOrders: async (page = 1, limit = 20): Promise<{ rows: CustomOrder[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/orders`, { params: { page, limit } });
+    return response.data;
+  },
+
+  getOrder: async (id: number): Promise<CustomOrder> => {
+    const response = await api.get(`${CHAT_API}/orders/${id}`);
+    return response.data;
+  },
+
+  addRevision: async (orderId: number, fileUrl: string, comment?: string): Promise<void> => {
+    await api.post(`${CHAT_API}/orders/${orderId}/revision`, {
+      fileUrl,
+      comment,
+    });
+  },
+
+  approveOrder: async (orderId: number): Promise<CustomOrder> => {
+    const response = await api.post(`${CHAT_API}/orders/${orderId}/approve`);
+    return response.data;
+  },
+
+  requestRevision: async (orderId: number): Promise<CustomOrder> => {
+    const response = await api.post(`${CHAT_API}/orders/${orderId}/revision-request`);
+    return response.data;
+  },
+};

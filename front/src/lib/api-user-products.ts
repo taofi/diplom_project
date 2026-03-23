@@ -14,6 +14,7 @@ export interface UserProductResponse {
   price: number;
   purchasedAt: string;
   fileUrl: string;
+  sellerId: number; // ID автора товара для создания чата
 }
 
 /**

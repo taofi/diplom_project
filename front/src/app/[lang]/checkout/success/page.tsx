@@ -57,10 +57,6 @@ export default function CheckoutSuccessPage() {
               <span className="text-green-500 mr-2">✓</span>
               {t('checkout.step2') || 'Your purchased products will be available in your profile'}
             </li>
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">✓</span>
-              {t('checkout.step3') || 'Download links will be sent to your email'}
-            </li>
           </ul>
         </div>
 

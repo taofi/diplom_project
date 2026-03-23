@@ -1,9 +1,35 @@
 'use client';
 
+import { useState } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
+import { chatApi } from '@/lib/api-chat';
+import { useAuth } from '@/context/auth/AuthContext';
+import { Button } from '@/components/ui';
+import { useRouter } from 'next/navigation';
 
 export default function ContactsPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleStartGeneralChat = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Для общего чата не указываем productId
+      const tempChat = await chatApi.initTempChat(0);
+      router.push(`/chat?tempChatId=${tempChat.id}`);
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 mt-20">
@@ -63,8 +89,28 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Contact Form */}
+        {/* Chat Section */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary">
+          <h2 className="text-xl font-semibold text-text mb-6">
+            Direct Contact
+          </h2>
+          
+          <p className="text-text/70 mb-6">
+            Have questions or need consultation? Contact us directly via chat.
+          </p>
+
+          <Button
+            onClick={handleStartGeneralChat}
+            disabled={loading}
+            variant="primary"
+            className="w-full"
+          >
+            {loading ? 'Loading...' : 'Start Chat'}
+          </Button>
+        </div>
+
+        {/* Contact Form */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary md:col-span-2">
           <h2 className="text-xl font-semibold text-text mb-6">
             {t('common.submit')}
           </h2>

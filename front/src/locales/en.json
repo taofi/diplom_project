@@ -71,6 +71,7 @@
     "zoom": "Zoom",
     "rotate": "Rotate",
     "clickToEdit": "Click to edit",
+    "contactAuthor": "Contact Author",
     "errors": {
       "nameRequired": "Name is required",
       "updateFailed": "Failed to update profile",
@@ -233,9 +234,7 @@
         "author": "Author",
         "user": "User",
         "none": "No roles"
-      }
-    },
-    "common": {
+      },
       "save": "Save",
       "cancel": "Cancel",
       "delete": "Delete",

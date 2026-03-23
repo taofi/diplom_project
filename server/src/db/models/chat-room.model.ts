@@ -15,6 +15,7 @@ import {
 } from 'sequelize-typescript';
 import { User } from './user.model';
 import { Product } from './product.model';
+import { UserProduct } from './user-product.model';
 import { ChatMessage } from './chat-message.model';
 import { ChatOffer } from './chat-offer.model';
 import { CustomOrder } from './custom-order.model';
@@ -44,6 +45,10 @@ export class ChatRoom extends Model {
   @Column(DataType.INTEGER)
   declare product_id: number | null; // NULL = общий чат без товара
 
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  declare user_product_id: number | null; // Связь с купленным товаром
+
   @Default(ChatRoomStatus.OPEN)
   @Column(DataType.ENUM(...Object.values(ChatRoomStatus)))
   declare status: ChatRoomStatus;
@@ -66,6 +71,9 @@ export class ChatRoom extends Model {
 
   @BelongsTo(() => Product, 'product_id')
   declare product: Product;
+
+  @BelongsTo(() => UserProduct, 'user_product_id')
+  declare user_product: UserProduct;
 
   @HasMany(() => ChatMessage, 'chat_room_id')
   declare messages: ChatMessage[];

@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { getUserProducts, downloadProduct, UserProductResponse } from '@/lib/api-user-products';
+import { chatApi } from '@/lib/api-chat';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Card, Button } from '@/components/ui';
 import { Spinner } from '@/components/ui/Spinner';
 import { ServerImage } from '@/components/Image';
+import { useRouter } from 'next/navigation';
 
 export function PurchasedProducts() {
   const { t } = useI18n();
+  const router = useRouter();
   const [products, setProducts] = useState<UserProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [contactingId, setContactingId] = useState<number | null>(null);
 
   useEffect(() => {
     getUserProducts()
@@ -42,6 +46,24 @@ export function PurchasedProducts() {
       console.error('Failed to download product:', error);
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleContactAuthor = async (product: UserProductResponse) => {
+    try {
+      setContactingId(product.id);
+      // Инициализируем временный чат с автором
+      const tempChat = await chatApi.initTempChat(
+        product.sellerId,
+        product.productId,
+        product.id
+      );
+      // Переходим на страницу чатов
+      router.push(`/chat?tempChatId=${tempChat.id}`);
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+    } finally {
+      setContactingId(null);
     }
   };
 
@@ -107,6 +129,20 @@ export function PurchasedProducts() {
                   </span>
                 ) : (
                   t('profile.download')
+                )}
+              </Button>
+              <Button
+                onClick={() => handleContactAuthor(product)}
+                disabled={contactingId === product.id}
+                variant="secondary"
+                className="ml-2 flex-shrink-0"
+              >
+                {contactingId === product.id ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner size="sm" />
+                  </span>
+                ) : (
+                  t('profile.contactAuthor')
                 )}
               </Button>
             </div>

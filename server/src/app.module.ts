@@ -19,6 +19,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { EmailModule } from './email/email.module';
 import { TranslationModule } from './translation/translation.module';
 import { UserProductModule } from './user-product/user-product.module';
+import { ChatModule } from './chat/chat.module';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
@@ -58,6 +59,7 @@ import emailConfig from './config/email.config';
     UserModule,
     TranslationModule,
     UserProductModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
