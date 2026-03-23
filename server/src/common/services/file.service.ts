@@ -166,6 +166,45 @@ export class FileService {
   }
 
   /**
+   * Сохранить аватар пользователя в public/user/{userId}/
+   * @param file - Загруженный файл
+   * @param userId - ID пользователя
+   */
+  saveUserAvatar(file: MulterFile, userId: number): FileUploadResult {
+    const targetDir = path.join('public', 'user', userId.toString());
+    this.ensureDirectory(targetDir);
+
+    // Всегда сохраняем как avatar.{ext}
+    const ext = path.extname(file.originalname) || '.png';
+    const filename = `avatar${ext}`;
+    const filePath = path.join(targetDir, filename);
+
+    // Удаляем старый аватар если есть
+    const existingFiles = fs.readdirSync(targetDir).filter(f => f.startsWith('avatar'));
+    for (const existingFile of existingFiles) {
+      if (existingFile !== filename) {
+        fs.unlinkSync(path.join(targetDir, existingFile));
+      }
+    }
+
+    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
+    const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
+    if (!fileData) {
+      throw new Error('No file data available: both buffer and path are undefined');
+    }
+    fs.writeFileSync(filePath, fileData);
+
+    return {
+      filename,
+      originalName: file.originalname,
+      path: filePath,
+      url: `/user/${userId}/${filename}`,
+      size: file.size,
+      mimeType: file.mimetype,
+    };
+  }
+
+  /**
    * Переместить файл из одной папки в другую
    * @param fromPath - Текущий путь к файлу (относительный или абсолютный)
    * @param toDir - Целевая директория

@@ -3,10 +3,13 @@ import {
   Controller,
   Post,
   Delete,
+  Patch,
   Body,
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './uploads.service';
@@ -142,5 +145,48 @@ export class UploadsController {
   clearTempFolder(@CurrentUserId() userId: number) {
     this.uploadsService.clearTempFolder(userId);
     return { success: true };
+  }
+
+  /**
+   * Загрузить аватар пользователя
+   * Сохраняет в public/user/{userId}/avatar.{ext}
+   */
+  @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './tmp',
+        filename: (
+          _req: Request,
+          file: MulterFile,
+          cb: (error: Error | null, filename: string) => void,
+        ) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  uploadAvatar(
+    @CurrentUserId() userId: number,
+    @UploadedFile() file: MulterFile,
+  ) {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    const result = this.uploadsService.uploadAvatar(userId, {
+      originalname: file.originalname,
+      buffer: file.buffer,
+      size: file.size,
+      mimetype: file.mimetype,
+      path: file.path,
+      filename: file.filename,
+    });
+
+    return result;
   }
 }

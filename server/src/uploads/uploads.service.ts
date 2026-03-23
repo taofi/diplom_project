@@ -96,6 +96,25 @@ export class UploadsService {
   }
 
   /**
+   * Загрузить аватар пользователя
+   * @param userId - ID пользователя
+   * @param file - Загруженный файл
+   */
+  uploadAvatar(userId: number, file: MulterFile): FileUploadResult {
+    // Проверить тип файла (только изображения)
+    if (!file?.mimetype?.startsWith('image/')) {
+      throw new BadRequestException('Only image files are allowed for avatar');
+    }
+
+    // Проверить размер (макс 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      throw new BadRequestException('Avatar file size must be less than 2MB');
+    }
+
+    return this.fileService.saveUserAvatar(file, userId);
+  }
+
+  /**
    * Проверить, является ли URL временным
    */
   isTempUrl(url: string): boolean {

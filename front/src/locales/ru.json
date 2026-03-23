@@ -66,7 +66,17 @@
     "license": "Лицензия",
     "purchased": "Приобретено",
     "download": "Скачать",
-    "downloading": "Загрузка..."
+    "downloading": "Загрузка...",
+    "changeAvatar": "Изменить аватар",
+    "zoom": "Масштаб",
+    "clickToEdit": "Нажмите для редактирования",
+    "errors": {
+      "nameRequired": "Имя обязательно",
+      "updateFailed": "Не удалось обновить профиль",
+      "uploadFailed": "Не удалось загрузить аватар",
+      "invalidFileType": "Можно загружать только изображения",
+      "fileTooLarge": "Файл слишком большой (макс 2MB)"
+    }
   },
   "catalog": {
     "title": "Каталог",

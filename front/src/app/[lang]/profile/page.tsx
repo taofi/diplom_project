@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button, Card } from '@/components/ui';
 import { PurchasedProducts } from '@/components/profile/PurchasedProducts';
+import { AvatarEditor, UserInfo } from '@/components/profile';
 
 function ProfileContent() {
   const { user, logout, isAdmin } = useAuth();
@@ -12,52 +13,47 @@ function ProfileContent() {
 
   return (
     <div className="w-full">
-      <div className="max-w-4xl  mt-20 mx-auto py-12 px-6">
-        <Card padding="lg">
-          <h2 className="text-2xl font-bold mb-6 text-center text-primary">
-            {t('profile.profileInformation')}
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="font-medium text-gray-600">{t('profile.name')}:</span>
-              <span className="text-gray-900">{user?.name}</span>
-            </div>
-            
-            <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="font-medium text-gray-600">{t('profile.email')}:</span>
-              <span className="text-gray-900">{user?.email}</span>
-            </div>
-            
-            <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="font-medium text-gray-600">{t('profile.role')}:</span>
-              <span className="text-gray-900">{user?.roles?.join(', ')}</span>
-            </div>
-            
-            <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="font-medium text-gray-600">{t('profile.locale')}:</span>
-              <span className="text-gray-900">{user?.locale}</span>
-            </div>
-          </div>
+      <div className="max-w-6xl mt-20 mx-auto py-12 px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Левая колонка - профиль */}
+          <div className="lg:col-span-1">
+            <Card padding="lg">
+              <h2 className="text-2xl font-bold mb-6 text-center text-primary">
+                {t('profile.profileInformation')}
+              </h2>
+              
+              {/* Аватар */}
+              <AvatarEditor currentAvatar={user?.avatar_url} />
+              
+              {/* Имя и email */}
+              <div className="mt-6">
+                <UserInfo />
+              </div>
 
-          <div className="mt-8 text-center">
-            {isAdmin && (
-              <a
-                href={`/${locale}/admin/products`}
-                className="inline-block mr-4"
-              >
-                <Button variant="primary">
-                  {t('nav.dashboard')}
+              {/* Кнопки действий */}
+              <div className="mt-8 text-center space-y-3">
+                {isAdmin && (
+                  <a
+                    href={`/${locale}/admin/products`}
+                    className="block"
+                  >
+                    <Button variant="primary">
+                      {t('nav.dashboard')}
+                    </Button>
+                  </a>
+                )}
+                <Button variant="danger" onClick={logout}>
+                  {t('auth.logout')}
                 </Button>
-              </a>
-            )}
-            <Button variant="danger" onClick={logout}>
-              {t('auth.logout')}
-            </Button>
+              </div>
+            </Card>
           </div>
-        </Card>
 
-        <PurchasedProducts />
+          {/* Правая колонка - покупки */}
+          <div className="lg:col-span-2">
+            <PurchasedProducts />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -44,6 +44,35 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 /**
+ * Обновить профиль пользователя
+ * @param data - данные для обновления (name, avatar_url)
+ */
+export const updateProfile = async (data: {
+  name?: string;
+  avatar_url?: string;
+}): Promise<User> => {
+  const response = await api.patch<User>('/auth/profile', data);
+  return response.data;
+};
+
+/**
+ * Загрузить аватар пользователя
+ * @param file - файл изображения
+ */
+export const uploadAvatar = async (file: File): Promise<{ url: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post<{ url: string }>('/uploads/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};
+
+/**
  * Обновить токены через refresh token
  * Использует прямой fetch для избежания циклических зависимостей
  */

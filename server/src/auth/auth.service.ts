@@ -220,6 +220,55 @@ export class AuthService {
     await this.tokenService.revokeRefreshToken(userId.toString());
   }
 
+  async updateProfile(
+    userId: number,
+    data: { name?: string; avatar_url?: string },
+  ): Promise<{
+    id: number;
+    email: string;
+    name: string;
+    roles: string[];
+    locale: string;
+    avatar_url: string | null;
+    created_at: Date;
+  }> {
+    const user = await this.userModel.findByPk(userId, {
+      include: [{ model: this.userRoleModel, as: 'user_roles' }],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Обновляем только переданные поля
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+    if (data.avatar_url !== undefined) {
+      updateData.avatar_url = data.avatar_url;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await user.update(updateData);
+    }
+
+    // Нормализуем роли
+    const normalizedRoles = normalizeRoles(
+      user.user_roles?.map((ur) => ur.role),
+    );
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: normalizedRoles,
+      locale: user.locale,
+      avatar_url: user.avatar_url,
+      created_at: user.created_at,
+    };
+  }
+
   async getProfile(userId: number): Promise<User> {
     const user = await this.userModel.findByPk(userId, {
       include: [{ model: this.userRoleModel, as: 'user_roles' }],
