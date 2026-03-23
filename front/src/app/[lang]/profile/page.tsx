@@ -4,6 +4,7 @@ import { useAuth } from '@/context/auth/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button, Card } from '@/components/ui';
+import { PurchasedProducts } from '@/components/profile/PurchasedProducts';
 
 function ProfileContent() {
   const { user, logout, isAdmin } = useAuth();
@@ -55,6 +56,8 @@ function ProfileContent() {
             </Button>
           </div>
         </Card>
+
+        <PurchasedProducts />
       </div>
     </div>
   );

@@ -15,8 +15,10 @@ import { UploadsModule } from './uploads/uploads.module';
 import { UserModule } from './user/user.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { CheckoutModule } from './checkout/checkout.module';
 import { EmailModule } from './email/email.module';
 import { TranslationModule } from './translation/translation.module';
+import { UserProductModule } from './user-product/user-product.module';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
@@ -40,12 +42,14 @@ import emailConfig from './config/email.config';
     EmailModule,
     CartModule,
     OrderModule,
+    CheckoutModule,
     ProductModule,
     CategoryModule,
     LicenseTypeModule,
     UploadsModule,
     UserModule,
     TranslationModule,
+    UserProductModule,
   ],
   controllers: [AppController],
   providers: [AppService],

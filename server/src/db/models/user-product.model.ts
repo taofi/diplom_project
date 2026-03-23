@@ -7,7 +7,6 @@ import {
   AutoIncrement,
   ForeignKey,
   BelongsTo,
-  CreatedAt,
 } from 'sequelize-typescript';
 import { User } from './user.model';
 import { ProductLicense } from './product-license.model';
@@ -32,7 +31,7 @@ export class UserProduct extends Model {
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare order_id: number;
 
-  @CreatedAt
+  @Column({ type: DataType.DATE, field: 'purchased_at' })
   declare purchased_at: Date;
 
   @BelongsTo(() => User)

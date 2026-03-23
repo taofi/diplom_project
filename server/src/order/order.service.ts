@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Sequelize } from 'sequelize';
 import { Order, OrderStatus } from '../db/models/order.model';
 import { OrderItem } from '../db/models/order-item.model';
 import { CartService } from '../cart/cart.service';
@@ -45,8 +44,11 @@ export class OrderService {
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
     private readonly cartService: CartService,
-    private readonly sequelize: Sequelize,
   ) {}
+
+  private get sequelize() {
+    return this.orderModel.sequelize!;
+  }
 
   /**
    * Создать заказ из корзины
@@ -61,9 +63,9 @@ export class OrderService {
       throw new NotFoundException('Cart is empty');
     }
 
-    // Рассчитываем общую сумму (quantity всегда 1)
+    // Рассчитываем общую сумму (quantity всегда 1, приводим к числу)
     const totalAmount = cartItems.reduce((sum, item) => {
-      return sum + (item.product?.price || 0);
+      return sum + Number(item.product?.price || 0);
     }, 0);
 
     // Создаём заказ в транзакции
@@ -88,7 +90,7 @@ export class OrderService {
           await this.orderItemModel.create({
             order_id: newOrder.id,
             product_license_id: productLicense.id,
-            price_at_purchase: productLicense.price,
+            price_at_purchase: Number(productLicense.price),
           }, { transaction });
         }
       }
@@ -101,7 +103,11 @@ export class OrderService {
       // Загружаем заказ с элементами
       return this.getOrderById(newOrder.id);
     } catch (error) {
-      await transaction.rollback();
+      try {
+        await transaction.rollback();
+      } catch {
+        // Игнорируем ошибку rollback - транзакция уже могла быть зафиксирована
+      }
       throw error;
     }
   }
@@ -118,8 +124,10 @@ export class OrderService {
             {
               model: this.productLicenseModel,
               include: [
-                { model: Product },
-                { model: ProductTranslation },
+                {
+                  model: Product,
+                  include: [{ model: ProductTranslation }],
+                },
               ],
             },
           ],
@@ -147,8 +155,10 @@ export class OrderService {
             {
               model: this.productLicenseModel,
               include: [
-                { model: Product },
-                { model: ProductTranslation },
+                {
+                  model: Product,
+                  include: [{ model: ProductTranslation }],
+                },
               ],
             },
           ],

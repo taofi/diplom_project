@@ -60,7 +60,13 @@
     "name": "Name",
     "email": "Email",
     "role": "Role",
-    "locale": "Language"
+    "locale": "Language",
+    "myPurchases": "My Purchases",
+    "noPurchases": "You don't have any purchases yet",
+    "license": "License",
+    "purchased": "Purchased",
+    "download": "Download",
+    "downloading": "Downloading..."
   },
   "catalog": {
     "title": "Catalog",
@@ -352,5 +358,33 @@
     "section3Text": "You can disable cookies in your browser settings. However, this may affect website functionality.",
     "section4Title": "4. Third-Party Services",
     "section4Text": "We may use third-party analytics services such as Google Analytics, which may also set cookies."
+  },
+  "checkout": {
+    "title": "Checkout",
+    "cartEmpty": "Your cart is empty",
+    "emailRequired": "Email is required to place an order",
+    "orderSuccess": "Order placed successfully!",
+    "orderFailed": "Failed to place order",
+    "orderDetails": "Order Details",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailNote": "We will send order details to this email",
+    "authenticatedNote": "Your order will be associated with your account",
+    "items": "Items",
+    "summary": "Summary",
+    "subtotal": "Subtotal",
+    "itemsCount": "Items count",
+    "total": "Total",
+    "placeOrder": "Place Order",
+    "termsNote": "By placing an order, you agree to our terms and conditions",
+    "continueShopping": "Continue Shopping",
+    "successTitle": "Order Placed Successfully!",
+    "successMessage": "Thank you for your purchase. We have received your order.",
+    "orderNumber": "Order Number",
+    "whatHappensNext": "What happens next?",
+    "step1": "You will receive a confirmation email with your order details",
+    "step2": "Your purchased products will be available in your profile",
+    "step3": "Download links will be sent to your email",
+    "goToProfile": "Go to Profile"
   }
 }

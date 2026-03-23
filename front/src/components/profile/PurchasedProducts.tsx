@@ -1,0 +1,111 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getUserProducts, downloadProduct, UserProductResponse } from '@/lib/api-user-products';
+import { useI18n } from '@/context/i18n/I18nContext';
+import { Card, Button } from '@/components/ui';
+import { Spinner } from '@/components/ui/Spinner';
+
+export function PurchasedProducts() {
+  const { t } = useI18n();
+  const [products, setProducts] = useState<UserProductResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    getUserProducts()
+      .then(setProducts)
+      .catch((error) => {
+        console.error('Failed to load purchased products:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const handleDownload = async (product: UserProductResponse) => {
+    try {
+      setDownloadingId(product.id);
+      const blob = await downloadProduct(product.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${product.productName}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to download product:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card padding="lg" className="mt-6">
+        <div className="flex justify-center py-8">
+          <Spinner />
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card padding="lg" className="mt-6">
+      <h3 className="text-xl font-bold mb-4 text-primary">
+        {t('profile.myPurchases')}
+      </h3>
+      
+      {products.length === 0 ? (
+        <p className="text-gray-500">{t('profile.noPurchases')}</p>
+      ) : (
+        <div className="space-y-4">
+          {products.map((product) => (
+            <div 
+              key={product.id} 
+              className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0"
+            >
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                {product.productImage && (
+                  <img 
+                    src={product.productImage} 
+                    alt={product.productName} 
+                    className="w-16 h-16 object-cover rounded flex-shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <h4 className="font-medium text-gray-900 truncate">
+                    {product.productName}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-medium">{t('profile.license')}:</span> {product.licenseTypeName}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {t('profile.purchased')}: {new Date(product.purchasedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => handleDownload(product)}
+                disabled={downloadingId === product.id}
+                variant="primary"
+                className="ml-4 flex-shrink-0"
+              >
+                {downloadingId === product.id ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner size="sm" />
+                    {t('profile.downloading')}
+                  </span>
+                ) : (
+                  t('profile.download')
+                )}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}

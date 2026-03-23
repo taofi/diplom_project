@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Sequelize } from 'sequelize';
 import { Product, ProductType } from '../../db/models/product.model';
 import { ProductMedia } from '../../db/models/product-media.model';
 import { ProductTranslation } from '../../db/models/product-translation.model';
@@ -23,7 +22,6 @@ import {
 import {
   ProductWithFullRelations,
 } from '../../types/product/product-response.types';
-import { SEQUELIZE_TOKEN } from '../../db/database.module';
 
 type ProductWhereOptions = {
   is_active?: boolean;
@@ -68,9 +66,11 @@ export class ProductRepository {
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
     private readonly fileService: FileService,
-    @Inject(SEQUELIZE_TOKEN)
-    private readonly sequelize: Sequelize,
   ) {}
+
+  private get sequelize() {
+    return this.productModel.sequelize!;
+  }
 
   async findAll(options?: FindOptions<Product>): Promise<Product[]> {
     return this.productModel.findAll(options);
