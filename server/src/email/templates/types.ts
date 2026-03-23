@@ -14,6 +14,7 @@ export interface EmailTemplates {
   welcome: EmailTemplate;
   passwordReset: EmailTemplate;
   purchaseConfirmation: EmailTemplate;
+  accountCreated: EmailTemplate;
 }
 
 /**
@@ -35,6 +36,9 @@ export interface TemplateVariables {
   orderId?: string;
   orderItems?: string;
   totalPrice?: string;
+
+  // accountCreated
+  password?: string;
 }
 
 /**

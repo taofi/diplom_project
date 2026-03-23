@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Sequelize } from 'sequelize';
@@ -8,15 +8,16 @@ import { Order } from '../db/models/order.model';
 import { OrderItem } from '../db/models/order-item.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { Product } from '../db/models/product.model';
+import { UserProduct } from '../db/models/user-product.model';
 import { CartModule } from '../cart/cart.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule,
-    SequelizeModule.forFeature([Order, OrderItem, ProductLicense, Product]),
-    CartModule,
-    AuthModule,
+    SequelizeModule.forFeature([Order, OrderItem, ProductLicense, Product, UserProduct]),
+    forwardRef(() => CartModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [OrderController],
   providers: [

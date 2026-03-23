@@ -1,14 +1,12 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import Cookies from 'js-cookie';
 import { cartApi } from '@/lib/api-cart';
 import { useAuth } from '@/context/auth/AuthContext';
 import type { CartItem, AddToCartPayload } from '@/types/cart/cart.types';
 
-// Константы для куки
-const GUEST_CART_ID_KEY = 'guest_cart_id';
-const GUEST_CART_EXPIRY = 30; // дней
+// Константы для localStorage
+const GUEST_CART_KEY = 'guest_cart';
 
 interface CartContextType {
   items: CartItem[];
@@ -24,70 +22,84 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Генерация UUID
-function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+// Получение корзины из localStorage
+function getLocalCart(): CartItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const data = localStorage.getItem(GUEST_CART_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
   }
-  // Fallback для старых браузеров
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
 }
 
-// Получение или создание guestCartId
-function getOrCreateGuestCartId(): string {
-  let guestCartId = Cookies.get(GUEST_CART_ID_KEY);
-  if (!guestCartId) {
-    guestCartId = generateUUID();
-    Cookies.set(GUEST_CART_ID_KEY, guestCartId, {
-      path: '/',
-      sameSite: 'strict',
-      expires: GUEST_CART_EXPIRY,
-    });
+// Сохранение корзины в localStorage
+function setLocalCart(items: CartItem[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+  } catch (error) {
+    console.error('Failed to save cart to localStorage:', error);
   }
-  return guestCartId;
+}
+
+// Очистка корзины в localStorage
+function clearLocalCart(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(GUEST_CART_KEY);
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [guestCartId, setGuestCartId] = useState<string | null>(null);
+  const [localCartLoaded, setLocalCartLoaded] = useState(false);
   
   const { isAuthenticated } = useAuth();
 
   // Определяем, гость ли мы
   const isGuest = !isAuthenticated;
 
-  // Инициализация guestCartId для неавторизованных пользователей
+  // Загрузка корзины из localStorage при инициализации (для гостей)
   useEffect(() => {
-    if (!isAuthenticated) {
-      const id = getOrCreateGuestCartId();
-      setGuestCartId(id);
-    } else {
-      setGuestCartId(null);
+    if (!isAuthenticated && !localCartLoaded) {
+      const localItems = getLocalCart();
+      setItems(localItems);
+      setCount(localItems.length);
+      setLocalCartLoaded(true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, localCartLoaded]);
 
-  // Загрузка корзины
+  // Загрузка корзины с сервера
   const refreshCart = useCallback(async () => {
     setIsLoading(true);
     try {
       if (isAuthenticated) {
-        // Загружаем корзину пользователя
+        // Не загружаем с сервера если корзина пустая (оптимизация)
+        // Сначала проверим, есть ли локальные данные (могут быть не синхронизированы)
+        const localItems = getLocalCart();
+        
+        if (localItems.length > 0) {
+          // Есть локальные данные - синхронизируем с сервером
+          for (const item of localItems) {
+            await cartApi.addItem({
+              productId: item.productId,
+              licenseTypeId: item.licenseTypeId
+            });
+          }
+          // Очищаем localStorage после синхронизации
+          clearLocalCart();
+        }
+        
+        // Загружаем корзину пользователя с сервера
         const cartItems = await cartApi.getCart();
         setItems(cartItems);
-        // Теперь каждый товар = 1
         setCount(cartItems.length);
-      } else if (guestCartId) {
-        // Загружаем гостевую корзину
-        const guestItems = await cartApi.getGuestCart(guestCartId);
-        setItems(guestItems);
-        // Теперь каждый товар = 1
-        setCount(guestItems.length);
+      } else {
+        // Для гостей - читаем из localStorage
+        const localItems = getLocalCart();
+        setItems(localItems);
+        setCount(localItems.length);
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
@@ -99,35 +111,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, guestCartId]);
+  }, [isAuthenticated]);
 
-  // Загружаем корзину при изменении auth статуса или guestId
+  // Загружаем корзину при изменении auth статуса
   useEffect(() => {
-    if (isAuthenticated || guestCartId) {
+    if (isAuthenticated) {
       refreshCart();
+    } else if (localCartLoaded) {
+      // Для гостей - просто читаем из localStorage
+      const localItems = getLocalCart();
+      setItems(localItems);
+      setCount(localItems.length);
     }
-  }, [refreshCart, isAuthenticated, guestCartId]);
+  }, [isAuthenticated, localCartLoaded, refreshCart]);
 
-  // Синхронизация корзины при входе
-  const syncCart = useCallback(async (guestId: string) => {
+  // Синхронизация корзины при входе (для обратной совместимости)
+  const syncCart = useCallback(async () => {
     try {
-      // Получаем гостевую корзину
-      const guestItems = await cartApi.getGuestCart(guestId);
+      // Получаем корзину из localStorage
+      const localItems = getLocalCart();
       
-      if (guestItems.length > 0) {
-        // Синхронизируем с сервером - добавляем каждый товар в пользовательскую корзину
-        for (const item of guestItems) {
+      if (localItems.length > 0) {
+        // Синхронизируем с сервером - добавляем каждый товар
+        for (const item of localItems) {
           await cartApi.addItem({
             productId: item.productId,
             licenseTypeId: item.licenseTypeId
           });
         }
         
-        // Очищаем гостевую корзину
-        await cartApi.clearGuestCart(guestId);
-        
-        // Удаляем куку
-        Cookies.remove(GUEST_CART_ID_KEY);
+        // Очищаем localStorage
+        clearLocalCart();
       }
     } catch (error) {
       console.error('Failed to sync cart:', error);
@@ -136,20 +150,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Эффект для синхронизации при входе
   useEffect(() => {
-    if (isAuthenticated && guestCartId) {
-      syncCart(guestCartId);
+    if (isAuthenticated && localCartLoaded) {
+      syncCart();
     }
-  }, [isAuthenticated, guestCartId, syncCart]);
+  }, [isAuthenticated, localCartLoaded, syncCart]);
 
   const addItem = async (payload: AddToCartPayload) => {
     setIsLoading(true);
     try {
       if (isAuthenticated) {
         await cartApi.addItem(payload);
-      } else if (guestCartId) {
-        await cartApi.addGuestItem(guestCartId, payload);
+        // Обновляем корзину с сервера
+        const cartItems = await cartApi.getCart();
+        setItems(cartItems);
+        setCount(cartItems.length);
+      } else {
+        // Для гостей - добавляем в localStorage
+        const currentItems = getLocalCart();
+        // Проверяем, не добавлен ли уже этот товар
+        const exists = currentItems.some(
+          item => item.productId === payload.productId && item.licenseTypeId === payload.licenseTypeId
+        );
+        if (!exists) {
+          // Создаём минимальный объект товара для localStorage
+          // product и licenseType будут загружены с сервера при синхронизации
+          const newItem = {
+            id: Date.now(), // Временный ID
+            productId: payload.productId,
+            licenseTypeId: payload.licenseTypeId,
+          } as CartItem;
+          const newItems = [...currentItems, newItem];
+          setLocalCart(newItems);
+          setItems(newItems);
+          setCount(newItems.length);
+        }
       }
-      await refreshCart();
     } finally {
       setIsLoading(false);
     }
@@ -164,10 +199,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       if (isAuthenticated) {
         await cartApi.updateItemQuantity(itemId, quantity);
-      } else if (guestCartId) {
-        await cartApi.updateGuestItemQuantity(guestCartId, itemId, quantity);
+        await refreshCart();
       }
-      await refreshCart();
+      // Для гостей quantity не поддерживается
     } finally {
       setIsLoading(false);
     }
@@ -178,10 +212,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       if (isAuthenticated) {
         await cartApi.removeItem(itemId);
-      } else if (guestCartId) {
-        await cartApi.removeGuestItem(guestCartId, itemId);
+        await refreshCart();
+      } else {
+        // Для гостей - удаляем из localStorage
+        const currentItems = getLocalCart();
+        const newItems = currentItems.filter(item => item.id !== itemId);
+        setLocalCart(newItems);
+        setItems(newItems);
+        setCount(newItems.length);
       }
-      await refreshCart();
     } finally {
       setIsLoading(false);
     }
@@ -192,10 +231,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       if (isAuthenticated) {
         await cartApi.clearCart();
-      } else if (guestCartId) {
-        await cartApi.clearGuestCart(guestCartId);
+        setItems([]);
+        setCount(0);
+      } else {
+        // Для гостей - очищаем localStorage
+        clearLocalCart();
+        setItems([]);
+        setCount(0);
       }
-      await refreshCart();
     } finally {
       setIsLoading(false);
     }

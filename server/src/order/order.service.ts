@@ -6,6 +6,7 @@ import { CartService } from '../cart/cart.service';
 import { ProductLicense } from '../db/models/product-license.model';
 import { Product } from '../db/models/product.model';
 import { ProductTranslation } from '../db/models/product-translation.model';
+import { UserProduct } from '../db/models/user-product.model';
 
 export interface CreateOrderFromCartOptions {
   userId: number;
@@ -43,6 +44,8 @@ export class OrderService {
     private readonly orderItemModel: typeof OrderItem,
     @InjectModel(ProductLicense)
     private readonly productLicenseModel: typeof ProductLicense,
+    @InjectModel(UserProduct)
+    private readonly userProductModel: typeof UserProduct,
     private readonly cartService: CartService,
   ) {}
 
@@ -182,6 +185,76 @@ export class OrderService {
 
     await order.update({ status });
     return this.getOrderById(orderId);
+  }
+
+  /**
+   * Перенести заказы гостя на пользователя по email
+   * Используется при верификации email на checkout
+   */
+  async transferGuestOrdersToUser(userId: number, guestEmail: string): Promise<number> {
+    // Находим все заказы с указанным email гостя
+    const guestOrders = await this.orderModel.findAll({
+      where: {
+        guest_email: guestEmail,
+        user_id: null, // Только заказы без пользователя
+      },
+    });
+
+    if (guestOrders.length === 0) {
+      return 0;
+    }
+
+    // Обновляем user_id для всех найденных заказов
+    // Также нужно создать UserProduct для каждого orderItem
+    const transaction = await this.sequelize.transaction();
+
+    try {
+      for (const order of guestOrders) {
+        // Обновляем заказ - привязываем к пользователю
+        await order.update({ user_id: userId }, { transaction });
+
+        // Для каждого orderItem создаем UserProduct
+        await this.orderItemModel.update(
+          { order_id: order.id }, // Это нужно для поиска orderItems
+          { where: { order_id: order.id }, transaction }
+        );
+
+        // Получаем orderItems и создаем UserProduct
+        const orderItems = await this.orderItemModel.findAll({
+          where: { order_id: order.id },
+        });
+
+        for (const orderItem of orderItems) {
+          // Проверяем, не существует ли уже UserProduct
+          const existingUserProduct = await this.userProductModel.findOne({
+            where: {
+              user_id: userId,
+              product_license_id: orderItem.product_license_id,
+              order_id: order.id,
+            },
+          });
+
+          if (!existingUserProduct) {
+            await this.userProductModel.create({
+              user_id: userId,
+              product_license_id: orderItem.product_license_id,
+              order_id: order.id,
+              purchased_at: order.created_at,
+            }, { transaction });
+          }
+        }
+      }
+
+      await transaction.commit();
+      return guestOrders.length;
+    } catch (error) {
+      try {
+        await transaction.rollback();
+      } catch {
+        // Игнорируем ошибку rollback
+      }
+      throw error;
+    }
   }
 
   /**

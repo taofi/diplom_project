@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,11 +6,15 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { StringValue } from 'ms';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { CheckoutVerificationController } from './checkout-verification.controller';
+import { CheckoutVerificationService } from './checkout-verification.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { TokenModule } from '../token/token.module';
 import { EmailModule } from '../email/email.module';
+import { CartModule } from '../cart/cart.module';
+import { OrderModule } from '../order/order.module';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 
@@ -30,9 +34,11 @@ import { UserRole as UserRoleModel } from '../db/models/user-role.model';
     }),
     TokenModule,
     EmailModule,
+    forwardRef(() => CartModule),
+    forwardRef(() => OrderModule),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
+  controllers: [AuthController, CheckoutVerificationController],
+  providers: [AuthService, CheckoutVerificationService, JwtStrategy, JwtAuthGuard, RolesGuard],
   exports: [AuthService, JwtAuthGuard, RolesGuard, TokenModule, JwtModule],
 })
 export class AuthModule {}

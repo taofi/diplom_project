@@ -34,6 +34,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   updateLocale: (locale: string) => Promise<void>;
+  setAuthFromTokens: (user: User, accessToken: string, refreshToken: string) => void;
   isAdmin: boolean;
   isAuthor: boolean;
   isAdminOrAuthor: boolean;
@@ -186,6 +187,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: true,
       isLoading: false,
     });
+    
+    // Синхронизируем корзину после входа
+    await syncCartOnLogin();
+  };
+
+  // Функция синхронизации корзины при входе
+  const syncCartOnLogin = async () => {
+    try {
+      // Читаем корзину из localStorage напрямую
+      const { cartApi } = await import('@/lib/api-cart');
+      const localCartKey = 'guest_cart';
+      if (typeof window === 'undefined') return;
+      
+      const cartData = localStorage.getItem(localCartKey);
+      if (!cartData) return;
+      
+      const localItems = JSON.parse(cartData);
+      if (Array.isArray(localItems) && localItems.length > 0) {
+        for (const item of localItems) {
+          await cartApi.addItem({
+            productId: item.productId,
+            licenseTypeId: item.licenseTypeId
+          });
+        }
+        // Очищаем localStorage
+        localStorage.removeItem(localCartKey);
+      }
+    } catch (error) {
+      console.error('Failed to sync cart on login:', error);
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -200,6 +231,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: true,
       isLoading: false,
     });
+    
+    // Синхронизируем корзину после регистрации
+    await syncCartOnLogin();
   };
 
   const logout = async () => {
@@ -256,6 +290,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Установить авторизацию из полученных токенов (используется при верификации email на checkout)
+  const setAuthFromTokens = (user: User, accessToken: string, refreshToken: string) => {
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+    setUserData(user);
+    
+    setState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  };
+
   // Role helpers - с защитой от undefined
   const isAdmin = Array.isArray(state.user?.roles) && state.user.roles.includes('admin');
   const isAuthor = Array.isArray(state.user?.roles) && state.user.roles.includes('author');
@@ -263,7 +310,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, logout, updateUser, updateLocale, isAdmin, isAuthor, isAdminOrAuthor }}
+      value={{ ...state, login, register, logout, updateUser, updateLocale, setAuthFromTokens, isAdmin, isAuthor, isAdminOrAuthor }}
     >
       {children}
     </AuthContext.Provider>

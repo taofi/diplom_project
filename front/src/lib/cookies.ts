@@ -6,6 +6,7 @@ const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
 const CSRF_KEY = 'csrf_token';
 const USER_KEY = 'user_data';
+const GUEST_KEY = 'guest_cart_id';
 
 const cookieOptions = {
   path: '/',
@@ -75,4 +76,14 @@ export const getUserData = (): User | null => {
 // Удалить данные пользователя из куки
 export const removeUserData = (): void => {
   Cookies.remove(USER_KEY, { path: '/' });
+};
+
+// Получить ID гостевой корзины
+export const getGuestId = (): string | undefined => {
+  return Cookies.get(GUEST_KEY);
+};
+
+// Установить ID гостевой корзины
+export const setGuestId = (guestId: string): void => {
+  Cookies.set(GUEST_KEY, guestId, { ...cookieOptions, expires: 30 });
 };

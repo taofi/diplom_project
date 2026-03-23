@@ -5,6 +5,7 @@ import { getUserProducts, downloadProduct, UserProductResponse } from '@/lib/api
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Card, Button } from '@/components/ui';
 import { Spinner } from '@/components/ui/Spinner';
+import { ServerImage } from '@/components/Image';
 
 export function PurchasedProducts() {
   const { t } = useI18n();
@@ -71,11 +72,15 @@ export function PurchasedProducts() {
             >
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 {product.productImage && (
-                  <img 
-                    src={product.productImage} 
-                    alt={product.productName} 
-                    className="w-16 h-16 object-cover rounded flex-shrink-0"
-                  />
+                  <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                    <ServerImage
+                      src={product.productImage}
+                      alt={product.productName}
+                      width={80}
+                      height={80}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 )}
                 <div className="min-w-0">
                   <h4 className="font-medium text-gray-900 truncate">

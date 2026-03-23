@@ -476,6 +476,23 @@ export class CartService {
   }
 
   /**
+   * Найти product_license_id по productId и licenseTypeId
+   * Используется при синхронизации корзины с фронта
+   */
+  async findProductLicenseId(
+    productId: number,
+    licenseTypeId: number,
+  ): Promise<number | null> {
+    const productLicense = await this.productLicenseModel.findOne({
+      where: {
+        product_id: productId,
+        license_type_id: licenseTypeId,
+      },
+    });
+    return productLicense?.id || null;
+  }
+
+  /**
    * Форматировать элемент корзины
    */
   private async formatCartItem(

@@ -135,4 +135,20 @@ export class EmailService {
       totalPrice: orderDetails.total,
     }, locale);
   }
+
+  /**
+   * Отправить письмо о созданном аккаунте с паролем
+   */
+  async sendAccountCreated(
+    email: string,
+    name: string,
+    password: string,
+    locale: string = 'ru'
+  ): Promise<void> {
+    await this.sendTemplatedEmail(email, 'accountCreated', {
+      name,
+      email,
+      password,
+    }, locale);
+  }
 }

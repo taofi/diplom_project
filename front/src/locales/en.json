@@ -396,6 +396,21 @@
     "step1": "You will receive a confirmation email with your order details",
     "step2": "Your purchased products will be available in your profile",
     "step3": "Download links will be sent to your email",
-    "goToProfile": "Go to Profile"
+    "goToProfile": "Go to Profile",
+    "verification": {
+      "sendCode": "Send Code",
+      "codePlaceholder": "Enter 6-digit code",
+      "verify": "Verify",
+      "resendCode": "Resend Code",
+      "resendIn": "Resend in {seconds} sec",
+      "codeSent": "Verification code sent to email",
+      "codeSentTo": "Code sent to",
+      "emailVerified": "Email verified",
+      "invalidCode": "Invalid or expired code",
+      "enterCode": "Enter 6-digit code",
+      "invalidEmail": "Please enter a valid email",
+      "note": "Verify email to place order",
+      "placeOrderDisabled": "Verify email to place order"
+    }
   }
 }

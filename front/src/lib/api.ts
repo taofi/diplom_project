@@ -59,6 +59,15 @@ api.interceptors.request.use(
 // Коды ошибок, для которых НЕ показываем toast (они обрабатываются автоматически)
 const IGNORED_ERROR_CODES = [401];
 
+// Эндпоинты, которые должны работать без авторизации
+const PUBLIC_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register', 
+  '/auth/refresh',
+  '/auth/checkout/send-code',
+  '/auth/checkout/verify-code',
+];
+
 // Response interceptor - обрабатываем 401 и refresh
 api.interceptors.response.use(
   (response) => response,
@@ -68,6 +77,16 @@ api.interceptors.response.use(
     };
 
     if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // Проверяем, является ли запрос публичным
+    const isPublicRequest = PUBLIC_ENDPOINTS.some(
+      endpoint => originalRequest.url?.includes(endpoint)
+    );
+
+    // Для публичных эндпоинтов не обрабатываем 401 автоматически
+    if (error.response?.status === 401 && isPublicRequest) {
       return Promise.reject(error);
     }
 
