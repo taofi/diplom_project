@@ -1,0 +1,124 @@
+{"context":"NestFactory","level":"info","message":"Starting Nest application...","timestamp":"2026-03-23T14:01:09.236Z"}
+{"context":"InstanceLoader","level":"info","message":"DatabaseModule dependencies initialized","timestamp":"2026-03-23T14:01:09.277Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:09.277Z"}
+{"context":"InstanceLoader","level":"info","message":"CommonModule dependencies initialized","timestamp":"2026-03-23T14:01:09.278Z"}
+{"context":"InstanceLoader","level":"info","message":"PassportModule dependencies initialized","timestamp":"2026-03-23T14:01:09.278Z"}
+{"context":"InstanceLoader","level":"info","message":"MailerModule dependencies initialized","timestamp":"2026-03-23T14:01:09.278Z"}
+{"context":"InstanceLoader","level":"info","message":"ConfigHostModule dependencies initialized","timestamp":"2026-03-23T14:01:09.279Z"}
+{"context":"InstanceLoader","level":"info","message":"AppModule dependencies initialized","timestamp":"2026-03-23T14:01:09.431Z"}
+{"context":"InstanceLoader","level":"info","message":"ConfigModule dependencies initialized","timestamp":"2026-03-23T14:01:09.434Z"}
+{"context":"InstanceLoader","level":"info","message":"ConfigModule dependencies initialized","timestamp":"2026-03-23T14:01:09.435Z"}
+{"context":"InstanceLoader","level":"info","message":"ServeStaticModule dependencies initialized","timestamp":"2026-03-23T14:01:09.435Z"}
+{"context":"InstanceLoader","level":"info","message":"ServeStaticModule dependencies initialized","timestamp":"2026-03-23T14:01:09.435Z"}
+{"context":"InstanceLoader","level":"info","message":"JwtModule dependencies initialized","timestamp":"2026-03-23T14:01:09.574Z"}
+{"context":"InstanceLoader","level":"info","message":"JwtModule dependencies initialized","timestamp":"2026-03-23T14:01:09.575Z"}
+{"context":"InstanceLoader","level":"info","message":"TokenModule dependencies initialized","timestamp":"2026-03-23T14:01:09.575Z"}
+{"context":"InstanceLoader","level":"info","message":"MailerCoreModule dependencies initialized","timestamp":"2026-03-23T14:01:09.575Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeCoreModule dependencies initialized","timestamp":"2026-03-23T14:01:12.584Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.586Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.586Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.586Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.587Z"}
+{"context":"InstanceLoader","level":"info","message":"SequelizeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.588Z"}
+{"context":"InstanceLoader","level":"info","message":"EmailModule dependencies initialized","timestamp":"2026-03-23T14:01:12.589Z"}
+{"context":"InstanceLoader","level":"info","message":"TranslationModule dependencies initialized","timestamp":"2026-03-23T14:01:12.590Z"}
+{"context":"InstanceLoader","level":"info","message":"UploadsModule dependencies initialized","timestamp":"2026-03-23T14:01:12.594Z"}
+{"context":"InstanceLoader","level":"info","message":"CategoryModule dependencies initialized","timestamp":"2026-03-23T14:01:12.594Z"}
+{"context":"InstanceLoader","level":"info","message":"LicenseTypeModule dependencies initialized","timestamp":"2026-03-23T14:01:12.595Z"}
+{"context":"InstanceLoader","level":"info","message":"UserModule dependencies initialized","timestamp":"2026-03-23T14:01:12.595Z"}
+{"context":"InstanceLoader","level":"info","message":"CartModule dependencies initialized","timestamp":"2026-03-23T14:01:12.595Z"}
+{"context":"InstanceLoader","level":"info","message":"UserProductModule dependencies initialized","timestamp":"2026-03-23T14:01:12.595Z"}
+{"context":"InstanceLoader","level":"info","message":"OrderModule dependencies initialized","timestamp":"2026-03-23T14:01:12.596Z"}
+{"context":"InstanceLoader","level":"info","message":"ProductModule dependencies initialized","timestamp":"2026-03-23T14:01:12.596Z"}
+{"context":"InstanceLoader","level":"info","message":"CheckoutModule dependencies initialized","timestamp":"2026-03-23T14:01:12.596Z"}
+{"context":"InstanceLoader","level":"info","message":"AuthModule dependencies initialized","timestamp":"2026-03-23T14:01:12.596Z"}
+{"context":"RoutesResolver","level":"info","message":"AppController {/}:","timestamp":"2026-03-23T14:01:12.601Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/, GET} route","timestamp":"2026-03-23T14:01:12.605Z"}
+{"context":"RoutesResolver","level":"info","message":"AuthController {/auth}:","timestamp":"2026-03-23T14:01:12.605Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/register, POST} route","timestamp":"2026-03-23T14:01:12.606Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/login, POST} route","timestamp":"2026-03-23T14:01:12.606Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/refresh, POST} route","timestamp":"2026-03-23T14:01:12.607Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/logout, POST} route","timestamp":"2026-03-23T14:01:12.607Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/logout-all, POST} route","timestamp":"2026-03-23T14:01:12.608Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/me, GET} route","timestamp":"2026-03-23T14:01:12.608Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/profile, PATCH} route","timestamp":"2026-03-23T14:01:12.608Z"}
+{"context":"RoutesResolver","level":"info","message":"CheckoutVerificationController {/auth/checkout}:","timestamp":"2026-03-23T14:01:12.609Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/checkout/send-code, POST} route","timestamp":"2026-03-23T14:01:12.609Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/checkout/verify-code, POST} route","timestamp":"2026-03-23T14:01:12.610Z"}
+{"context":"RoutesResolver","level":"info","message":"CartController {/cart}:","timestamp":"2026-03-23T14:01:12.610Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart, GET} route","timestamp":"2026-03-23T14:01:12.610Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/items, POST} route","timestamp":"2026-03-23T14:01:12.611Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/items/:id, PATCH} route","timestamp":"2026-03-23T14:01:12.611Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/items/:id, DELETE} route","timestamp":"2026-03-23T14:01:12.612Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart, DELETE} route","timestamp":"2026-03-23T14:01:12.612Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/count, GET} route","timestamp":"2026-03-23T14:01:12.613Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest, GET} route","timestamp":"2026-03-23T14:01:12.613Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest/items, POST} route","timestamp":"2026-03-23T14:01:12.613Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest/items/:id, PATCH} route","timestamp":"2026-03-23T14:01:12.614Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest/items/:id, DELETE} route","timestamp":"2026-03-23T14:01:12.614Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest, DELETE} route","timestamp":"2026-03-23T14:01:12.614Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/guest/count, GET} route","timestamp":"2026-03-23T14:01:12.614Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/cart/sync, POST} route","timestamp":"2026-03-23T14:01:12.615Z"}
+{"context":"RoutesResolver","level":"info","message":"OrderController {/orders}:","timestamp":"2026-03-23T14:01:12.615Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/orders, GET} route","timestamp":"2026-03-23T14:01:12.615Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/orders/:id, GET} route","timestamp":"2026-03-23T14:01:12.615Z"}
+{"context":"RoutesResolver","level":"info","message":"CheckoutController {/checkout}:","timestamp":"2026-03-23T14:01:12.616Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/checkout, POST} route","timestamp":"2026-03-23T14:01:12.616Z"}
+{"context":"RoutesResolver","level":"info","message":"ProductController {/products}:","timestamp":"2026-03-23T14:01:12.616Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products, GET} route","timestamp":"2026-03-23T14:01:12.616Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/my, GET} route","timestamp":"2026-03-23T14:01:12.617Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id, GET} route","timestamp":"2026-03-23T14:01:12.617Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/translations, GET} route","timestamp":"2026-03-23T14:01:12.617Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products, POST} route","timestamp":"2026-03-23T14:01:12.617Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id, PATCH} route","timestamp":"2026-03-23T14:01:12.618Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id, DELETE} route","timestamp":"2026-03-23T14:01:12.618Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/activate, PATCH} route","timestamp":"2026-03-23T14:01:12.618Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/deactivate, PATCH} route","timestamp":"2026-03-23T14:01:12.618Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/media/upload, POST} route","timestamp":"2026-03-23T14:01:12.619Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/media, GET} route","timestamp":"2026-03-23T14:01:12.619Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/media, POST} route","timestamp":"2026-03-23T14:01:12.619Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/media/:mediaId, DELETE} route","timestamp":"2026-03-23T14:01:12.620Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/media/:mediaId/cover, PATCH} route","timestamp":"2026-03-23T14:01:12.620Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/file, PATCH} route","timestamp":"2026-03-23T14:01:12.620Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/file, DELETE} route","timestamp":"2026-03-23T14:01:12.620Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/licenses, GET} route","timestamp":"2026-03-23T14:01:12.621Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/licenses, POST} route","timestamp":"2026-03-23T14:01:12.621Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/products/:id/licenses/:licenseId, DELETE} route","timestamp":"2026-03-23T14:01:12.621Z"}
+{"context":"RoutesResolver","level":"info","message":"UploadsController {/uploads}:","timestamp":"2026-03-23T14:01:12.621Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/uploads/temp/media, POST} route","timestamp":"2026-03-23T14:01:12.622Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/uploads/temp/file, POST} route","timestamp":"2026-03-23T14:01:12.622Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/uploads/temp/confirm, POST} route","timestamp":"2026-03-23T14:01:12.623Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/uploads/temp, DELETE} route","timestamp":"2026-03-23T14:01:12.623Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/uploads/avatar, POST} route","timestamp":"2026-03-23T14:01:12.623Z"}
+{"context":"RoutesResolver","level":"info","message":"CategoryController {/categories}:","timestamp":"2026-03-23T14:01:12.624Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories, GET} route","timestamp":"2026-03-23T14:01:12.624Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id, GET} route","timestamp":"2026-03-23T14:01:12.624Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id/products, GET} route","timestamp":"2026-03-23T14:01:12.625Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id/count, GET} route","timestamp":"2026-03-23T14:01:12.625Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories, POST} route","timestamp":"2026-03-23T14:01:12.625Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id, PATCH} route","timestamp":"2026-03-23T14:01:12.625Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id, DELETE} route","timestamp":"2026-03-23T14:01:12.626Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id/products/:productId, POST} route","timestamp":"2026-03-23T14:01:12.626Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/categories/:id/products/:productId, DELETE} route","timestamp":"2026-03-23T14:01:12.626Z"}
+{"context":"RoutesResolver","level":"info","message":"LicenseTypeController {/license-types}:","timestamp":"2026-03-23T14:01:12.626Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types, GET} route","timestamp":"2026-03-23T14:01:12.627Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types/:id, GET} route","timestamp":"2026-03-23T14:01:12.627Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types/:id/count, GET} route","timestamp":"2026-03-23T14:01:12.627Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types, POST} route","timestamp":"2026-03-23T14:01:12.627Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types/:id, PATCH} route","timestamp":"2026-03-23T14:01:12.628Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/license-types/:id, DELETE} route","timestamp":"2026-03-23T14:01:12.628Z"}
+{"context":"RoutesResolver","level":"info","message":"UserController {/users}:","timestamp":"2026-03-23T14:01:12.628Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/users, GET} route","timestamp":"2026-03-23T14:01:12.628Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/users/:id, GET} route","timestamp":"2026-03-23T14:01:12.629Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/users/:id/roles, PATCH} route","timestamp":"2026-03-23T14:01:12.629Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/users/:id/locale, PATCH} route","timestamp":"2026-03-23T14:01:12.629Z"}
+{"context":"RoutesResolver","level":"info","message":"UserProductController {/user/products}:","timestamp":"2026-03-23T14:01:12.629Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/products, GET} route","timestamp":"2026-03-23T14:01:12.630Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/products/:id/download, GET} route","timestamp":"2026-03-23T14:01:12.630Z"}
+{"context":"NestApplication","level":"info","message":"Nest application successfully started","timestamp":"2026-03-23T14:01:12.641Z"}

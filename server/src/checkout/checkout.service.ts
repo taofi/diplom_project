@@ -4,8 +4,10 @@ import { Order, OrderStatus } from '../db/models/order.model';
 import { OrderItem } from '../db/models/order-item.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { UserProduct } from '../db/models/user-product.model';
+import { User } from '../db/models/user.model';
 import { CartService } from '../cart/cart.service';
 import { OrderService, OrderResponse } from '../order/order.service';
+import { EmailService } from '../email/email.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CartItemResponse } from '../cart/cart.service';
 
@@ -25,8 +27,11 @@ export class CheckoutService {
     private readonly productLicenseModel: typeof ProductLicense,
     @InjectModel(UserProduct)
     private readonly userProductModel: typeof UserProduct,
+    @InjectModel(User)
+    private readonly userModel: typeof User,
     private readonly cartService: CartService,
     private readonly orderService: OrderService,
+    private readonly emailService: EmailService,
   ) {}
 
   private get sequelize() {
@@ -57,6 +62,9 @@ export class CheckoutService {
 
     // Очищаем корзину пользователя
     await this.cartService.clearCart(userId);
+
+    // Отправляем email с файлами заказа
+    await this.sendOrderConfirmationEmail(order.id, userId, null, locale || 'ru');
 
     return {
       order,
@@ -93,10 +101,50 @@ export class CheckoutService {
     // Очищаем гостевую корзину
     await this.cartService.clearGuestCart(guestId);
 
+    // Отправляем email с файлами заказа
+    await this.sendOrderConfirmationEmail(order.id, null, dto.guestEmail, locale || 'ru');
+
     return {
       order,
       success: true,
     };
+  }
+
+  /**
+   * Отправить email с подтверждением заказа и файлами
+   */
+  private async sendOrderConfirmationEmail(
+    orderId: number,
+    userId: number | null,
+    guestEmail: string | null,
+    locale: string,
+  ): Promise<void> {
+    try {
+      // Определяем email получателя
+      let email: string;
+
+      if (userId) {
+        // Для авторизованного пользователя получаем email из базы
+        const user = await this.userModel.findByPk(userId);
+        if (!user) {
+          console.warn(`User not found for order ${orderId}`);
+          return;
+        }
+        email = user.email;
+      } else if (guestEmail) {
+        email = guestEmail;
+      } else {
+        console.warn(`No email provided for order ${orderId}`);
+        return;
+      }
+
+      // Отправляем email с файлами
+      await this.emailService.sendOrderConfirmationWithFiles(email, orderId, locale);
+      console.log(`Order confirmation email sent for order ${orderId} to ${email}`);
+    } catch (error) {
+      // Логируем ошибку, но не блокируем успешный checkout
+      console.error(`Failed to send order confirmation email for order ${orderId}:`, error);
+    }
   }
 
   /**

@@ -108,11 +108,14 @@ export class UserProductService {
         locale,
       );
 
+      // Получаем главное изображение (is_cover = true)
+      const productImage = await this.translationService.getProductCoverImage(product.id);
+
       results.push({
         id: up.id,
         productId: product.id,
         productName: productTranslation?.name || `Product #${product.id}`,
-        productImage: product.main_image,
+        productImage: productImage || product.main_image,
         licenseTypeId: licenseType.id,
         licenseTypeName: licenseTypeTranslation?.name || `License #${licenseType.id}`,
         price: Number(productLicense.price),

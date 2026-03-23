@@ -1,11 +1,16 @@
 import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
 import { TemplateService } from './templates/template.service';
+import { Order } from '../db/models/order.model';
+import { OrderItem } from '../db/models/order-item.model';
+import { ProductLicense } from '../db/models/product-license.model';
 
 @Module({
   imports: [
+    SequelizeModule.forFeature([Order, OrderItem, ProductLicense]),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

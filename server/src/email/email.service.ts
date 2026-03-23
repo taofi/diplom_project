@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { MailerService } from '@nestjs-modules/mailer';
+import * as fs from 'fs';
+import * as path from 'path';
 import { TemplateService } from './templates/template.service';
 import type { TemplateVariables, TemplateName } from './templates/types';
+import { Order } from '../db/models/order.model';
+import { OrderItem } from '../db/models/order-item.model';
+import { ProductLicense } from '../db/models/product-license.model';
+import { Product } from '../db/models/product.model';
 
 export interface SendEmailOptions {
   to: string;
@@ -9,15 +16,21 @@ export interface SendEmailOptions {
   html?: string;
 }
 
-export interface OrderItem {
+export interface OrderItemInfo {
   name: string;
   price: string;
 }
 
 export interface OrderDetails {
   orderId: string;
-  items: OrderItem[];
+  items: OrderItemInfo[];
   total: string;
+}
+
+export interface EmailAttachment {
+  filename: string;
+  path: string;
+  contentType: string;
 }
 
 @Injectable()
@@ -27,6 +40,12 @@ export class EmailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly templateService: TemplateService,
+    @InjectModel(Order)
+    private readonly orderModel: typeof Order,
+    @InjectModel(OrderItem)
+    private readonly orderItemModel: typeof OrderItem,
+    @InjectModel(ProductLicense)
+    private readonly productLicenseModel: typeof ProductLicense,
   ) {}
 
   /**
@@ -150,5 +169,155 @@ export class EmailService {
       email,
       password,
     }, locale);
+  }
+
+  /**
+   * Получить вложения для заказа
+   */
+  async getOrderAttachments(orderId: number): Promise<EmailAttachment[]> {
+    const attachments: EmailAttachment[] = [];
+
+    try {
+      // Находим заказ с элементами заказа
+      const order = await this.orderModel.findByPk(orderId, {
+        include: [
+          {
+            model: this.orderItemModel,
+            include: [
+              {
+                model: this.productLicenseModel,
+                include: [{ model: Product }],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!order) {
+        this.logger.warn(`Order not found: ${orderId}`);
+        return attachments;
+      }
+
+      const orderItems = order.order_items as (OrderItem & {
+        product_license: ProductLicense & { product: Product };
+      })[];
+
+      for (const item of orderItems) {
+        const productLicense = item.product_license;
+        if (!productLicense) continue;
+
+        const product = productLicense.product;
+        if (!product || !product.file_url) continue;
+
+        // file_url хранится как 'files/product/{id}/filename.ext'
+        // Путь относительно корня проекта
+        const fileUrl = product.file_url;
+        const fullPath = path.join(process.cwd(), fileUrl);
+
+        // Проверяем существование файла
+        if (fs.existsSync(fullPath)) {
+          const filename = fileUrl.split('/').pop() || 'file';
+          attachments.push({
+            filename,
+            path: fullPath,
+            contentType: this.getMimeType(filename),
+          });
+          this.logger.log(`Found attachment: ${filename} for order ${orderId}`);
+        } else {
+          this.logger.warn(`File not found: ${fullPath} for order ${orderId}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error getting order attachments: ${error}`);
+    }
+
+    return attachments;
+  }
+
+  /**
+   * Отправить подтверждение заказа с файлами
+   */
+  async sendOrderConfirmationWithFiles(
+    email: string,
+    orderId: number,
+    locale: string = 'ru'
+  ): Promise<void> {
+    try {
+      // Получаем вложения
+      const attachments = await this.getOrderAttachments(orderId);
+
+      // Получаем HTML из шаблона
+      const { subject, body } = this.templateService.render(
+        'orderConfirmation',
+        locale,
+        {
+          orderId: String(orderId),
+          attachmentsCount: String(attachments.length),
+        }
+      );
+
+      // Отправляем email с вложениями
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        html: body,
+        attachments: attachments.map((att) => ({
+          filename: att.filename,
+          path: att.path,
+          contentType: att.contentType,
+        })),
+      });
+
+      this.logger.log(`Order confirmation sent to ${email} with ${attachments.length} attachments`);
+    } catch (error) {
+      this.logger.error(`Failed to send order confirmation to ${email}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Сформировать HTML для подтверждения заказа
+   */
+  private getOrderConfirmationHtml(
+    orderId: number,
+    attachmentsCount: number,
+    locale: string
+  ): string {
+    const { body } = this.templateService.render(
+      'orderConfirmation',
+      locale,
+      {
+        orderId: String(orderId),
+        attachmentsCount: String(attachmentsCount),
+      }
+    );
+
+    return body;
+  }
+
+  /**
+   * Определить MIME тип по расширению файла
+   */
+  private getMimeType(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.mov': 'video/quicktime',
+      '.zip': 'application/zip',
+      '.rar': 'application/x-rar-compressed',
+      '.7z': 'application/x-7z-compressed',
+      '.pdf': 'application/pdf',
+      '.psd': 'image/vnd.adobe.photoshop',
+      '.ai': 'application/postscript',
+      '.eps': 'application/eps',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 }
