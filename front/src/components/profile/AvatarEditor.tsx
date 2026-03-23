@@ -1,25 +1,29 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
+import Cropper from 'react-easy-crop';
 import { uploadAvatar, updateProfile } from '@/lib/api-auth';
 import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button } from '@/components/ui';
+import { ServerImage } from '@/components/Image';
 
-interface AvatarEditorProps {
+interface ProfileAvatarEditorProps {
   currentAvatar?: string | null;
   onAvatarChange?: (newAvatarUrl: string) => void;
 }
 
-export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProps) {
-  const { user, updateUser } = useAuth();
+export function ProfileAvatarEditor({ currentAvatar, onAvatarChange }: ProfileAvatarEditorProps) {
+  const { updateUser } = useAuth();
   const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // Обработчик выбора файла
@@ -33,34 +37,85 @@ export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProp
       return;
     }
 
-    // Проверка размера (макс 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Проверка размера (макс 10MB)
+    if (file.size > 10 * 1024 * 1024) {
       setError(t('profile.errors.fileTooLarge'));
       return;
     }
 
-    setError(null);
-    setSelectedFile(file);
-    setIsEditing(true);
-
-    // Создаем preview
+    // Создаем preview URL
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setPreviewUrl(event.target?.result as string);
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setSelectedFile(file);
+      setIsEditing(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setError(null);
     };
     reader.readAsDataURL(file);
   }, [t]);
 
+  // Создание обрезанного изображения
+  const createCroppedImage = useCallback(async (imgSrc: string, zoomValue: number): Promise<File | null> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const image = new Image();
+    image.src = imgSrc;
+    
+    await new Promise((resolve) => {
+      image.onload = resolve;
+    });
+
+    // Размер аватара
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+
+    // Центрирование и масштабирование
+    const scale = zoomValue;
+    const minDim = Math.min(image.width, image.height);
+    const cropSize = minDim / scale;
+    const centerX = image.width / 2;
+    const centerY = image.height / 2;
+    const sx = centerX - cropSize / 2;
+    const sy = centerY - cropSize / 2;
+
+    ctx.drawImage(image, sx, sy, cropSize, cropSize, 0, 0, size, size);
+
+    return new Promise<File | null>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'avatar.png', { type: 'image/png' });
+          resolve(file);
+        } else {
+          resolve(null);
+        }
+      }, 'image/png');
+    });
+  }, []);
+
   // Сохранение аватара
   const handleSave = useCallback(async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !imageSrc) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
+      // Создаем обрезанное изображение
+      const croppedFile = await createCroppedImage(imageSrc, zoom);
+      
+      if (!croppedFile) {
+        setError(t('profile.errors.uploadFailed'));
+        setIsUploading(false);
+        return;
+      }
+
       // Загружаем аватар
-      const { url } = await uploadAvatar(selectedFile);
+      const { url } = await uploadAvatar(croppedFile);
 
       // Обновляем профиль
       const updatedUser = await updateProfile({ avatar_url: url });
@@ -72,60 +127,69 @@ export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProp
       // Сбрасываем состояние
       setIsEditing(false);
       setSelectedFile(null);
-      setPreviewUrl(null);
+      setImageSrc(null);
       setZoom(1);
+      setIsUploading(false);
     } catch (err) {
       console.error('Failed to upload avatar:', err);
       setError(t('profile.errors.uploadFailed'));
-    } finally {
       setIsUploading(false);
     }
-  }, [selectedFile, updateUser, onAvatarChange, t]);
+  }, [selectedFile, imageSrc, zoom, createCroppedImage, updateUser, onAvatarChange, t]);
 
   // Отмена редактирования
   const handleCancel = useCallback(() => {
     setIsEditing(false);
     setSelectedFile(null);
-    setPreviewUrl(null);
+    setImageSrc(null);
     setZoom(1);
+    setCrop({ x: 0, y: 0 });
     setError(null);
   }, []);
 
-  // Текущий аватар (из preview или текущий)
-  const displayAvatar = previewUrl || currentAvatar || '/noimage.png';
+  // Текущий аватар
 
   return (
     <div className="flex flex-col items-center">
       {/* Контейнер аватара */}
-      <div
-        className="relative w-32 h-32 rounded-full overflow-hidden cursor-pointer border-4 border-gray-200 hover:border-primary transition-colors"
-        onClick={() => !isEditing && fileInputRef.current?.click()}
-      >
-        <img
-          src={displayAvatar}
-          alt="Avatar"
-          className="w-full h-full object-cover"
-          style={{
-            transform: `scale(${zoom})`,
-          }}
-        />
+      {isEditing && imageSrc ? (
+        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            style={{
+              containerStyle: { background: '#f0f0f0' },
+              cropAreaStyle: { border: '2px solid white' },
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          className="relative w-32 h-32 rounded-full overflow-hidden cursor-pointer border-4 border-gray-200 hover:border-primary transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <ServerImage
+            src={currentAvatar || undefined}
+            alt="Avatar"
+            width={128}
+            height={128}
+            className="w-full h-full"
+          />
 
-        {/* Overlay при наведении */}
-        {!isEditing && (
+          {/* Overlay при наведении */}
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
             <span className="text-white text-sm font-medium">
               {t('profile.changeAvatar')}
             </span>
           </div>
-        )}
-
-        {/* Индикатор загрузки */}
-        {isUploading && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Скрытый input для файла */}
       <input
@@ -146,8 +210,8 @@ export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProp
             </label>
             <input
               type="range"
-              min="0.5"
-              max="2"
+              min={1}
+              max={3}
               step="0.1"
               value={zoom}
               onChange={(e) => setZoom(parseFloat(e.target.value))}
@@ -168,7 +232,7 @@ export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProp
               onClick={handleSave}
               disabled={isUploading}
             >
-              {t('common.save')}
+              {isUploading ? t('common.loading') : t('common.save')}
             </Button>
             <Button
               variant="secondary"
@@ -184,3 +248,6 @@ export function AvatarEditor({ currentAvatar, onAvatarChange }: AvatarEditorProp
     </div>
   );
 }
+
+// Экспорт как AvatarEditor для обратной совместимости
+export { ProfileAvatarEditor as AvatarEditor };

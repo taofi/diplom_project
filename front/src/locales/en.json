@@ -69,13 +69,14 @@
     "downloading": "Downloading...",
     "changeAvatar": "Change avatar",
     "zoom": "Zoom",
+    "rotate": "Rotate",
     "clickToEdit": "Click to edit",
     "errors": {
       "nameRequired": "Name is required",
       "updateFailed": "Failed to update profile",
       "uploadFailed": "Failed to upload avatar",
       "invalidFileType": "Only image files are allowed",
-      "fileTooLarge": "File too large (max 2MB)"
+      "fileTooLarge": "File too large (max 10MB)"
     }
   },
   "catalog": {

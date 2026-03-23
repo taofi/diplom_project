@@ -106,9 +106,9 @@ export class UploadsService {
       throw new BadRequestException('Only image files are allowed for avatar');
     }
 
-    // Проверить размер (макс 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      throw new BadRequestException('Avatar file size must be less than 2MB');
+    // Проверить размер (макс 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Avatar file size must be less than 10MB');
     }
 
     return this.fileService.saveUserAvatar(file, userId);

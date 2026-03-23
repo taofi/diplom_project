@@ -69,13 +69,14 @@
     "downloading": "Загрузка...",
     "changeAvatar": "Изменить аватар",
     "zoom": "Масштаб",
+    "rotate": "Поворот",
     "clickToEdit": "Нажмите для редактирования",
     "errors": {
       "nameRequired": "Имя обязательно",
       "updateFailed": "Не удалось обновить профиль",
       "uploadFailed": "Не удалось загрузить аватар",
       "invalidFileType": "Можно загружать только изображения",
-      "fileTooLarge": "Файл слишком большой (макс 2MB)"
+      "fileTooLarge": "Файл слишком большой (макс 10MB)"
     }
   },
   "catalog": {
