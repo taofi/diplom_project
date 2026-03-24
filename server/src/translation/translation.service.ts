@@ -39,7 +39,7 @@ export class TranslationService {
     locale?: string,
   ): Promise<ProductTranslationData | null> {
     const normalizedLocale = normalizeLanguage(locale);
-    console.log('[DEBUG getProductTranslation] productId:', productId, 'locale:', locale, 'normalizedLocale:', normalizedLocale);
+    console.log('[DEBUG] getProductTranslation: productId =', productId, ', locale =', locale, ', normalizedLocale =', normalizedLocale);
 
     // Для product_translations используется поле 'language' (not 'locale')
     const translation = await this.productTranslationModel.findOne({
@@ -48,7 +48,8 @@ export class TranslationService {
         language: normalizedLocale,
       },
     });
-
+    console.log('[DEBUG] getProductTranslation: found =', translation ? 'yes' : 'no');
+    
     if (!translation) {
       // Если перевод для указанного языка не найден, пробуем получить любой
       const fallbackTranslation = await this.productTranslationModel.findOne({

@@ -7,7 +7,6 @@ import { CreateChatRoomDto } from '../dto/create-chat-room.dto';
 import { User } from '../../db/models/user.model';
 import { Product } from '../../db/models/product.model';
 import { ProductMedia } from '../../db/models/product-media.model';
-import { ProductTranslation } from '../../db/models/product-translation.model';
 import { UserProduct } from '../../db/models/user-product.model';
 import { ProductLicense } from '../../db/models/product-license.model';
 import { LicenseType } from '../../db/models/license-type.model';
@@ -77,7 +76,8 @@ export class ChatRoomRepository {
           model: Product,
           as: 'product',
           include: [
-            { model: ProductTranslation, as: 'translations' },
+            // Убрали ProductTranslation - переводы берутся отдельно через translationService
+            // для правильной фильтрации по языку пользователя
             {
               model: ProductMedia,
               where: { is_cover: true },

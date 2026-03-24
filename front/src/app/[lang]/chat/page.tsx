@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth/AuthContext';
 import { ChatProvider, useChat } from '@/context/chat/ChatContext';
@@ -34,9 +34,16 @@ function ChatContent() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const isMountedRef = useRef(false);
 
   // Load chat rooms on mount
   useEffect(() => {
+    // Prevent double loading in Strict Mode
+    if (isMountedRef.current) {
+      return;
+    }
+    isMountedRef.current = true;
+    
     const loadRooms = async () => {
       try {
         await loadChatRooms();

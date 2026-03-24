@@ -25,13 +25,23 @@ export interface ChatRoom {
     id: number;
     name: string;
     main_image: string;
-    translatedName?: string; // Переведенное название товара
+    translatedName?: string; // Переведенное название товара (translatedProductName)
+    translatedDescription?: string; // Переведенное описание товара
+    mainImage?: string; // Главное изображение (из is_cover)
+    licenseTypeName?: string; // Название типа лицензии
+    price?: number; // Цена
     media?: Array<{
       id: number;
       url: string;
       is_cover: boolean;
     }>;
   };
+  // Fields from server (ChatRoomWithTranslations)
+  translatedProductName?: string;
+  translatedProductDescription?: string;
+  mainImage?: string;
+  licenseTypeName?: string;
+  price?: number;
   lastMessage?: ChatMessage;
   unreadCount?: number;
 }

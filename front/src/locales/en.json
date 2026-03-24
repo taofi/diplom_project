@@ -447,7 +447,8 @@
     "acceptOffer": "Accept",
     "declineOffer": "Decline",
     "orderCreated": "Order created",
-    "temporary": "Temporary"
+    "temporary": "Temporary",
+    "chatWith": "Chat with"
   },
   "orders": {
     "title": "My Orders",

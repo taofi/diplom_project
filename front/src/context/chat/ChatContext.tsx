@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { socketClient } from '../../lib/socket';
 import { chatApi } from '../../lib/api-chat';
 import { getUserById } from '../../lib/api-user';
@@ -50,6 +50,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<ChatOffer[]>([]);
   const [orders, setOrders] = useState<CustomOrder[]>([]);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
+
+  // Refs for preventing duplicate requests
+  const isLoadingRoomsRef = useRef(false);
+  const isLoadingRoomRef = useRef<number | null>(null);
 
   // Connect to WebSocket on mount
   useEffect(() => {
@@ -111,11 +115,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadChatRooms = useCallback(async () => {
+    // Prevent duplicate requests
+    if (isLoadingRoomsRef.current) {
+      return;
+    }
+    isLoadingRoomsRef.current = true;
+    
     try {
       const result = await chatApi.getChatRooms(locale);
       setRooms(result.rows);
     } catch (error) {
       console.error('Error loading chat rooms:', error);
+    } finally {
+      isLoadingRoomsRef.current = false;
     }
   }, [locale]);
 
@@ -135,8 +147,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const selectRoom = useCallback(async (roomId: number) => {
+    // Prevent duplicate requests for the same room
+    if (isLoadingRoomRef.current === roomId) {
+      return;
+    }
+    isLoadingRoomRef.current = roomId;
+    
     try {
-      const result = await chatApi.getChatRoom(roomId);
+      const result = await chatApi.getChatRoom(roomId, locale);
       setCurrentRoom(result.chatRoom);
       setMessages(result.messages);
       
@@ -148,8 +166,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setOffers(roomOffers);
     } catch (error) {
       console.error('Error selecting room:', error);
+    } finally {
+      isLoadingRoomRef.current = null;
     }
-  }, []);
+  }, [locale]);
 
   const sendMessage = useCallback(async (content: string, type = 'text') => {
     try {

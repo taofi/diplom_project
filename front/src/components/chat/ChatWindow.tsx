@@ -108,10 +108,11 @@ export function ChatWindow({
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
             {/* Показываем обложку товара если есть, иначе аватар пользователя */}
-            {room.product?.media?.[0] ? (
+            {/* Используем mainImage (приоритет) или room.product?.media */}
+            {(room.mainImage || room.product?.mainImage || room.product?.media?.[0]) ? (
               <ServerImage
-                src={room.product.media[0].url}
-                alt={room.product.name || 'Product'}
+                src={room.mainImage || room.product?.mainImage || room.product?.media?.[0]?.url || ''}
+                alt={room.translatedProductName || room.product?.name || 'Product'}
                 width={40}
                 height={40}
                 className="w-full h-full object-cover"
@@ -132,7 +133,7 @@ export function ChatWindow({
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">
-              {room.product?.translatedName || room.product?.name || otherUser?.name || t('chat.unknownUser')}
+              {room.translatedProductName || room.product?.translatedName || room.product?.name || otherUser?.name || t('chat.unknownUser')}
             </h3>
             {otherUser && (
               <p className="text-sm text-gray-500">

@@ -39,8 +39,9 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
   const getChatTitle = (room: ChatRoom) => {
     const otherUser = getOtherUser(room);
     // Если есть товар, показываем переведенное название или имя товара
-    if (room.product?.translatedName || room.product?.name) {
-      return room.product.translatedName || room.product.name;
+    // Используем translatedProductName или translatedName
+    if (room.translatedProductName || room.product?.translatedName || room.product?.name) {
+      return room.translatedProductName || room.product?.translatedName || room.product?.name;
     }
     return otherUser?.name || t('chat.unknownUser');
   };
@@ -76,10 +77,11 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
               {/* Avatar */}
               <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                 {/* Показываем обложку товара если есть, иначе аватар пользователя */}
-                {room.product?.media?.[0] ? (
+                {/* Используем mainImage (приоритет) или room.product?.media */}
+                {(room.mainImage || room.product?.mainImage || room.product?.media?.[0]) ? (
                   <ServerImage
-                    src={room.product.media[0].url}
-                    alt={room.product.name || 'Product'}
+                    src={room.mainImage || room.product?.mainImage || room.product?.media?.[0]?.url || ''}
+                    alt={room.translatedProductName || room.product?.name || 'Product'}
                     width={40}
                     height={40}
                     className="w-full h-full object-cover"

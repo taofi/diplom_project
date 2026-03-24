@@ -18,7 +18,6 @@ import { Op, WhereOptions } from 'sequelize';
 import { UserProduct } from '../db/models/user-product.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { LicenseType } from '../db/models/license-type.model';
-import { ChatRoomWithTranslations } from './interfaces/chat.types';
 
 interface ChatRoomWhereClause {
   [Op.or]: Array<{ buyer_id: number; seller_id: number }>;
@@ -48,7 +47,7 @@ export class ChatService {
     private readonly userProductModel: typeof UserProduct,
     @InjectModel(Product)
     private readonly productModel: typeof Product,
-  ) {}
+  ) { }
 
   // ==================== UserProduct Integration ====================
 
@@ -163,77 +162,98 @@ export class ChatService {
       limit,
       offset: (page - 1) * limit,
     });
-    
+
     const count = chats.length;
 
     // Нормализуем язык (по умолчанию используем 'en' если не передан)
     const normalizedLang = normalizeLanguage(locale) || 'en';
-    console.log('[DEBUG getUserChatRooms] locale:', locale, 'normalizedLang:', normalizedLang);
-    
-    // Всегда добавляем переводы для продуктов
-    for (const chat of chats) {
-      if (chat.product_id) {
-        console.log('[DEBUG getUserChatRooms] product_id:', chat.product_id);
+
+    // Создаем новый массив с преобразованными данными (чистый объект без Sequelize)
+    const transformedChats = await Promise.all(chats.map(async (chat) => {
+      // Начинаем с базовых данных
+      const chatResponse: Record<string, unknown> = {
+        id: chat.id,
+        buyer_id: chat.buyer_id,
+        seller_id: chat.seller_id,
+        product_id: chat.product_id,
+        user_product_id: chat.user_product_id,
+        status: chat.status,
+        visibility: chat.visibility,
+        last_message_at: chat.last_message_at,
+        created_at: chat.created_at,
+        updated_at: chat.updated_at,
+      };
+
+      // Добавляем buyer и seller
+      if (chat.buyer) {
+        chatResponse.buyer = {
+          id: chat.buyer.id,
+          name: chat.buyer.name,
+          avatar_url: chat.buyer.avatar_url,
+        };
+      }
+      if (chat.seller) {
+        chatResponse.seller = {
+          id: chat.seller.id,
+          name: chat.seller.name,
+          avatar_url: chat.seller.avatar_url,
+        };
+      }
+
+      // Обрабатываем product
+      if (chat.product_id && chat.product) {
+        const product = chat.product as Product & { media?: Array<{ url: string; is_cover: boolean }> };
+
+        // Получаем перевод продукта
         const translation = await this.translationService.getProductTranslation(
           chat.product_id,
           normalizedLang,
         );
-        console.log('[DEBUG getUserChatRooms] translation:', translation);
-        
-        const typedChat = chat as unknown as ChatRoom & ChatRoomWithTranslations;
-        const product = chat.product as Product & { translations?: unknown[]; media?: Array<{ url: string }> };
-        
+
         if (translation) {
-          // Добавляем перевод к продукту
-          typedChat.translatedProductName = translation.name;
-          typedChat.translatedProductDescription = translation.shortDescription;
+          chatResponse.translatedProductName = translation.name;
+          chatResponse.translatedProductDescription = translation.shortDescription;
         }
 
-        // Скрываем массив translations
-        if (product.translations) {
-          (product as unknown as Record<string, unknown>).translations = undefined;
+        // Получаем main_image из media
+        if (product.media && product.media.length > 0) {
+          chatResponse.mainImage = product.media[0].url;
         }
 
-        // Получаем main_image из media с is_cover: true
-        if (product?.media && product.media.length > 0) {
-          typedChat.mainImage = product.media[0].url;
-          // Убираем массив media из ответа
-          (product as unknown as Record<string, unknown>).media = undefined;
+        // Добавляем данные о продукте (только id)
+        chatResponse.product = {
+          id: product.id,
+        };
+      }
+
+      // Получаем данные о лицензии из user_product
+      const userProduct = chat.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
+      if (userProduct?.product_license) {
+        const productLicense = userProduct.product_license;
+        const licenseType = productLicense.license_type;
+
+        // Получаем цену покупки
+        if (productLicense.price !== undefined) {
+          chatResponse.price = Number(productLicense.price);
         }
 
-        // Получаем данные о лицензии из user_product
-        const userProduct = chat.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
-        if (userProduct?.product_license) {
-          const productLicense = userProduct.product_license;
-          const licenseType = productLicense.license_type;
-
-          // Получаем цену покупки
-          if (productLicense.price !== undefined) {
-            typedChat.price = Number(productLicense.price);
-          }
-
-          // Получаем перевод типа лицензии
-          if (licenseType?.id) {
-            const licenseTypeTranslation = await this.translationService.getLicenseTypeTranslation(
+        // Получаем перевод типа лицензии
+        if (licenseType?.id) {
+          const licenseTypeTranslation =
+            await this.translationService.getLicenseTypeTranslation(
               licenseType.id,
               normalizedLang,
             );
-            if (licenseTypeTranslation) {
-              typedChat.licenseTypeName = licenseTypeTranslation.name;
-            }
+          if (licenseTypeTranslation) {
+            chatResponse.licenseTypeName = licenseTypeTranslation.name;
           }
         }
-
-        // Убираем user_product из ответа (не нужны private данные)
-        (typedChat as unknown as Record<string, unknown>).user_product = undefined;
       }
-    }
 
-    // Удаляем debug логи
-    // console.log('[DEBUG getUserChatRooms] product_id:', chat.product_id);
-    // console.log('[DEBUG getUserChatRooms] translation:', translation);
+      return chatResponse;
+    }));
 
-    return { rows: chats, count };
+    return { rows: transformedChats, count };
   }
 
   /**
@@ -278,64 +298,86 @@ export class ChatService {
 
     // Нормализуем язык (по умолчанию используем 'en' если не передан)
     const normalizedLang = normalizeLanguage(locale) || 'en';
-    console.log('[DEBUG getChatRoomWithMessages] locale:', locale, 'normalizedLang:', normalizedLang);
-    
-    // Всегда добавляем перевод названия товара если есть товар
-    if (chatRoom.product_id) {
-      console.log('[DEBUG getChatRoomWithMessages] product_id:', chatRoom.product_id);
+
+    // Формируем чистый объект ответа
+    const chatRoomResponse: Record<string, unknown> = {
+      id: chatRoom.id,
+      buyer_id: chatRoom.buyer_id,
+      seller_id: chatRoom.seller_id,
+      product_id: chatRoom.product_id,
+      user_product_id: chatRoom.user_product_id,
+      status: chatRoom.status,
+      visibility: chatRoom.visibility,
+      last_message_at: chatRoom.last_message_at,
+      created_at: chatRoom.created_at,
+      updated_at: chatRoom.updated_at,
+    };
+
+    // Добавляем buyer и seller
+    if (chatRoom.buyer) {
+      chatRoomResponse.buyer = {
+        id: chatRoom.buyer.id,
+        name: chatRoom.buyer.name,
+        avatar_url: chatRoom.buyer.avatar_url,
+      };
+    }
+    if (chatRoom.seller) {
+      chatRoomResponse.seller = {
+        id: chatRoom.seller.id,
+        name: chatRoom.seller.name,
+        avatar_url: chatRoom.seller.avatar_url,
+      };
+    }
+
+    // Обрабатываем product
+    if (chatRoom.product_id && chatRoom.product) {
+      const product = chatRoom.product as Product & { media?: Array<{ url: string; is_cover: boolean }> };
+
+      // Получаем перевод продукта
+      console.log('[DEBUG] getChatRoomWithMessages: product_id =', chatRoom.product_id, ', normalizedLang =', normalizedLang);
       const translation = await this.translationService.getProductTranslation(
-        chatRoom.product_id, 
+        chatRoom.product_id,
         normalizedLang,
       );
-      console.log('[DEBUG getChatRoomWithMessages] translation:', translation);
-      
-      // Работаем с product
-      const typedChatRoom = chatRoom as unknown as ChatRoom & ChatRoomWithTranslations;
-      const product = chatRoom.product as unknown as Record<string, unknown>;
-      
+      console.log('[DEBUG] getChatRoomWithMessages: translation =', translation);
+
       if (translation) {
-        // Добавляем переведенные поля к чату
-        typedChatRoom.translatedProductName = translation.name;
-        typedChatRoom.translatedProductDescription = translation.shortDescription;
+        chatRoomResponse.translatedProductName = translation.name;
+        chatRoomResponse.translatedProductDescription = translation.shortDescription;
       }
 
-      // Скрываем массив translations
-      if (product.translations) {
-        (product as unknown as Record<string, unknown>).translations = undefined;
+      // Получаем main_image из media
+      if (product.media && product.media.length > 0) {
+        chatRoomResponse.mainImage = product.media[0].url;
       }
 
-      // Получаем main_image из media с is_cover: true
-      if (product?.media && (product.media as unknown[]).length > 0) {
-        typedChatRoom.mainImage = (product.media as Array<{ url: string }>)[0].url;
-        // Убираем массив media из ответа
-        (product as unknown as Record<string, unknown>).media = undefined;
+      // Добавляем данные о продукте (только id)
+      chatRoomResponse.product = {
+        id: product.id,
+      };
+    }
+
+    // Получаем данные о лицензии из user_product
+    const userProduct = chatRoom.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
+    if (userProduct?.product_license) {
+      const productLicense = userProduct.product_license;
+      const licenseType = productLicense.license_type;
+
+      // Получаем цену покупки
+      if (productLicense.price !== undefined) {
+        chatRoomResponse.price = Number(productLicense.price);
       }
 
-      // Получаем данные о лицензии из user_product
-      const userProduct = chatRoom.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
-      if (userProduct?.product_license) {
-        const productLicense = userProduct.product_license;
-        const licenseType = productLicense.license_type;
-
-        // Получаем цену покупки
-        if (productLicense.price !== undefined) {
-          typedChatRoom.price = Number(productLicense.price);
-        }
-
-        // Получаем перевод типа лицензии
-        if (licenseType?.id) {
-          const licenseTypeTranslation = await this.translationService.getLicenseTypeTranslation(
-            licenseType.id,
-            normalizedLang,
-          );
-          if (licenseTypeTranslation) {
-            typedChatRoom.licenseTypeName = licenseTypeTranslation.name;
-          }
+      // Получаем перевод типа лицензии
+      if (licenseType?.id) {
+        const licenseTypeTranslation = await this.translationService.getLicenseTypeTranslation(
+          licenseType.id,
+          normalizedLang,
+        );
+        if (licenseTypeTranslation) {
+          chatRoomResponse.licenseTypeName = licenseTypeTranslation.name;
         }
       }
-
-      // Убираем user_product из ответа (не нужны private данные)
-      (typedChatRoom as unknown as Record<string, unknown>).user_product = undefined;
     }
 
     const messages = await this.chatMessageRepository.findAndCountAll({
@@ -348,7 +390,7 @@ export class ChatService {
     });
 
     return {
-      chatRoom,
+      chatRoom: chatRoomResponse,
       messages: messages.rows,
       total: messages.count,
     };
@@ -500,7 +542,7 @@ export class ChatService {
     price: number,
     deadline: Date,
   ): Promise<ChatOffer> {
-    return this.chatOfferRepository.create({
+    const offerData = {
       chat_room_id: chatRoomId,
       message_id: messageId,
       seller_id: sellerId,
@@ -508,7 +550,9 @@ export class ChatService {
       price,
       deadline,
       status: ChatOfferStatus.PENDING,
-    });
+    };
+
+    return this.chatOfferRepository.create(offerData);
   }
 
   /**
@@ -528,30 +572,48 @@ export class ChatService {
     }
 
     // Обновить статус предложения
-    await this.chatOfferRepository.updateStatus(offerId, ChatOfferStatus.ACCEPTED);
+    await this.chatOfferRepository.update(offerId, {
+      status: ChatOfferStatus.ACCEPTED,
+      responded_at: new Date(),
+    });
 
-    const chatRoomId = offer.chat_room_id;
-
-    // Создать заказ
-    const customOrder = await this.customOrderModel.create({
+    // Создать кастомный заказ
+    const orderData = {
       chat_offer_id: offerId,
       buyer_id: buyerId,
       seller_id: offer.seller_id,
-      chat_room_id: chatRoomId,
+      chat_room_id: offer.chat_room_id,
       description: offer.description,
       price: offer.price,
       status: CustomOrderStatus.IN_PROGRESS,
       deadline: offer.deadline,
-    });
+    };
 
-    return customOrder;
+    const order = await this.customOrderModel.create(orderData as any);
+    return order;
   }
 
   /**
    * Отклонить предложение
    */
   async declineOffer(offerId: number): Promise<ChatOffer> {
-    return this.chatOfferRepository.updateStatus(offerId, ChatOfferStatus.DECLINED);
+    const offer = await this.chatOfferRepository.findById(offerId);
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    if (offer.status !== ChatOfferStatus.PENDING) {
+      throw new BadRequestException('Offer is not pending');
+    }
+
+    await this.chatOfferRepository.update(offerId, {
+      status: ChatOfferStatus.DECLINED,
+      responded_at: new Date(),
+    });
+
+    // Приводим к типу ChatOffer, так как мы уже проверили, что offer существует
+    return this.chatOfferRepository.findById(offerId) as Promise<ChatOffer>;
   }
 
   /**
@@ -567,16 +629,14 @@ export class ChatService {
    * Получить заказы пользователя
    */
   async getUserOrders(userId: number, page = 1, limit = 20) {
-    const { rows, count } = await this.customOrderModel.findAndCountAll({
+    return this.customOrderModel.findAndCountAll({
       where: {
         [Op.or]: [{ buyer_id: userId }, { seller_id: userId }],
       },
-      offset: (page - 1) * limit,
-      limit,
       order: [['created_at', 'DESC']],
+      limit,
+      offset: (page - 1) * limit,
     });
-
-    return { rows, count };
   }
 
   /**
@@ -584,32 +644,35 @@ export class ChatService {
    */
   async getOrderWithRevisions(orderId: number) {
     const order = await this.customOrderModel.findByPk(orderId, {
-      include: [this.customOrderRevisionModel],
+      include: [
+        { model: this.chatOfferModel },
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
+        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
+      ],
     });
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    return order;
+    const revisions = await this.customOrderRevisionModel.findAll({
+      where: { custom_order_id: orderId },
+      order: [['created_at', 'ASC']],
+    });
+
+    return { order, revisions };
   }
 
   /**
-   * Добавить ревизию с файлом
+   * Добавить ревизию
    */
-  async addRevision(
-    orderId: number,
-    fileUrl: string,
-    comment?: string,
-  ): Promise<CustomOrderRevision> {
+  async addRevision(orderId: number, fileUrl: string, comment?: string) {
     const order = await this.customOrderModel.findByPk(orderId);
-
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    // Создать ревизию
-    const revision = await this.customOrderRevisionModel.create({
+    await this.customOrderRevisionModel.create({
       custom_order_id: orderId,
       file_url: fileUrl,
       comment,
@@ -618,38 +681,38 @@ export class ChatService {
 
     // Обновить статус заказа
     await order.update({ status: CustomOrderStatus.REVIEW });
-
-    return revision;
   }
 
   /**
-   * Одобрить результат
+   * Одобрить заказ
    */
-  async approveOrder(orderId: number): Promise<CustomOrder> {
+  async approveOrder(orderId: number) {
     const order = await this.customOrderModel.findByPk(orderId);
-
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    return order.update({ status: CustomOrderStatus.COMPLETED });
+    await order.update({ status: CustomOrderStatus.COMPLETED });
+    return order;
   }
 
   /**
    * Запросить доработку
    */
-  async requestRevision(orderId: number): Promise<CustomOrder> {
+  async requestRevision(orderId: number) {
     const order = await this.customOrderModel.findByPk(orderId);
-
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    return order.update({ status: CustomOrderStatus.REVISION });
+    await order.update({ status: CustomOrderStatus.REVISION });
+    return order;
   }
 
+  // ==================== Seller Chats ====================
+
   /**
-   * Получить чаты покупателей для автора (только VISIBLE)
+   * Получить чаты продавца
    */
   async getSellerChats(sellerId: number, page = 1, limit = 20) {
     const chats = await this.chatRoomRepository.findVisibleByUserId(sellerId, {
@@ -657,9 +720,7 @@ export class ChatService {
       limit,
       offset: (page - 1) * limit,
     });
-    
-    const count = chats.length;
-    
-    return { rows: chats, count };
+
+    return { rows: chats, count: chats.length };
   }
 }

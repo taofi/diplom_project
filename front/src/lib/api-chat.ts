@@ -27,8 +27,11 @@ export const chatApi = {
     return response.data;
   },
 
-  getChatRoom: async (id: number, page = 1, limit = 50): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
-    const response = await api.get(`${CHAT_API}/rooms/${id}`, { params: { page, limit } });
+  getChatRoom: async (id: number, locale?: string, page = 1, limit = 50): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
+    const response = await api.get(`${CHAT_API}/rooms/${id}`, { 
+      params: { page, limit },
+      headers: locale ? { 'accept-language': locale } : {}
+    });
     return response.data;
   },
 

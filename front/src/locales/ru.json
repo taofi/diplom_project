@@ -223,6 +223,27 @@
         "none": "Нет ролей"
       }
     },
+    "common": {
+      "name": "Название",
+      "email": "Email",
+      "rolesTitle": "Роли",
+      "locale": "Язык",
+      "createdAt": "Создан",
+      "changeRoles": "Изменить роли",
+      "noUsers": "Пользователи не найдены",
+      "roles": {
+        "admin": "Администратор",
+        "author": "Автор",
+        "user": "Пользователь",
+        "none": "Нет ролей"
+      },
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "delete": "Удалить",
+      "edit": "Редактировать",
+      "language": "Язык",
+      "actions": "Действия"
+    },
     "products": {
       "title": "Управление товарами",
       "createNew": "Создать товар",
@@ -426,7 +447,8 @@
     "acceptOffer": "Принять",
     "declineOffer": "Отклонить",
     "orderCreated": "Заказ создан",
-    "temporary": "Временный"
+    "temporary": "Временный",
+    "chatWith": "Чат с"
   },
   "orders": {
     "title": "Мои заказы",

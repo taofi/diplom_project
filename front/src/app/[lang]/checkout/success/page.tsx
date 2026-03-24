@@ -1,10 +1,12 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -73,5 +75,17 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen mt-20 flex items-center justify-center">
+        <Spinner />
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
