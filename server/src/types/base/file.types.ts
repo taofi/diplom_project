@@ -55,6 +55,7 @@ export interface FileInfo {
 export enum MediaFolder {
   PRODUCT = 'product',
   TEMP = 'temp',
+  OFFERS = 'offers', // Для превью заказов
 }
 
 /**
@@ -63,6 +64,7 @@ export enum MediaFolder {
 export enum FileFolder {
   PRODUCT = 'product',
   TEMP = 'temp',
+  OFFERS = 'offers', // Для исходников заказов
 }
 
 /**

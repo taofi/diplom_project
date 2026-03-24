@@ -41,3 +41,7 @@ export { ChatOffer, ChatOfferStatus } from './chat-offer.model';
 // Custom Orders
 export { CustomOrder, CustomOrderStatus } from './custom-order.model';
 export { CustomOrderRevision } from './custom-order-revision.model';
+
+// Offers
+export { Offer, OfferStatus, OfferFileType } from './offer.model';
+export type { IOfferFile } from './offer.model';
