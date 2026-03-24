@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Headers,
 } from '@nestjs/common';
+import { normalizeLanguage } from '../translation/utils/language.utils';
 import { ChatService } from './chat.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -55,11 +56,14 @@ export class ChatController {
     @CurrentUserId() userId: number,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Headers('accept-language') locale?: string,
   ) {
+    const normalizedLocale = normalizeLanguage(locale);
     return this.chatService.getUserChatRooms(
       userId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
+      normalizedLocale,
     );
   }
 
@@ -72,11 +76,14 @@ export class ChatController {
     @Param('id') id: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Headers('accept-language') locale?: string,
   ) {
+    const normalizedLocale = normalizeLanguage(locale);
     return this.chatService.getChatRoomWithMessages(
       parseInt(id, 10),
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 50,
+      normalizedLocale,
     );
   }
 

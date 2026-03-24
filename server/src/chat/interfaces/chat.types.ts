@@ -16,6 +16,21 @@ export interface TempChat {
   updatedAt: string;
 }
 
+// Типы для расширенного ChatRoom с переводами
+export interface ChatRoomProductTranslated {
+  translatedName: string;
+  translatedDescription?: string;
+  translatedShortDescription?: string;
+}
+
+export interface ChatRoomWithTranslations {
+  translatedProductName?: string;
+  translatedProductDescription?: string;
+  mainImage?: string;
+  licenseTypeName?: string;
+  price?: number;
+}
+
 export interface JoinRoomPayload {
   roomId: number;
 }

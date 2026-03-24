@@ -1,200 +1,121 @@
-# План: Рефакторинг языковых утилит и удаление дубликатов
+# План: Рефакторинг языковых утилит и исправление перевода в чате
 
-## Текущее состояние
+## Текущее состояние (выполнено)
+
+### ЭТАП 1-5: Рефакторинг языковых утилит ✅
+- [x] Создан `server/src/translation/utils/language.utils.ts`
+- [x] Создан `server/src/translation/utils/index.ts`
+- [x] Обновлён `translation.service.ts` - корректный импорт
+- [x] Обновлены импорты в product модуле (product-response.types.ts, product.types.ts)
+- [x] Обновлён `user-product.controller.ts` - удалён дублирующий метод normalizeLocale
+- [x] Удалён старый файл `product/utils/language.utils.ts`
+
+### Исправлена функция normalizeLanguage ✅
+- Теперь правильно извлекает язык из заголовка Accept-Language
+- "ru,en-US;q=0.9" → "ru"
+
+### Добавлен Accept-Language в axios ✅
+- В `front/src/lib/api.ts` добавлен заголовок Accept-Language
+
+---
+
+## НОВАЯ ЗАДАЧА: Исправить перевод в чате
 
 ### Проблема
-В проекте существует несколько мест с дублирующей логикой нормализации языка:
+1. [`chat.controller.ts`](server/src/chat/chat.controller.ts:70) - метод `getChatRoom` НЕ принимает `accept-language` заголовок
+2. [`chat.service.ts`](server/src/chat/chat.service.ts:173) - метод `getChatRoomWithMessages` принимает `locale` но не использует `normalizeLanguage`
+3. Перевод названия товара не передаётся в ответе
 
-| Файл | Метод | Поведение |
-|------|-------|-----------|
-| `product/utils/language.utils.ts` | `normalizeLanguage()` | `language?.toLowerCase() \|\| 'ru'` |
-| `chat.controller.ts` | `normalizeLocale()` | возвращает 'ru' по умолчанию |
-| `user-product.controller.ts` | `normalizeLocale()` | возвращает 'en' по умолчанию |
+### Решение
 
-### Использование normalizeLanguage
-- `translation.service.ts` - 4 использования
-- `product-response.types.ts` - 6 использований
-- `product.types.ts` - 3 использования
+#### ЭТАП 1: Обновить chat.controller.ts
 
-## Задача
+Добавить использование заголовка `accept-language` в методе `getChatRoom`:
 
-1. Перенести функции `normalizeLanguage` и `findTranslationByLanguage` из `product/utils/language.utils.ts` в `translation/utils/language.utils.ts`
-2. Обновить все импорты
-3. Удалить дублирующие методы `normalizeLocale` из контроллеров
-4. Удалить старый файл `product/utils/language.utils.ts`
-
----
-
-## ЭТАП 1: Создать translation/utils/language.utils.ts
-
-### Файл: `server/src/translation/utils/language.utils.ts`
-
-Создать новый файл с функциями:
-
+**Было:**
 ```typescript
-import { Language } from '../../common/enums/language.enum';
-
-/**
- * Нормализовать язык для поиска в базе данных
- */
-export function normalizeLanguage(language?: string): string {
-  return language?.toLowerCase() || Language.RUSSIAN;
+@Get('rooms/:id')
+async getChatRoom(
+  @Param('id') id: string,
+  @Query('page') page?: string,
+  @Query('limit') limit?: string,
+) {
+  return this.chatService.getChatRoomWithMessages(
+    parseInt(id, 10),
+    page ? parseInt(page, 10) : 1,
+    limit ? parseInt(limit, 10) : 50,
+  );
 }
+```
 
-/**
- * Получить перевод из массива переводов по языку
- */
-export function findTranslationByLanguage(
-  translations: unknown[] | undefined,
-  language?: string,
-): unknown | undefined {
-  if (!translations || translations.length === 0) {
-    return undefined;
+**Стало:**
+```typescript
+import { normalizeLanguage } from '../translation/utils/language.utils';
+
+@Get('rooms/:id')
+async getChatRoom(
+  @Param('id') id: string,
+  @Query('page') page?: string,
+  @Query('limit') limit?: string,
+  @Headers('accept-language') locale?: string,
+) {
+  const normalizedLocale = normalizeLanguage(locale);
+  return this.chatService.getChatRoomWithMessages(
+    parseInt(id, 10),
+    page ? parseInt(page, 10) : 1,
+    limit ? parseInt(limit, 10) : 50,
+    normalizedLocale,
+  );
+}
+```
+
+#### ЭТАП 2: Обновить chat.service.ts
+
+Добавить использование `normalizeLanguage` и расширить возвращаемые данные о продукте:
+
+**Изменения в `getChatRoomWithMessages`:**
+```typescript
+import { normalizeLanguage } from '../translation/utils/language.utils';
+
+// В методе:
+const normalizedLang = normalizeLanguage(locale);
+
+// Получаем перевод названия товара если есть товар
+if (chatRoom.product_id && locale) {
+  const translation = await this.translationService.getProductTranslation(
+    chatRoom.product_id, 
+    normalizedLang,
+  );
+  if (translation) {
+    // Добавляем переведенные поля к продукту
+    (chatRoom.product as any).translatedName = translation.name;
+    (chatRoom.product as any).translatedDescription = translation.description;
+    (chatRoom.product as any).translatedShortDescription = translation.shortDescription;
   }
-
-  const normalizedLang = normalizeLanguage(language);
-
-  const translation = translations.find((t) => {
-    const obj = t as { dataValues?: { language?: string }; language?: string };
-    const lang = obj.dataValues?.language || obj.language;
-    return String(lang).toLowerCase() === normalizedLang.toLowerCase();
-  });
-
-  return translation || translations[0];
 }
 ```
 
-### Файл: `server/src/translation/utils/index.ts`
+#### ЭТАП 3: Проверить getUserChatRooms
 
-Создать индексный файл:
+Также добавить locale для списка чатов:
 
+**Изменения в `getUserChatRooms` controller:**
 ```typescript
-export * from './language.utils';
-```
-
----
-
-## ЭТАП 2: Обновить translation.service.ts
-
-### Изменения в `server/src/translation/translation.service.ts`
-
-**Было:**
-```typescript
-import { normalizeLanguage } from '../product/utils/language.utils';
-```
-
-**Стало:**
-```typescript
-import { normalizeLanguage } from './utils/language.utils';
-```
-
----
-
-## ЭТАП 3: Обновить импорты в product модуле
-
-### Изменения в `server/src/types/product/product-response.types.ts`
-
-**Было:**
-```typescript
-import { normalizeLanguage } from '../../product/utils/language.utils';
-```
-
-**Стало:**
-```typescript
-import { normalizeLanguage } from '../../translation/utils/language.utils';
-```
-
-### Изменения в `server/src/types/product/product.types.ts`
-
-**Было:**
-```typescript
-import { normalizeLanguage } from '../../product/utils/language.utils';
-```
-
-**Стало:**
-```typescript
-import { normalizeLanguage } from '../../translation/utils/language.utils';
-```
-
----
-
-## ЭТАП 4: Удалить дубликаты из контроллеров
-
-### Изменения в `server/src/chat/chat.controller.ts`
-
-Удалить метод `normalizeLocale` и использовать импортированную функцию:
-
-```typescript
-// Удалить этот метод:
-private normalizeLocale(locale?: string): string {
-  if (!locale) return 'ru';
-  return locale.split(',')[0].split('-')[0];
+@Get('rooms')
+async getUserChatRooms(
+  @CurrentUserId() userId: number,
+  @Query('page') page?: string,
+  @Query('limit') limit?: string,
+  @Headers('accept-language') locale?: string,
+) {
+  const normalizedLocale = normalizeLanguage(locale);
+  return this.chatService.getUserChatRooms(
+    userId,
+    page ? parseInt(page, 10) : 1,
+    limit ? parseInt(limit, 10) : 20,
+    normalizedLocale,
+  );
 }
-
-// Изменить вызов:
-const normalizedLocale = normalizeLanguage(locale);
-```
-
-**Было:**
-```typescript
-import { normalizeLanguage } from '../product/utils/language.utils'; // добавить импорт
-// или использовать локальную функцию
-const normalizedLocale = this.normalizeLocale(locale);
-```
-
-**Стало:**
-```typescript
-import { normalizeLanguage } from '../translation/utils/language.utils';
-// ...
-const normalizedLocale = normalizeLanguage(locale);
-```
-
-### Изменения в `server/src/user-product/user-product.controller.ts`
-
-Удалить метод `normalizeLocale`:
-
-```typescript
-// Удалить этот метод:
-private normalizeLocale(locale?: string): string {
-  if (!locale) return 'en';
-  return locale.split(',')[0].split('-')[0];
-}
-
-// Использовать импортированную функцию:
-import { normalizeLanguage } from '../translation/utils/language.utils';
-const normalizedLocale = normalizeLanguage(locale);
-```
-
----
-
-## ЭТАП 5: Удалить старый файл
-
-Удалить `server/src/product/utils/language.utils.ts`
-
----
-
-## Mermaid диаграмма изменений
-
-```mermaid
-flowchart TD
-    subgraph "Этап 1: Создать"
-        A1[product/utils/language.utils.ts] --> B1[translation/utils/language.utils.ts]
-    end
-
-    subgraph "Этап 2: Обновить импорты"
-        B1 --> C1[translation.service.ts]
-        B1 --> C2[product-response.types.ts]
-        B1 --> C3[product.types.ts]
-    end
-
-    subgraph "Этап 3: Удалить дубликаты"
-        C1 --> D1[chat.controller.ts - убрать normalizeLocale]
-        C1 --> D2[user-product.controller.ts - убрать normalizeLocale]
-    end
-
-    subgraph "Этап 4: Очистка"
-        A1 --> E1[Удалить product/utils/language.utils.ts]
-    end
 ```
 
 ---
@@ -203,11 +124,18 @@ flowchart TD
 
 | Файл | Изменение |
 |------|-----------|
-| `server/src/translation/utils/language.utils.ts` | Создать (новый) |
-| `server/src/translation/utils/index.ts` | Создать (новый) |
-| `server/src/translation/translation.service.ts` | Изменить импорт |
-| `server/src/types/product/product-response.types.ts` | Изменить импорт |
-| `server/src/types/product/product.types.ts` | Изменить импорт |
-| `server/src/chat/chat.controller.ts` | Удалить normalizeLocale, использовать импорт |
-| `server/src/user-product/user-product.controller.ts` | Удалить normalizeLocale, использовать импорт |
-| `server/src/product/utils/language.utils.ts` | Удалить файл |
+| [`server/src/chat/chat.controller.ts`](server/src/chat/chat.controller.ts) | Добавить импорт normalizeLanguage, использовать accept-language заголовок |
+| [`server/src/chat/chat.service.ts`](server/src/chat/chat.service.ts) | Использовать normalizeLanguage, расширить данные перевода |
+
+---
+
+## Mermaid диаграмма
+
+```mermaid
+flowchart TD
+    A[chat.controller.ts] --> B[Добавить accept-language заголовок]
+    B --> C[Нормализовать язык через normalizeLanguage]
+    C --> D[Передать locale в chat.service.ts]
+    D --> E[chat.service.ts - использовать normalizeLanguage]
+    E --> F[Получить перевод продукта с правильным языком]
+    F --> G[Вернуть translatedName, translatedDescription]

@@ -8,6 +8,9 @@ import { User } from '../../db/models/user.model';
 import { Product } from '../../db/models/product.model';
 import { ProductMedia } from '../../db/models/product-media.model';
 import { ProductTranslation } from '../../db/models/product-translation.model';
+import { UserProduct } from '../../db/models/user-product.model';
+import { ProductLicense } from '../../db/models/product-license.model';
+import { LicenseType } from '../../db/models/license-type.model';
 
 interface ChatRoomQuery {
   page?: number;
@@ -82,6 +85,18 @@ export class ChatRoomRepository {
               attributes: ['id', 'url', 'is_cover'],
             },
           ],
+        },
+        // Добавляем UserProduct для получения данных о лицензии и цене
+        {
+          model: UserProduct,
+          as: 'user_product',
+          include: [
+            {
+              model: ProductLicense,
+              include: [LicenseType],
+            },
+          ],
+          required: false,
         },
       ],
       ...options,

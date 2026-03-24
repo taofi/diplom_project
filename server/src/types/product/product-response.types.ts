@@ -338,10 +338,11 @@ export function createProductDetailResponse(
       let licenseName = l.license_type?.slug || '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
         const translationsArr = l.license_type.translations.map((t) => t.toJSON ? t.toJSON() : t);
-        const translation = translationsArr.find(
-          (t: { locale?: string; name?: string }) => 
-            t.locale?.toLowerCase() === normalizedLang.toLowerCase()
-        ) || translationsArr[0];
+        const translation =
+          translationsArr.find(
+            (t: { locale?: string; name?: string }) =>
+              t.locale?.toLowerCase() === normalizedLang.toLowerCase(),
+          ) || translationsArr[0];
         if (translation?.name) {
           licenseName = translation.name;
         }

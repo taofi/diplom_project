@@ -11,7 +11,6 @@ import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
-import type { LicenseTypeTranslation } from '../../db/models/license-type-translation.model';
 import { normalizeLanguage } from '../../translation/utils/language.utils';
 
 // =======================

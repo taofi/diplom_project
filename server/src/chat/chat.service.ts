@@ -12,11 +12,13 @@ import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
 import { ChatOfferRepository } from './repositories/chat-offer.repository';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
-import { CreateChatMessageDto } from './dto/create-chat-message.dto';
 import { TranslationService } from '../translation/translation.service';
+import { normalizeLanguage } from '../translation/utils/language.utils';
 import { Op, WhereOptions } from 'sequelize';
 import { UserProduct } from '../db/models/user-product.model';
 import { ProductLicense } from '../db/models/product-license.model';
+import { LicenseType } from '../db/models/license-type.model';
+import { ChatRoomWithTranslations } from './interfaces/chat.types';
 
 interface ChatRoomWhereClause {
   [Op.or]: Array<{ buyer_id: number; seller_id: number }>;
@@ -154,7 +156,7 @@ export class ChatService {
    * Получить все видимые чаты пользователя
    * Возвращает только чаты с visibility: VISIBLE
    */
-  async getUserChatRooms(userId: number, page = 1, limit = 20) {
+  async getUserChatRooms(userId: number, page = 1, limit = 20, locale?: string) {
     // Используем findVisibleByUserId чтобы получить только видимые чаты
     const chats = await this.chatRoomRepository.findVisibleByUserId(userId, {
       order: [['created_at', 'DESC']],
@@ -163,6 +165,71 @@ export class ChatService {
     });
     
     const count = chats.length;
+
+    // Нормализуем язык (по умолчанию используем 'en' если не передан)
+    const normalizedLang = normalizeLanguage(locale) || 'en';
+    console.log('[DEBUG getUserChatRooms] locale:', locale, 'normalizedLang:', normalizedLang);
+    
+    // Всегда добавляем переводы для продуктов
+    for (const chat of chats) {
+      if (chat.product_id) {
+        console.log('[DEBUG getUserChatRooms] product_id:', chat.product_id);
+        const translation = await this.translationService.getProductTranslation(
+          chat.product_id,
+          normalizedLang,
+        );
+        console.log('[DEBUG getUserChatRooms] translation:', translation);
+        
+        const typedChat = chat as unknown as ChatRoom & ChatRoomWithTranslations;
+        
+        if (translation) {
+          // Добавляем перевод к продукту
+          typedChat.translatedProductName = translation.name;
+          typedChat.translatedProductDescription = translation.shortDescription;
+          product.translatedName = translation.name;
+          product.translatedDescription = translation.description;
+          product.translatedShortDescription = translation.shortDescription;
+        }
+
+        // Скрываем массив translations
+        if (product.translations) {
+          product.translations = undefined;
+        }
+
+        // Получаем main_image из media с is_cover: true
+        if (product?.media && product.media.length > 0) {
+          typedChat.mainImage = product.media[0].url;
+          // Убираем массив media из ответа
+          product.media = undefined;
+        }
+
+        // Получаем данные о лицензии из user_product
+        const userProduct = chat.user_product as unknown as { product_license: { price: string; license_type: { id: number } } };
+        if (userProduct?.product_license) {
+          const productLicense = userProduct.product_license;
+          const licenseType = productLicense.license_type;
+
+          // Получаем цену покупки
+          if (productLicense.price !== undefined) {
+            typedChat.price = Number(productLicense.price);
+          }
+
+          // Получаем перевод типа лицензии
+          if (licenseType?.id) {
+            const licenseTypeTranslation = await this.translationService.getLicenseTypeTranslation(
+              licenseType.id,
+              normalizedLang,
+            );
+            if (licenseTypeTranslation) {
+              typedChat.licenseTypeName = licenseTypeTranslation.name;
+            }
+          }
+        }
+
+        // Убираем user_product из ответа (не нужны private данные)
+        typedChat.user_product = undefined;
+      }
+    }
     
     return { rows: chats, count };
   }
@@ -188,6 +255,18 @@ export class ChatService {
           ],
         },
         { model: this.chatMessageModel, as: 'messages' },
+        // Добавляем UserProduct для получения данных о лицензии и цене
+        {
+          model: UserProduct,
+          as: 'user_product',
+          include: [
+            {
+              model: ProductLicense,
+              include: [LicenseType],
+            },
+          ],
+          required: false,
+        },
       ],
     });
 
@@ -195,13 +274,66 @@ export class ChatService {
       throw new NotFoundException('Chat room not found');
     }
 
-    // Получаем перевод названия товара если есть товар
-    if (chatRoom.product_id && locale) {
-      const translation = await this.translationService.getProductTranslation(chatRoom.product_id, locale);
+    // Нормализуем язык (по умолчанию используем 'en' если не передан)
+    const normalizedLang = normalizeLanguage(locale) || 'en';
+    console.log('[DEBUG getChatRoomWithMessages] locale:', locale, 'normalizedLang:', normalizedLang);
+    
+    // Всегда добавляем перевод названия товара если есть товар
+    if (chatRoom.product_id) {
+      console.log('[DEBUG getChatRoomWithMessages] product_id:', chatRoom.product_id);
+      const translation = await this.translationService.getProductTranslation(
+        chatRoom.product_id, 
+        normalizedLang,
+      );
+      console.log('[DEBUG getChatRoomWithMessages] translation:', translation);
+      
+      // Работаем с product
+      const product = chatRoom.product as any;
+      
       if (translation) {
-        // Добавляем переведенное имя к продукту
-        (chatRoom.product as any).translatedName = translation.name;
+        // Добавляем переведенные поля к продукту
+        product.translatedName = translation.name;
+        product.translatedDescription = translation.description;
+        product.translatedShortDescription = translation.shortDescription;
       }
+
+      // Скрываем массив translations
+      if (product.translations) {
+        product.translations = undefined;
+      }
+
+      // Получаем main_image из media с is_cover: true
+      if (product?.media && product.media.length > 0) {
+        (chatRoom as any).mainImage = product.media[0].url;
+        // Убираем массив media из ответа
+        product.media = undefined;
+      }
+
+      // Получаем данные о лицензии из user_product
+      const userProduct = (chatRoom as any).user_product;
+      if (userProduct?.product_license) {
+        const productLicense = userProduct.product_license as any;
+        const licenseType = productLicense.license_type;
+
+        // Получаем цену покупки
+        if (productLicense.price !== undefined) {
+          (chatRoom as any).price = Number(productLicense.price);
+        }
+
+        // Получаем перевод типа лицензии
+        if (licenseType?.id) {
+          const licenseTypeTranslation = await this.translationService.getLicenseTypeTranslation(
+            licenseType.id,
+            normalizedLang,
+          );
+          if (licenseTypeTranslation) {
+            (chatRoom as any).licenseTypeName = licenseTypeTranslation.name;
+          }
+        }
+      }
+
+      // Убираем user_product из ответа (не нужны private данные)
+      (chatRoom as any).user_product = undefined;
     }
 
     const messages = await this.chatMessageRepository.findAndCountAll({
