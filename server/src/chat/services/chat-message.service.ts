@@ -94,6 +94,7 @@ export class ChatMessageService {
     this.server.to(roomKey).emit('newMessage', { message });
     
     this.logger.log(`Broadcast message ${message.id} to room ${roomId}`);
+    console.log(`[ChatMessageService] Broadcast message ${message.id} to room ${roomId}, chat_room_id=${message.chat_room_id}`);
   }
 
   /**

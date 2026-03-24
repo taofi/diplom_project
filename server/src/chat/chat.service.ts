@@ -250,6 +250,10 @@ export class ChatService {
         }
       }
 
+      // Добавляем количество непрочитанных сообщений
+      const unreadCount = await this.getUnreadCountForRoom(chat.id, userId);
+      chatResponse.unreadCount = unreadCount;
+
       return chatResponse;
     }));
 
@@ -527,6 +531,49 @@ export class ChatService {
         },
       },
     );
+  }
+
+  /**
+   * Получить количество непрочитанных сообщений в конкретном чате
+   */
+  async getUnreadCountForRoom(chatRoomId: number, userId: number): Promise<number> {
+    return this.chatMessageModel.count({
+      where: {
+        chat_room_id: chatRoomId,
+        sender_id: { [Op.ne]: userId },
+        is_read: false,
+      },
+    });
+  }
+
+  /**
+   * Получить все непрочитанные сообщения для пользователя (по всем чатам)
+   * Возвращает Map<roomId, count>
+   */
+  async getAllUnreadCounts(userId: number): Promise<Map<number, number>> {
+    // 1. Получаем все видимые чаты пользователя
+    const chats = await this.chatRoomRepository.findVisibleByUserId(userId, {
+      attributes: ['id'],
+    });
+
+    // 2. Для каждого чата считаем непрочитанные
+    const result = new Map<number, number>();
+
+    for (const chat of chats) {
+      const count = await this.getUnreadCountForRoom(chat.id, userId);
+      if (count > 0) {
+        result.set(chat.id, count);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Пометить конкретный чат как прочитанный
+   */
+  async markRoomAsRead(chatRoomId: number, userId: number): Promise<void> {
+    return this.markMessagesAsRead(chatRoomId, userId);
   }
 
   // ==================== Offers ====================

@@ -30,6 +30,7 @@ function ChatContent() {
     declineOffer,
     typingUsers,
     setTyping,
+    onlineUsers,
   } = useChat();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -171,6 +172,7 @@ function ChatContent() {
               typingUsers={typingUsers}
               onTyping={setTyping}
               isLoading={isLoading}
+              onlineUsers={onlineUsers}
             />
           </div>
         </div>

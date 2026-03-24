@@ -111,4 +111,14 @@ export const chatApi = {
     const response = await api.post(`${CHAT_API}/orders/${orderId}/revision-request`);
     return response.data;
   },
+
+  // Unread messages
+  getUnreadCounts: async (): Promise<Record<number, number>> => {
+    const response = await api.get(`${CHAT_API}/rooms/unread`);
+    return response.data;
+  },
+
+  markRoomAsRead: async (roomId: number): Promise<void> => {
+    await api.post(`${CHAT_API}/rooms/${roomId}/read`);
+  },
 };

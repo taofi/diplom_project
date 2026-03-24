@@ -87,6 +87,32 @@ export class ChatController {
     );
   }
 
+  /**
+   * GET /chat/rooms/unread
+   * Получить все непрочитанные сообщения пользователя
+   * Возвращает: { roomId: count, ... }
+   */
+  @Get('rooms/unread')
+  async getUnreadCounts(@CurrentUserId() userId: number) {
+    const unreadMap = await this.chatService.getAllUnreadCounts(userId);
+    // Конвертируем Map в объект
+    return Object.fromEntries(unreadMap);
+  }
+
+  /**
+   * POST /chat/rooms/:id/read
+   * Пометить чат как прочитанный
+   */
+  @Post('rooms/:id/read')
+  @HttpCode(HttpStatus.OK)
+  async markAsRead(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+  ) {
+    await this.chatService.markRoomAsRead(parseInt(id, 10), userId);
+    return { success: true };
+  }
+
   // ==================== Messages ====================
 
   /**

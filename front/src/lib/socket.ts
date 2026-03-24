@@ -97,6 +97,67 @@ class SocketClient {
   typing(roomId: number, isTyping: boolean) {
     this.emit('typing', { roomId, isTyping });
   }
+
+  // ==================== Tab Support ====================
+
+  /**
+   * Get unique ID for the current browser tab
+   * Uses sessionStorage to persist across page reloads
+   */
+  getTabId(): string {
+    let tabId = sessionStorage.getItem('chat_tab_id');
+    if (!tabId) {
+      tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('chat_tab_id', tabId);
+    }
+    return tabId;
+  }
+
+  /**
+   * Set active room for the current tab
+   * Called when user opens a chat
+   */
+  setActiveRoom(roomId: number) {
+    this.emit('setActiveRoom', { 
+      roomId,
+      tabId: this.getTabId() // pass tab ID
+    });
+  }
+
+  /**
+   * Clear active room (tab closed or user on chat list page)
+   */
+  clearActiveRoom() {
+    this.emit('clearActiveRoom', { 
+      tabId: this.getTabId() 
+    });
+  }
+
+  // ==================== Event Listeners ====================
+
+  /**
+   * Subscribe to unread count updates
+   * Event: unreadCountUpdate
+   */
+  onUnreadUpdate(callback: (data: { roomId: number; count: number }) => void) {
+    this.on('unreadCountUpdate', callback as (data: unknown) => void);
+  }
+
+  /**
+   * Subscribe to online users in room changes
+   * Event: usersOnline
+   */
+  onUsersOnline(callback: (data: { roomId: number; userIds: number[] }) => void) {
+    this.on('usersOnline', callback as (data: unknown) => void);
+  }
+
+  /**
+   * Subscribe to user online status changes
+   * Event: userOnlineStatus
+   */
+  onUserOnlineStatus(callback: (data: { userId: number; isOnline: boolean }) => void) {
+    this.on('userOnlineStatus', callback as (data: unknown) => void);
+  }
 }
 
 // Export singleton instance

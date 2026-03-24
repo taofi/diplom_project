@@ -20,6 +20,8 @@ interface ChatWindowProps {
   onTyping: (isTyping: boolean) => void;
   isLoading?: boolean;
   isHovered?: boolean;
+  // Online status
+  onlineUsers?: Map<number, boolean>;
 }
 
 export function ChatWindow({
@@ -34,6 +36,7 @@ export function ChatWindow({
   onTyping,
   isLoading = false,
   isHovered = false,
+  onlineUsers = new Map(),
 }: ChatWindowProps) {
   const { t } = useI18n();
   const [message, setMessage] = useState('');
@@ -168,9 +171,18 @@ export function ChatWindow({
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">
-              {room.translatedProductName || room.product?.translatedName || room.product?.name || otherUser?.name || t('chat.unknownUser')}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900">
+                {room.translatedProductName || room.product?.translatedName || room.product?.name || otherUser?.name || t('chat.unknownUser')}
+              </h3>
+              {/* Online status indicator */}
+              {otherUser && onlineUsers.get(otherUser.id) && (
+                <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  {t('chat.online') || 'Online'}
+                </span>
+              )}
+            </div>
             {otherUser && <p className="text-sm text-gray-500">{t('chat.chatWith')}: {otherUser.name}</p>}
           </div>
         </div>

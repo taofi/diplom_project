@@ -5,6 +5,7 @@ export interface ChatUser {
   name: string;
   email?: string;
   avatar?: string;
+  isOnline?: boolean;
 }
 
 export interface ChatRoom {
@@ -44,6 +45,8 @@ export interface ChatRoom {
   price?: number;
   lastMessage?: ChatMessage;
   unreadCount?: number;
+  buyerIsOnline?: boolean;
+  sellerIsOnline?: boolean;
 }
 
 export interface ChatMessage {

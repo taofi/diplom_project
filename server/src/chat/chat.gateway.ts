@@ -86,6 +86,7 @@ export class ChatGateway
 
   @SubscribeMessage('initChat')
   async handleInitChat(client: Socket, payload: { sellerId: number; productId?: number; userProductId?: number }) {
+    console.log(`[ChatGateway] initChat: sellerId=${payload.sellerId}, productId=${payload.productId}, userProductId=${payload.userProductId}, clientId=${client.id}`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
@@ -172,6 +173,7 @@ export class ChatGateway
    */
   @SubscribeMessage('setActiveRoom')
   async handleSetActiveRoom(client: Socket, payload: { roomId: number }) {
+    console.log(`[ChatGateway] setActiveRoom called: roomId=${payload.roomId}, clientId=${client.id}`);
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
@@ -187,6 +189,7 @@ export class ChatGateway
    */
   @SubscribeMessage('clearActiveRoom')
   async handleClearActiveRoom(client: Socket) {
+    console.log(`[ChatGateway] clearActiveRoom: clientId=${client.id}`);
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };

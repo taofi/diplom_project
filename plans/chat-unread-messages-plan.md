@@ -364,32 +364,32 @@ sequenceDiagram
 ## Детальные этапы реализации
 
 ### Этап 1: Redis сервис
-- [ ] Создать `server/src/chat/services/chat-state.service.ts`
-- [ ] Настроить RedisModule в `chat.module.ts`
+- [x] Создать `server/src/chat/services/chat-state.service.ts`
+- [x] Настроить RedisModule в `chat.module.ts`
 
 ### Этап 2: Рефакторинг Gateway
-- [ ] Оставить ключевые обработчики в `chat.gateway.ts`
-- [ ] Создать `server/src/chat/services/chat-message.service.ts`
-- [ ] Создать `server/src/chat/services/chat-notification.service.ts`
-- [ ] Обновить `chat.module.ts`
+- [x] Оставить ключевые обработчики в `chat.gateway.ts`
+- [x] Создать `server/src/chat/services/chat-message.service.ts`
+- [x] Создать `server/src/chat/services/chat-notification.service.ts`
+- [x] Обновить `chat.module.ts`
 
 ### Этап 3: ChatService и Controller
-- [ ] Обновить `chat.service.ts` - возврат unreadCount
-- [ ] Добавить эндпоинты в `chat.controller.ts`
+- [x] Обновить `chat.service.ts` - возврат unreadCount
+- [x] Добавить эндпоинты в `chat.controller.ts`
 
 ### Этап 4: Frontend - Socket
-- [ ] Обновить `front/src/lib/socket.ts`
-- [ ] Добавить обработчики событий
+- [x] Обновить `front/src/lib/socket.ts`
+- [x] Добавить обработчики событий
 
 ### Этап 5: Frontend - ChatContext
-- [ ] Расширить типы в `front/src/types/chat/index.ts`
-- [ ] Обновить `ChatContext.tsx`
-- [ ] Исправить логику добавления сообщений
+- [x] Расширить типы в `front/src/types/chat/index.ts`
+- [x] Обновить `ChatContext.tsx`
+- [x] Исправить логику добавления сообщений
 
 ### Этап 6: Frontend - Компоненты
-- [ ] Обновить `ChatWindow.tsx` - отображение онлайн статуса
-- [ ] Обновить `ChatPage.tsx` - передача роли
-- [ ] Проверить `ChatList.tsx`
+- [x] Обновить `ChatWindow.tsx` - отображение онлайн статуса
+- [x] Обновить `ChatPage.tsx` - передача роли
+- [x] Проверить `ChatList.tsx`
 
 ### Этап 7: Тестирование
 - [ ] Баг: переключение между чатами

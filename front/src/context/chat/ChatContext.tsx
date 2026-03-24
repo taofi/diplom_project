@@ -37,6 +37,27 @@ interface ChatContextType {
   // Typing indicator
   setTyping: (isTyping: boolean) => void;
   typingUsers: Map<number, Set<number>>;
+  
+  // ==================== Tab Support & Online Status ====================
+  
+  // Active room (for multi-tab support)
+  activeRoomId: number | null;
+  setActiveRoom: (roomId: number) => void;
+  
+  // Current user role in current room ('buyer' | 'seller' | null)
+  currentUserRole: 'buyer' | 'seller' | null;
+  
+  // Online users in current room (userId -> isOnline)
+  onlineUsers: Map<number, boolean>;
+  
+  // Mark room as read
+  markRoomAsRead: (roomId: number) => Promise<void>;
+  
+  // Refresh unread counts
+  refreshUnreadCounts: () => Promise<void>;
+  
+  // Update online users
+  updateOnlineUsers: (roomId: number, userIds: number[]) => void;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -52,6 +73,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
   // Кэш пользователей для подстановки имени и аватара по sender_id
   const [usersCache, setUsersCache] = useState<Map<number, ChatUser>>(new Map());
+  
+  // ==================== Tab Support & Online Status ====================
+  const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<'buyer' | 'seller' | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<Map<number, boolean>>(new Map());
+  
+  // Refs for values needed in callbacks
+  const activeRoomIdRef = useRef<number | null>(null);
+  activeRoomIdRef.current = activeRoomId;
 
   // Refs for preventing duplicate requests
   const isLoadingRoomsRef = useRef(false);
@@ -75,12 +105,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Set up event listeners
     socketClient.on('newMessage', (data: unknown) => {
       const payload = data as { message: ChatMessage };
+      console.log('[ChatContext] newMessage received:', payload.message.chat_room_id, 'activeRoomId:', activeRoomIdRef.current);
       // Подставляем данные отправителя из кэша
       const sender = usersCacheRef.current.get(payload.message.sender_id);
       if (sender) {
         payload.message.sender = sender;
       }
-      setMessages(prev => [...prev, payload.message]);
+      // Only add message if this is the active room (for multi-tab support)
+      if (activeRoomIdRef.current === payload.message.chat_room_id) {
+        console.log('[ChatContext] Adding message to state');
+        setMessages(prev => [...prev, payload.message]);
+      } else {
+        console.log('[ChatContext] Message NOT added - room mismatch');
+      }
     });
 
     socketClient.on('userTyping', (data: unknown) => {
@@ -115,6 +152,43 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const exists = prev.some(room => room.id === payload.room.id);
         if (exists) return prev;
         return [...prev, payload.room];
+      });
+    });
+
+    // ==================== Tab Support & Online Status Listeners ====================
+    
+    // Listen for unread count updates
+    socketClient.on('unreadCountUpdate', (data: unknown) => {
+      const payload = data as { roomId: number; count: number };
+      setRooms(prev => prev.map(room => 
+        room.id === payload.roomId 
+          ? { ...room, unreadCount: payload.count }
+          : room
+      ));
+      // If this is the active room, also update currentRoom
+      if (currentRoom?.id === payload.roomId) {
+        setCurrentRoom(prev => prev ? { ...prev, unreadCount: payload.count } : null);
+      }
+    });
+
+    // Listen for users online in room
+    socketClient.on('usersOnline', (data: unknown) => {
+      const payload = data as { roomId: number; userIds: number[] };
+      // Only update if this is the current room
+      if (currentRoom?.id === payload.roomId) {
+        const newOnlineUsers = new Map<number, boolean>();
+        payload.userIds.forEach(userId => newOnlineUsers.set(userId, true));
+        setOnlineUsers(newOnlineUsers);
+      }
+    });
+
+    // Listen for user online status changes
+    socketClient.on('userOnlineStatus', (data: unknown) => {
+      const payload = data as { userId: number; isOnline: boolean };
+      setOnlineUsers(prev => {
+        const newMap = new Map(prev);
+        newMap.set(payload.userId, payload.isOnline);
+        return newMap;
       });
     });
 
@@ -167,6 +241,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const result = await chatApi.getChatRoom(roomId, locale);
       setCurrentRoom(result.chatRoom);
       setMessages(result.messages);
+      
+      // Установить активную комнату для правильной обработки входящих сообщений
+      setActiveRoomId(roomId);
+      console.log('[ChatContext] setActiveRoomId called:', roomId);
+      // Уведомить сервер об активной комнате (для множественных вкладок)
+      socketClient.setActiveRoom(roomId);
+      console.log('[ChatContext] socketClient.setActiveRoom called:', roomId);
       
       // Сохраняем участников чата в кэш
       const newUsersCache = new Map(usersCacheRef.current);
@@ -284,6 +365,57 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [currentRoom]);
 
+  // ==================== Tab Support & Online Status Methods ====================
+
+  const setActiveRoom = useCallback((roomId: number) => {
+    setActiveRoomId(roomId);
+  }, []);
+
+  const markRoomAsRead = useCallback(async (roomId: number) => {
+    try {
+      await chatApi.markRoomAsRead(roomId);
+      // Update local state
+      setRooms(prev => prev.map(room => 
+        room.id === roomId 
+          ? { ...room, unreadCount: 0 }
+          : room
+      ));
+      if (currentRoom?.id === roomId) {
+        setCurrentRoom(prev => prev ? { ...prev, unreadCount: 0 } : null);
+      }
+      // Reset message read status
+      setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })));
+    } catch (error) {
+      console.error('Error marking room as read:', error);
+    }
+  }, [currentRoom]);
+
+  const refreshUnreadCounts = useCallback(async () => {
+    try {
+      const counts = await chatApi.getUnreadCounts();
+      // counts is Record<roomId, count>
+      setRooms(prev => prev.map(room => {
+        const count = counts[room.id] ?? 0;
+        return { ...room, unreadCount: count };
+      }));
+      if (currentRoom) {
+        const currentCount = counts[currentRoom.id] ?? 0;
+        setCurrentRoom(prev => prev ? { ...prev, unreadCount: currentCount } : null);
+      }
+    } catch (error) {
+      console.error('Error refreshing unread counts:', error);
+    }
+  }, [currentRoom]);
+
+  const updateOnlineUsers = useCallback((roomId: number, userIds: number[]) => {
+    // Only update for current room
+    if (activeRoomIdRef.current === roomId) {
+      const newOnlineUsers = new Map<number, boolean>();
+      userIds.forEach(userId => newOnlineUsers.set(userId, true));
+      setOnlineUsers(newOnlineUsers);
+    }
+  }, []);
+
   return (
     <ChatContext.Provider
       value={{
@@ -303,6 +435,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         loadOrders,
         setTyping,
         typingUsers,
+        // ==================== Tab Support & Online Status ====================
+        activeRoomId,
+        setActiveRoom,
+        currentUserRole,
+        onlineUsers,
+        markRoomAsRead,
+        refreshUnreadCounts,
+        updateOnlineUsers,
       }}
     >
       {children}
