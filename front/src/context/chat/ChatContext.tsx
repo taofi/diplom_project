@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { socketClient } from '../../lib/socket';
 import { chatApi } from '../../lib/api-chat';
 import { getUserById } from '../../lib/api-user';
+import { useI18n } from '../../context/i18n/I18nContext';
 import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, ChatUser } from '../../types/chat';
 
 interface ChatContextType {
@@ -41,6 +42,7 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
+  const { locale } = useI18n();
   const [isConnected, setIsConnected] = useState(false);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
@@ -110,19 +112,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const loadChatRooms = useCallback(async () => {
     try {
-      const result = await chatApi.getChatRooms();
+      const result = await chatApi.getChatRooms(locale);
       setRooms(result.rows);
     } catch (error) {
       console.error('Error loading chat rooms:', error);
     }
-  }, []);
+  }, [locale]);
 
   const loadUserInfo = useCallback(async (userId: number): Promise<ChatUser | null> => {
     try {
       const user = await getUserById(userId);
       return {
         id: user.id,
-        username: user.name,
+        name: user.name,
         email: user.email,
         avatar: user.avatar_url || undefined,
       };

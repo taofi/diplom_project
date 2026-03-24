@@ -19,8 +19,11 @@ export const chatApi = {
   },
 
   // Chat rooms - get visible chats only
-  getChatRooms: async (page = 1, limit = 20): Promise<{ rows: ChatRoom[]; count: number }> => {
-    const response = await api.get(`${CHAT_API}/rooms`, { params: { page, limit } });
+  getChatRooms: async (locale?: string, page = 1, limit = 20): Promise<{ rows: ChatRoom[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/rooms`, { 
+      params: { page, limit },
+      headers: locale ? { 'accept-language': locale } : {}
+    });
     return response.data;
   },
 

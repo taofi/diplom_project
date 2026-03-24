@@ -5,14 +5,17 @@ import { ChatMessage, MessageType } from '../db/models/chat-message.model';
 import { ChatOffer, ChatOfferStatus } from '../db/models/chat-offer.model';
 import { CustomOrder, CustomOrderStatus } from '../db/models/custom-order.model';
 import { CustomOrderRevision } from '../db/models/custom-order-revision.model';
+import { User } from '../db/models/user.model';
+import { Product } from '../db/models/product.model';
+import { ProductMedia } from '../db/models/product-media.model';
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
 import { ChatOfferRepository } from './repositories/chat-offer.repository';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
+import { TranslationService } from '../translation/translation.service';
 import { Op, WhereOptions } from 'sequelize';
 import { UserProduct } from '../db/models/user-product.model';
-import { Product } from '../db/models/product.model';
 import { ProductLicense } from '../db/models/product-license.model';
 
 interface ChatRoomWhereClause {
@@ -28,6 +31,7 @@ export class ChatService {
     private readonly chatRoomRepository: ChatRoomRepository,
     private readonly chatMessageRepository: ChatMessageRepository,
     private readonly chatOfferRepository: ChatOfferRepository,
+    private readonly translationService: TranslationService,
     @InjectModel(ChatRoom)
     private readonly chatRoomModel: typeof ChatRoom,
     @InjectModel(ChatMessage)
@@ -166,9 +170,23 @@ export class ChatService {
   /**
    * Получить чат с сообщениями
    */
-  async getChatRoomWithMessages(chatRoomId: number, page = 1, limit = 50) {
+  async getChatRoomWithMessages(chatRoomId: number, page = 1, limit = 50, locale?: string) {
     const chatRoom = await this.chatRoomRepository.findById(chatRoomId, {
       include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
+        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
+        {
+          model: Product,
+          as: 'product',
+          include: [
+            {
+              model: ProductMedia,
+              where: { is_cover: true },
+              required: false,
+              attributes: ['id', 'url', 'is_cover'],
+            },
+          ],
+        },
         { model: this.chatMessageModel, as: 'messages' },
       ],
     });
@@ -177,10 +195,22 @@ export class ChatService {
       throw new NotFoundException('Chat room not found');
     }
 
+    // Получаем перевод названия товара если есть товар
+    if (chatRoom.product_id && locale) {
+      const translation = await this.translationService.getProductTranslation(chatRoom.product_id, locale);
+      if (translation) {
+        // Добавляем переведенное имя к продукту
+        (chatRoom.product as any).translatedName = translation.name;
+      }
+    }
+
     const messages = await this.chatMessageRepository.findAndCountAll({
       page,
       limit,
       chatRoomId,
+      include: [
+        { model: User, as: 'sender', attributes: ['id', 'name', 'avatar_url'] },
+      ],
     });
 
     return {
@@ -277,15 +307,16 @@ export class ChatService {
     }
 
     // Создать сообщение
-    const messageDto: CreateChatMessageDto = {
-      chatRoomId: roomId,
-      senderId,
-      content,
-      type,
-      mediaUrl: attachmentUrl,
+    // Маппим поля в snake_case для Sequelize
+    const messageData = {
+      chat_room_id: roomId,
+      sender_id: senderId,
+      message: content,
+      message_type: type,
+      attachment_url: attachmentUrl,
     };
 
-    const message = await this.chatMessageRepository.create(messageDto);
+    const message = await this.chatMessageRepository.create(messageData);
 
     // Обновить last_message_at в чате
     await this.chatRoomRepository.update(roomId, {

@@ -4,6 +4,10 @@ import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../../db/models/ch
 import { FindOptions, FindAndCountOptions } from 'sequelize';
 import { Op } from 'sequelize';
 import { CreateChatRoomDto } from '../dto/create-chat-room.dto';
+import { User } from '../../db/models/user.model';
+import { Product } from '../../db/models/product.model';
+import { ProductMedia } from '../../db/models/product-media.model';
+import { ProductTranslation } from '../../db/models/product-translation.model';
 
 interface ChatRoomQuery {
   page?: number;
@@ -52,6 +56,7 @@ export class ChatRoomRepository {
   /**
    * Find all visible chat rooms for a user (for chat list display)
    * Only returns chats where visibility is VISIBLE
+   * Includes: buyer, seller, product with translations and cover media
    */
   async findVisibleByUserId(
     userId: number,
@@ -62,6 +67,23 @@ export class ChatRoomRepository {
         [Op.or]: [{ buyer_id: userId }, { seller_id: userId }],
         visibility: ChatRoomVisibility.VISIBLE,
       },
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
+        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
+        {
+          model: Product,
+          as: 'product',
+          include: [
+            { model: ProductTranslation, as: 'translations' },
+            {
+              model: ProductMedia,
+              where: { is_cover: true },
+              required: false,
+              attributes: ['id', 'url', 'is_cover'],
+            },
+          ],
+        },
+      ],
       ...options,
     });
   }

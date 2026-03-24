@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { ProductTranslation } from '../db/models/product-translation.model';
 import { LicenseTypeTranslation } from '../db/models/license-type-translation.model';
 import { ProductMedia } from '../db/models/product-media.model';
+import { normalizeLanguage } from './utils/language.utils';
 
 export interface ProductTranslationData {
   name: string;
@@ -28,22 +29,6 @@ export class TranslationService {
   ) {}
 
   /**
-   * Нормализовать язык для поиска в базе данных
-   * @param locale - язык (может быть в любом регистре)
-   * @returns нормализованный язык в нижнем регистре
-   */
-  private normalizeLocale(locale?: string): string {
-    if (!locale) {
-      return 'ru';
-    }
-    const normalized = locale.toLowerCase();
-    if (normalized === 'en' || normalized.startsWith('en-')) {
-      return 'en';
-    }
-    return 'ru';
-  }
-
-  /**
    * Получить перевод продукта по ID и языку
    * @param productId - ID продукта
    * @param locale - язык (ru/en)
@@ -53,7 +38,7 @@ export class TranslationService {
     productId: number,
     locale?: string,
   ): Promise<ProductTranslationData | null> {
-    const normalizedLocale = this.normalizeLocale(locale);
+    const normalizedLocale = normalizeLanguage(locale);
 
     // Для product_translations используется поле 'language' (not 'locale')
     const translation = await this.productTranslationModel.findOne({
@@ -99,7 +84,7 @@ export class TranslationService {
     licenseTypeId: number,
     locale?: string,
   ): Promise<LicenseTypeTranslationData | null> {
-    const normalizedLocale = this.normalizeLocale(locale);
+    const normalizedLocale = normalizeLanguage(locale);
 
     // Для license_type_translations используется поле 'locale'
     const translation = await this.licenseTypeTranslationModel.findOne({
@@ -178,7 +163,7 @@ export class TranslationService {
     productIds: number[],
     locale?: string,
   ): Promise<Map<number, ProductTranslationData>> {
-    const normalizedLocale = this.normalizeLocale(locale);
+    const normalizedLocale = normalizeLanguage(locale);
     const result = new Map<number, ProductTranslationData>();
 
     if (productIds.length === 0) {
@@ -247,7 +232,7 @@ export class TranslationService {
     licenseTypeIds: number[],
     locale?: string,
   ): Promise<Map<number, LicenseTypeTranslationData>> {
-    const normalizedLocale = this.normalizeLocale(locale);
+    const normalizedLocale = normalizeLanguage(locale);
     const result = new Map<number, LicenseTypeTranslationData>();
 
     if (licenseTypeIds.length === 0) {

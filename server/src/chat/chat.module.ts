@@ -34,9 +34,13 @@ import { ChatController } from './chat.controller';
 // Gateway
 import { ChatGateway } from './chat.gateway';
 
+// Translation
+import { TranslationModule } from '../translation/translation.module';
+
 @Module({
   imports: [
     AuthModule,
+    TranslationModule,
     SequelizeModule.forFeature([
       ChatRoom,
       ChatMessage,

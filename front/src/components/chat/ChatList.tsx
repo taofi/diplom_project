@@ -20,7 +20,7 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
     const date = new Date(dateString);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
@@ -38,7 +38,11 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
 
   const getChatTitle = (room: ChatRoom) => {
     const otherUser = getOtherUser(room);
-    return otherUser?.username || t('chat.unknownUser');
+    // Если есть товар, показываем переведенное название или имя товара
+    if (room.product?.translatedName || room.product?.name) {
+      return room.product.translatedName || room.product.name;
+    }
+    return otherUser?.name || t('chat.unknownUser');
   };
 
   if (rooms.length === 0) {
@@ -51,7 +55,7 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
       </div>
     );
   }
-
+  console.log(rooms);
   return (
     <div className="divide-y divide-gray-100">
       {rooms.map((room) => {
@@ -71,17 +75,26 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
             <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {otherUser?.avatar ? (
+                {/* Показываем обложку товара если есть, иначе аватар пользователя */}
+                {room.product?.media?.[0] ? (
+                  <ServerImage
+                    src={room.product.media[0].url}
+                    alt={room.product.name || 'Product'}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : otherUser?.avatar ? (
                   <ServerImage
                     src={otherUser.avatar}
-                    alt={otherUser.username}
+                    alt={otherUser.name}
                     width={48}
                     height={48}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-lg font-medium text-gray-600">
-                    {otherUser?.username?.charAt(0).toUpperCase() || '?'}
+                    {otherUser?.name?.charAt(0).toUpperCase() || '?'}
                   </span>
                 )}
               </div>
@@ -98,20 +111,14 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
                 </div>
 
                 <div className="flex justify-between items-center">
-                  {/* Product info if exists */}
+                  {/* Product info if exists - используем media для обложки */}
                   {room.product && (
                     <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
-                      <ServerImage
-                        src={room.product.main_image}
-                        alt={room.product.name}
-                        width={16}
-                        height={16}
-                        className="w-4 h-4 rounded object-cover"
-                      />
+
                       <span className="truncate max-w-[100px]">{room.product.name}</span>
                     </div>
                   )}
-                  
+
                   {room.lastMessage && (
                     <p className={`text-sm truncate ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
                       {room.lastMessage.message}

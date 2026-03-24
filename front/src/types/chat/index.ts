@@ -2,8 +2,8 @@
 
 export interface ChatUser {
   id: number;
-  username: string;
-  email: string;
+  name: string;
+  email?: string;
   avatar?: string;
 }
 
@@ -25,6 +25,12 @@ export interface ChatRoom {
     id: number;
     name: string;
     main_image: string;
+    translatedName?: string; // Переведенное название товара
+    media?: Array<{
+      id: number;
+      url: string;
+      is_cover: boolean;
+    }>;
   };
   lastMessage?: ChatMessage;
   unreadCount?: number;

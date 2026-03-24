@@ -33,29 +33,23 @@ const messageDto: CreateChatMessageDto = {
 
 **Стало:**
 ```typescript
-const messageDto: CreateChatMessageDto = {
-  chatRoomId: roomId,
-  senderId,
-  content,
-  type,
-  mediaUrl: attachmentUrl,
-};
-
-// Дополнительно маппим для Sequelize
+// Маппим поля в snake_case для Sequelize
 const messageData = {
-  chat_room_id: messageDto.chatRoomId,
-  sender_id: messageDto.senderId,
-  message: messageDto.content,
-  message_type: messageDto.type,
-  attachment_url: messageDto.mediaUrl,
+  chat_room_id: roomId,
+  sender_id: senderId,
+  message: content,
+  message_type: type,
+  attachment_url: attachmentUrl,
 };
 
 const message = await this.chatMessageRepository.create(messageData);
 ```
 
-## Проблема 2: ChatRoom не возвращает имя автора
+---
 
-### Описание
+## Проблема 2: ChatRoom не возвращает данные для отображения
+
+### Текущее состояние
 API возвращает объект:
 ```json
 {
@@ -71,16 +65,19 @@ API возвращает объект:
 }
 ```
 
-В ответе отсутствуют:
-- Имя покупателя (`buyer.name`)
-- Имя продавца (`seller.name`)
-- Информация об отправителе в сообщениях (`sender`)
+### Что должно отображаться в чате
+
+1. **Имя автора** - имя покупателя и продавца (buyer.name, seller.name)
+2. **Информация о товаре** - название товара и обложка (product с is_cover)
+3. **Аватарка товара** - картинка товара с is_cover = true вместо аватарки автора
 
 ### Причина
-В методе [`getChatRoomWithMessages`](server/src/chat/chat.service.ts:169) запрос не включает связанные модели для `buyer`, `seller` и `sender`.
+В методе [`getChatRoomWithMessages`](server/src/chat/chat.service.ts:169) запрос не включает связанные модели:
+- buyer, seller (для имен)
+- product с media (для названия и картинки товара)
 
 ### Исправление
-Добавить `include` с моделями User в запрос чата и сообщений:
+Добавить `include` с моделями User и Product в запрос чата:
 
 ```typescript
 // В chat.service.ts - getChatRoomWithMessages
@@ -88,18 +85,23 @@ const chatRoom = await this.chatRoomRepository.findById(chatRoomId, {
   include: [
     { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
     { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
-  ],
-});
-
-const messages = await this.chatMessageRepository.findAndCountAll({
-  page,
-  limit,
-  chatRoomId,
-  include: [
-    { model: User, as: 'sender', attributes: ['id', 'name', 'avatar_url'] },
+    { 
+      model: Product, 
+      as: 'product', 
+      include: [
+        { 
+          model: ProductMedia, 
+          where: { is_cover: true },
+          required: false,
+          attributes: ['url', 'is_cover']
+        }
+      ] 
+    },
   ],
 });
 ```
+
+---
 
 ## План исправлений
 
@@ -110,8 +112,12 @@ const messages = await this.chatMessageRepository.findAndCountAll({
 ### Этап 2: Добавление связанных данных в ответ API
 1. Изменить [`chat.service.ts`](server/src/chat/chat.service.ts) метод `getChatRoomWithMessages`
 2. Добавить include для buyer/seller в запрос чата
-3. Добавить include для sender в запрос сообщений
+3. Добавить include для product с media в запрос чата (для обложки товара)
+4. Добавить include для sender в запрос сообщений
 
 ### Этап 3: Проверка
 1. Протестировать отправку сообщения через WebSocket
-2. Проверить получение chatRoom с именами авторов
+2. Проверить получение chatRoom с:
+   - Именами авторов (buyer.name, seller.name)
+   - Названием товара (product.name)
+   - Картинкой товара (product.media с is_cover=true)

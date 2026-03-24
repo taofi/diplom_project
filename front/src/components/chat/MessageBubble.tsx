@@ -68,14 +68,14 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
         {sender?.avatar ? (
           <ServerImage
             src={sender.avatar}
-            alt={sender.username}
+            alt={sender.name}
             width={32}
             height={32}
             className="w-full h-full object-cover"
           />
         ) : (
           <span className="text-sm font-medium text-gray-600">
-            {sender?.username?.charAt(0).toUpperCase() || '?'}
+            {sender?.name?.charAt(0).toUpperCase() || '?'}
           </span>
         )}
       </div>
@@ -84,7 +84,7 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
       <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium text-gray-700">
-            {sender?.username || t('chat.unknownUser')}
+            {sender?.name || t('chat.unknownUser')}
           </span>
           <span className="text-xs text-gray-400">
             {formatTime(message.created_at)}

@@ -10,6 +10,7 @@ interface ChatMessageQuery {
   chatRoomId?: number;
   senderId?: number;
   type?: MessageType;
+  include?: FindOptions['include'];
 }
 
 type ChatMessageWhereOptions = FindOptions['where'] & {
@@ -59,7 +60,7 @@ export class ChatMessageRepository {
   async findAndCountAll(
     query: ChatMessageQuery = {},
   ): Promise<{ rows: ChatMessage[]; count: number }> {
-    const { page = 1, limit = 20, chatRoomId, senderId, type } = query;
+    const { page = 1, limit = 20, chatRoomId, senderId, type, include } = query;
     const offset = (page - 1) * limit;
 
     const where: ChatMessageWhereOptions = {};
@@ -81,12 +82,13 @@ export class ChatMessageRepository {
       offset,
       limit,
       order: [['created_at', 'ASC']],
+      include,
     };
 
     return this.chatMessageModel.findAndCountAll(options);
   }
 
-  async create(data: CreateChatMessageDto): Promise<ChatMessage> {
+  async create(data: Partial<ChatMessage>): Promise<ChatMessage> {
     return this.chatMessageModel.create(data as any);
   }
 

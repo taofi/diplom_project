@@ -12,7 +12,7 @@ import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
-import { normalizeLanguage } from '../../product/utils/language.utils';
+import { normalizeLanguage } from '../../translation/utils/language.utils';
 
 // Re-export типов из product.types.ts
 export type {

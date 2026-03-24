@@ -2,14 +2,13 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
-  Delete,
   Body,
   Param,
   Query,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
@@ -18,8 +17,6 @@ import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
 import {
   CreateOfferDto,
-  AcceptOfferDto,
-  DeclineOfferDto,
   CreateRevisionDto,
 } from './dto/chat-actions.dto';
 import { MessageType } from '../db/models/chat-message.model';

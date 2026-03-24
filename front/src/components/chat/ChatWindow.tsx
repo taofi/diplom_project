@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useState, useRef, FormEvent } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { MessageBubble } from './MessageBubble';
 import { OfferCard } from './OfferCard';
@@ -38,11 +38,6 @@ export function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // Handle typing indicator
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,27 +107,36 @@ export function ChatWindow({
       <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-            {otherUser?.avatar ? (
+            {/* Показываем обложку товара если есть, иначе аватар пользователя */}
+            {room.product?.media?.[0] ? (
+              <ServerImage
+                src={room.product.media[0].url}
+                alt={room.product.name || 'Product'}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            ) : otherUser?.avatar ? (
               <ServerImage
                 src={otherUser.avatar}
-                alt={otherUser.username}
+                alt={otherUser.name}
                 width={40}
                 height={40}
                 className="w-full h-full object-cover"
               />
             ) : (
               <span className="text-lg font-medium text-gray-600">
-                {otherUser?.username?.charAt(0).toUpperCase() || '?'}
+                {otherUser?.name?.charAt(0).toUpperCase() || '?'}
               </span>
             )}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">
-              {otherUser?.username || t('chat.unknownUser')}
+              {room.product?.translatedName || room.product?.name || otherUser?.name || t('chat.unknownUser')}
             </h3>
-            {room.product && (
+            {otherUser && (
               <p className="text-sm text-gray-500">
-                {t('chat.aboutProduct')}: {room.product.name}
+                {t('chat.chatWith')}: {otherUser.name}
               </p>
             )}
           </div>

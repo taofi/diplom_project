@@ -12,7 +12,7 @@ import type { ProductTranslation } from '../../db/models/product-translation.mod
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
 import type { LicenseTypeTranslation } from '../../db/models/license-type-translation.model';
-import { normalizeLanguage } from '../../product/utils/language.utils';
+import { normalizeLanguage } from '../../translation/utils/language.utils';
 
 // =======================
 // ENUMS
