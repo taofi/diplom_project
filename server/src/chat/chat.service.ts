@@ -181,30 +181,28 @@ export class ChatService {
         console.log('[DEBUG getUserChatRooms] translation:', translation);
         
         const typedChat = chat as unknown as ChatRoom & ChatRoomWithTranslations;
+        const product = chat.product as Product & { translations?: unknown[]; media?: Array<{ url: string }> };
         
         if (translation) {
           // Добавляем перевод к продукту
           typedChat.translatedProductName = translation.name;
           typedChat.translatedProductDescription = translation.shortDescription;
-          product.translatedName = translation.name;
-          product.translatedDescription = translation.description;
-          product.translatedShortDescription = translation.shortDescription;
         }
 
         // Скрываем массив translations
         if (product.translations) {
-          product.translations = undefined;
+          (product as unknown as Record<string, unknown>).translations = undefined;
         }
 
         // Получаем main_image из media с is_cover: true
         if (product?.media && product.media.length > 0) {
           typedChat.mainImage = product.media[0].url;
           // Убираем массив media из ответа
-          product.media = undefined;
+          (product as unknown as Record<string, unknown>).media = undefined;
         }
 
         // Получаем данные о лицензии из user_product
-        const userProduct = chat.user_product as unknown as { product_license: { price: string; license_type: { id: number } } };
+        const userProduct = chat.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
         if (userProduct?.product_license) {
           const productLicense = userProduct.product_license;
           const licenseType = productLicense.license_type;
@@ -227,10 +225,14 @@ export class ChatService {
         }
 
         // Убираем user_product из ответа (не нужны private данные)
-        typedChat.user_product = undefined;
+        (typedChat as unknown as Record<string, unknown>).user_product = undefined;
       }
     }
-    
+
+    // Удаляем debug логи
+    // console.log('[DEBUG getUserChatRooms] product_id:', chat.product_id);
+    // console.log('[DEBUG getUserChatRooms] translation:', translation);
+
     return { rows: chats, count };
   }
 
@@ -288,36 +290,36 @@ export class ChatService {
       console.log('[DEBUG getChatRoomWithMessages] translation:', translation);
       
       // Работаем с product
-      const product = chatRoom.product as any;
+      const typedChatRoom = chatRoom as unknown as ChatRoom & ChatRoomWithTranslations;
+      const product = chatRoom.product as unknown as Record<string, unknown>;
       
       if (translation) {
-        // Добавляем переведенные поля к продукту
-        product.translatedName = translation.name;
-        product.translatedDescription = translation.description;
-        product.translatedShortDescription = translation.shortDescription;
+        // Добавляем переведенные поля к чату
+        typedChatRoom.translatedProductName = translation.name;
+        typedChatRoom.translatedProductDescription = translation.shortDescription;
       }
 
       // Скрываем массив translations
       if (product.translations) {
-        product.translations = undefined;
+        (product as unknown as Record<string, unknown>).translations = undefined;
       }
 
       // Получаем main_image из media с is_cover: true
-      if (product?.media && product.media.length > 0) {
-        (chatRoom as any).mainImage = product.media[0].url;
+      if (product?.media && (product.media as unknown[]).length > 0) {
+        typedChatRoom.mainImage = (product.media as Array<{ url: string }>)[0].url;
         // Убираем массив media из ответа
-        product.media = undefined;
+        (product as unknown as Record<string, unknown>).media = undefined;
       }
 
       // Получаем данные о лицензии из user_product
-      const userProduct = (chatRoom as any).user_product;
+      const userProduct = chatRoom.user_product as UserProduct & { product_license: ProductLicense & { license_type: LicenseType } } | null;
       if (userProduct?.product_license) {
-        const productLicense = userProduct.product_license as any;
+        const productLicense = userProduct.product_license;
         const licenseType = productLicense.license_type;
 
         // Получаем цену покупки
         if (productLicense.price !== undefined) {
-          (chatRoom as any).price = Number(productLicense.price);
+          typedChatRoom.price = Number(productLicense.price);
         }
 
         // Получаем перевод типа лицензии
@@ -327,13 +329,13 @@ export class ChatService {
             normalizedLang,
           );
           if (licenseTypeTranslation) {
-            (chatRoom as any).licenseTypeName = licenseTypeTranslation.name;
+            typedChatRoom.licenseTypeName = licenseTypeTranslation.name;
           }
         }
       }
 
       // Убираем user_product из ответа (не нужны private данные)
-      (chatRoom as any).user_product = undefined;
+      (typedChatRoom as unknown as Record<string, unknown>).user_product = undefined;
     }
 
     const messages = await this.chatMessageRepository.findAndCountAll({
