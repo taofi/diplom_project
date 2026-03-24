@@ -85,6 +85,14 @@ export function ChatWindow({
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
+  }, [handleWheel]);
+
+  // 4. Отслеживание положения скролла
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const threshold = 100;
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     setIsAtBottom(isNearBottom);
   }, []);
@@ -152,7 +160,6 @@ export function ChatWindow({
               />
             ) : otherUser?.avatar ? (
               <ServerImage
-                alt={otherUser.name}
                 src={otherUser.avatar} alt={otherUser.name}
                 width={40} height={40} className="w-full h-full object-cover"
               />
