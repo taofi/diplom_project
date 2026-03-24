@@ -106,17 +106,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socketClient.on('newMessage', (data: unknown) => {
       const payload = data as { message: ChatMessage };
       console.log('[ChatContext] newMessage received:', payload.message.chat_room_id, 'activeRoomId:', activeRoomIdRef.current);
+      
       // Подставляем данные отправителя из кэша
       const sender = usersCacheRef.current.get(payload.message.sender_id);
       if (sender) {
         payload.message.sender = sender;
       }
+      
       // Only add message if this is the active room (for multi-tab support)
       if (activeRoomIdRef.current === payload.message.chat_room_id) {
         console.log('[ChatContext] Adding message to state');
         setMessages(prev => [...prev, payload.message]);
       } else {
-        console.log('[ChatContext] Message NOT added - room mismatch');
+        console.log('[ChatContext] Message NOT added - room mismatch, incrementing unread count');
+        // Увеличиваем счетчик непрочитанных для комнаты
+        setRooms(prev => prev.map(room => 
+          room.id === payload.message.chat_room_id
+            ? { ...room, unreadCount: (room.unreadCount || 0) + 1 }
+            : room
+        ));
       }
     });
 
@@ -248,6 +256,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Уведомить сервер об активной комнате (для множественных вкладок)
       socketClient.setActiveRoom(roomId);
       console.log('[ChatContext] socketClient.setActiveRoom called:', roomId);
+      
+      // Сбросить счетчик непрочитанных для выбранной комнаты
+      setRooms(prev => prev.map(room => 
+        room.id === roomId ? { ...room, unreadCount: 0 } : room
+      ));
       
       // Сохраняем участников чата в кэш
       const newUsersCache = new Map(usersCacheRef.current);

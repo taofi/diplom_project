@@ -107,6 +107,7 @@ export class ChatGateway
 
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: Socket, payload: { roomId: number }) {
+    console.log(`[ChatGateway] joinRoom: roomId=${payload.roomId}, clientId=${client.id}`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
@@ -126,6 +127,7 @@ export class ChatGateway
 
   @SubscribeMessage('leaveRoom')
   async handleLeaveRoom(client: Socket, payload: { roomId: number }) {
+    console.log(`[ChatGateway] leaveRoom: roomId=${payload.roomId}, clientId=${client.id}`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
@@ -145,6 +147,7 @@ export class ChatGateway
     client: Socket,
     payload: { roomId: number; content: string; type?: string; attachmentUrl?: string },
   ) {
+    console.log(`[ChatGateway] sendMessage: roomId=${payload.roomId}, type=${payload.type}, content="${payload.content?.substring(0, 50)}"`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
