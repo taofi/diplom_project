@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { Server } from 'socket.io';
 import { ChatService } from '../chat.service';
 import { ChatStateService } from './chat-state.service';
+import { ChatCacheService } from './chat-cache.service';
 import { ChatMessage, MessageType } from '../../db/models/chat-message.model';
 
 export interface SendMessagePayload {
@@ -26,6 +27,7 @@ export class ChatMessageService {
   constructor(
     private readonly chatService: ChatService,
     private readonly chatStateService: ChatStateService,
+    private readonly chatCacheService: ChatCacheService,
   ) {}
 
   /**
@@ -64,8 +66,8 @@ export class ChatMessageService {
         attachmentUrl,
       );
 
-      // Рассылаем сообщение участникам комнаты
-      this.broadcastToRoom(roomId, message);
+      // Рассылаем сообщение участникам комнаты через их сокеты
+      await this.broadcastToMembers(roomId, message, senderId);
 
       return { success: true, message };
     } catch (error) {
@@ -95,6 +97,50 @@ export class ChatMessageService {
     
     this.logger.log(`Broadcast message ${message.id} to room ${roomId}`);
     console.log(`[ChatMessageService] Broadcast message ${message.id} to room ${roomId}, chat_room_id=${message.chat_room_id}`);
+  }
+
+  /**
+   * Рассылка сообщения участникам чата через их сокеты
+   * Использует кэш участников чата для определения получателей
+   * @param roomId ID комнаты
+   * @param message Сообщение для отправки
+   * @param senderId ID отправителя (не получит сообщение)
+   */
+  async broadcastToMembers(roomId: number, message: ChatMessage, senderId: number): Promise<void> {
+    if (!this.server) {
+      this.logger.warn('Server not set, cannot broadcast message to members');
+      return;
+    }
+
+    try {
+      // Получаем участников чата из кэша или БД
+      const memberIds = await this.chatCacheService.getChatRoomMembers(roomId);
+      
+      this.logger.log(`Broadcasting message ${message.id} to room ${roomId} members: ${memberIds.join(', ')} (sender: ${senderId})`);
+      console.log(`[ChatMessageService] Broadcast message ${message.id} to members: ${memberIds.join(', ')}, sender: ${senderId}`);
+
+      // Для каждого участника находим все его сокеты и отправляем
+      for (const memberId of memberIds) {
+        // Получаем все сокеты пользователя
+        const sockets = await this.chatStateService.getUserSockets(memberId);
+
+        if (sockets.length === 0) {
+          this.logger.log(`Member ${memberId} is offline, message ${message.id} will be sent on next connect`);
+          // TODO: Здесь можно сохранить уведомление в БД для офлайн пользователя
+          continue;
+        }
+
+        // Отправляем сообщение на все сокеты пользователя
+        for (const socketId of sockets) {
+          this.server.to(socketId).emit('newMessage', { message });
+          this.logger.log(`Sent message ${message.id} to user ${memberId} on socket ${socketId}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error broadcasting message to members:`, error);
+      // При ошибке пробуем отправить через старую логику (Socket.IO room)
+      this.broadcastToRoom(roomId, message);
+    }
   }
 
   /**

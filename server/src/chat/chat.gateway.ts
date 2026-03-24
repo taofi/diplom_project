@@ -14,6 +14,7 @@ import { MessageType } from '../db/models/chat-message.model';
 import { ChatStateService } from './services/chat-state.service';
 import { ChatMessageService } from './services/chat-message.service';
 import { ChatNotificationService } from './services/chat-notification.service';
+import { ChatCacheService } from './services/chat-cache.service';
 
 @WebSocketGateway({
   namespace: '/chat',
@@ -35,6 +36,7 @@ export class ChatGateway
     private readonly chatStateService: ChatStateService,
     private readonly chatMessageService: ChatMessageService,
     private readonly chatNotificationService: ChatNotificationService,
+    private readonly chatCacheService: ChatCacheService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -119,6 +121,9 @@ export class ChatGateway
     // Устанавливаем активную комнату в Redis для отслеживания состояния
     await this.chatStateService.setUserActiveRoom(userId, client.id, payload.roomId);
     
+    // Добавляем пользователя в список активных пользователей комнаты
+    await this.chatStateService.addUserToRoomActiveList(userId, payload.roomId);
+    
     // Отмечаем сообщения как прочитанные
     await this.chatService.markMessagesAsRead(payload.roomId, userId);
 
@@ -138,6 +143,15 @@ export class ChatGateway
 
     // Очищаем активную комнату в Redis
     await this.chatStateService.clearUserActiveRoom(userId, client.id);
+    
+    // Удаляем пользователя из списка активных пользователей комнаты
+    const isRoomEmpty = await this.chatStateService.removeUserFromRoomActiveList(userId, payload.roomId);
+    
+    // Если в комнате больше нет активных пользователей, инвалидируем кэш
+    if (isRoomEmpty) {
+      await this.chatCacheService.invalidateChatRoomCache(payload.roomId);
+      console.log(`[ChatGateway] Room ${payload.roomId} is now empty, cache invalidated`);
+    }
 
     return { success: true };
   }

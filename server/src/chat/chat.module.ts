@@ -30,6 +30,7 @@ import { TempChatService } from './temp-chat.service';
 import { ChatStateService } from './services/chat-state.service';
 import { ChatMessageService } from './services/chat-message.service';
 import { ChatNotificationService } from './services/chat-notification.service';
+import { ChatCacheService } from './services/chat-cache.service';
 
 // Controllers
 import { ChatController } from './chat.controller';
@@ -76,11 +77,12 @@ import { RedisModule } from '../redis/redis.module';
     ChatStateService,
     ChatMessageService,
     ChatNotificationService,
+    ChatCacheService,
     ChatRoomRepository,
     ChatMessageRepository,
     ChatOfferRepository,
     ChatGateway,
   ],
-  exports: [ChatService, TempChatService, ChatStateService],
+  exports: [ChatService, TempChatService, ChatStateService, ChatCacheService],
 })
 export class ChatModule {}

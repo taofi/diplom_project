@@ -14,6 +14,7 @@ export class ChatStateService {
   private readonly USER_SOCKET_KEY_PREFIX = 'chat:user:sockets';
   private readonly ROOM_USERS_KEY_PREFIX = 'chat:room:users';
   private readonly SOCKET_TTL = 86400; // 24 hours TTL for socket mappings
+  private readonly ROOM_ACTIVE_TTL = 1800; // 30 minutes TTL for room active users
 
   constructor(private readonly redisService: RedisService) {}
 
@@ -259,6 +260,90 @@ export class ChatStateService {
       this.logger.log(`Cleared all Redis data for user ${userId}`);
     } catch (error) {
       this.logger.error(`Error clearing user data for ${userId}:`, error);
+    }
+  }
+
+  // ==================== Room Active Users (for tracking who is viewing chat) ====================
+
+  /**
+   * Получить ключ для активных пользователей комнаты
+   */
+  private getRoomActiveUsersKey(roomId: number): string {
+    return `chat:room:active:${roomId}`;
+  }
+
+  /**
+   * Добавить пользователя в список активных пользователей комнаты
+   * @param userId ID пользователя
+   * @param roomId ID комнаты
+   */
+  async addUserToRoomActiveList(userId: number, roomId: number): Promise<void> {
+    try {
+      const key = this.getRoomActiveUsersKey(roomId);
+      await this.redisService.hSet(key, String(userId), String(Date.now()));
+      await this.redisService.expire(key, this.ROOM_ACTIVE_TTL);
+      this.logger.log(`Added user ${userId} to active list of room ${roomId}`);
+    } catch (error) {
+      this.logger.error(`Error adding user ${userId} to room ${roomId} active list:`, error);
+    }
+  }
+
+  /**
+   * Удалить пользователя из списка активных пользователей комнаты
+   * @param userId ID пользователя
+   * @param roomId ID комнаты
+   * @returns true если в комнате больше нет активных пользователей
+   */
+  async removeUserFromRoomActiveList(userId: number, roomId: number): Promise<boolean> {
+    try {
+      const key = this.getRoomActiveUsersKey(roomId);
+      await this.redisService.hDel(key, String(userId));
+
+      // Проверяем, остались ли ещё пользователи
+      const remainingUsers = await this.redisService.hKeys(key);
+      const isEmpty = remainingUsers.length === 0;
+
+      if (isEmpty) {
+        this.logger.log(`Room ${roomId} has no more active users`);
+      } else {
+        this.logger.log(`Removed user ${userId} from room ${roomId}, ${remainingUsers.length} users remaining`);
+      }
+
+      return isEmpty;
+    } catch (error) {
+      this.logger.error(`Error removing user ${userId} from room ${roomId} active list:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Получить список активных пользователей комнаты
+   * @param roomId ID комнаты
+   * @returns Массив userId
+   */
+  async getRoomActiveUsers(roomId: number): Promise<number[]> {
+    try {
+      const key = this.getRoomActiveUsersKey(roomId);
+      const users = await this.redisService.hKeys(key);
+      return users.map((userId) => parseInt(userId, 10));
+    } catch (error) {
+      this.logger.error(`Error getting active users for room ${roomId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Проверить, находится ли пользователь в какой-либо комнате
+   * @param userId ID пользователя
+   * @returns true если пользователь активен хотя бы в одной комнате
+   */
+  async isUserInAnyRoom(userId: number): Promise<boolean> {
+    try {
+      const rooms = await this.getUserActiveRooms(userId);
+      return rooms.length > 0;
+    } catch (error) {
+      this.logger.error(`Error checking if user ${userId} in any room:`, error);
+      return false;
     }
   }
 }
