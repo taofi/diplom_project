@@ -14,9 +14,14 @@ import {
 import { ChatService } from './chat.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { InitTempChatDto } from './dto/init-temp-chat.dto';
+import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
-import { CreateOfferDto, AcceptOfferDto, DeclineOfferDto, CreateRevisionDto } from './dto/chat-actions.dto';
+import {
+  CreateOfferDto,
+  AcceptOfferDto,
+  DeclineOfferDto,
+  CreateRevisionDto,
+} from './dto/chat-actions.dto';
 import { MessageType } from '../db/models/chat-message.model';
 
 @Controller('chat')
@@ -24,50 +29,29 @@ import { MessageType } from '../db/models/chat-message.model';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  // ==================== Temp Chat (Redis) ====================
+  // ==================== Chat Rooms ====================
 
   /**
-   * POST /chat/rooms/init
-   * Создать временный чат в Redis
+   * POST /chat/rooms
+   * Создать чат напрямую в БД (с visibility: PENDING)
    */
-  @Post('rooms/init')
-  @HttpCode(HttpStatus.OK)
-  async initTempChat(
+  @Post('rooms')
+  @HttpCode(HttpStatus.CREATED)
+  async createChat(
     @CurrentUserId() userId: number,
-    @Body() dto: InitTempChatDto,
+    @Body() dto: CreateChatRoomDto,
   ) {
-    return this.chatService.createTempChat(
+    return this.chatService.createPendingChat(
       userId,
-      dto.sellerId!,
+      dto.sellerId,
       dto.productId,
       dto.userProductId,
     );
   }
 
   /**
-   * GET /chat/rooms/temp/:id
-   * Получить временный чат
-   */
-  @Get('rooms/temp/:id')
-  async getTempChat(@Param('id') id: string) {
-    return this.chatService.getTempChat(id);
-  }
-
-  /**
-   * DELETE /chat/rooms/temp/:id
-   * Удалить временный чат
-   */
-  @Delete('rooms/temp/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTempChat(@Param('id') id: string) {
-    await this.chatService.deleteTempChat(id);
-  }
-
-  // ==================== Chat Rooms ====================
-
-  /**
    * GET /chat/rooms
-   * Получить все чаты пользователя
+   * Получить все видимые чаты пользователя
    */
   @Get('rooms')
   async getUserChatRooms(

@@ -25,6 +25,11 @@ export enum ChatRoomStatus {
   CLOSED = 'closed',
 }
 
+export enum ChatRoomVisibility {
+  PENDING = 'pending',
+  VISIBLE = 'visible',
+}
+
 @Table({ tableName: 'chat_rooms', timestamps: true })
 export class ChatRoom extends Model {
   @PrimaryKey
@@ -52,6 +57,10 @@ export class ChatRoom extends Model {
   @Default(ChatRoomStatus.OPEN)
   @Column(DataType.ENUM(...Object.values(ChatRoomStatus)))
   declare status: ChatRoomStatus;
+
+  @Default(ChatRoomVisibility.PENDING)
+  @Column(DataType.ENUM(...Object.values(ChatRoomVisibility)))
+  declare visibility: ChatRoomVisibility;
 
   @Column({ type: DataType.DATE, allowNull: true })
   declare last_message_at: Date | null;

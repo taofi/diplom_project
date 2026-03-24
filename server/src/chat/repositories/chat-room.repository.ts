@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ChatRoom, ChatRoomStatus } from '../../db/models/chat-room.model';
+import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../../db/models/chat-room.model';
 import { FindOptions, FindAndCountOptions } from 'sequelize';
 import { Op } from 'sequelize';
 import { CreateChatRoomDto } from '../dto/create-chat-room.dto';
@@ -49,6 +49,71 @@ export class ChatRoomRepository {
     });
   }
 
+  /**
+   * Find all visible chat rooms for a user (for chat list display)
+   * Only returns chats where visibility is VISIBLE
+   */
+  async findVisibleByUserId(
+    userId: number,
+    options?: FindOptions,
+  ): Promise<ChatRoom[]> {
+    return this.chatRoomModel.findAll({
+      where: {
+        [Op.or]: [{ buyer_id: userId }, { seller_id: userId }],
+        visibility: ChatRoomVisibility.VISIBLE,
+      },
+      ...options,
+    });
+  }
+
+  /**
+   * Find pending chat rooms for a user (created by other user, waiting for first message)
+   * Used to check if a pending chat exists when creating a new one
+   */
+  async findPendingByUserId(
+    userId: number,
+    options?: FindOptions,
+  ): Promise<ChatRoom[]> {
+    return this.chatRoomModel.findAll({
+      where: {
+        [Op.or]: [
+          { buyer_id: userId, visibility: ChatRoomVisibility.PENDING },
+          { seller_id: userId, visibility: ChatRoomVisibility.PENDING },
+        ],
+      },
+      ...options,
+    });
+  }
+
+  /**
+   * Find a specific pending chat by buyer and seller/product
+   */
+  async findPendingByParticipants(
+    buyerId: number,
+    sellerId: number,
+    productId?: number,
+  ): Promise<ChatRoom | null> {
+    return this.chatRoomModel.findOne({
+      where: {
+        buyer_id: buyerId,
+        seller_id: sellerId,
+        ...(productId && { product_id: productId }),
+        visibility: ChatRoomVisibility.PENDING,
+      },
+    });
+  }
+
+  /**
+   * Update chat room visibility to VISIBLE
+   */
+  async makeVisible(id: number): Promise<ChatRoom> {
+    const chatRoom = await this.findById(id);
+    if (!chatRoom) {
+      throw new NotFoundException('Chat room not found');
+    }
+    return chatRoom.update({ visibility: ChatRoomVisibility.VISIBLE });
+  }
+
   async findByProductId(
     productId: number,
     options?: FindOptions,
@@ -90,7 +155,16 @@ export class ChatRoomRepository {
   }
 
   async create(data: CreateChatRoomDto): Promise<ChatRoom> {
-    return this.chatRoomModel.create(data as any);
+    // Маппим camelCase в snake_case для Sequelize
+    return this.chatRoomModel.create({
+      buyer_id: data.buyerId,
+      seller_id: data.sellerId,
+      product_id: data.productId,
+      user_product_id: data.userProductId,
+      status: data.status,
+      visibility: data.visibility,
+      subject: data.subject,
+    });
   }
 
   async update(

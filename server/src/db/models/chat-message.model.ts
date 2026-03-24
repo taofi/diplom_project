@@ -23,7 +23,7 @@ export enum MessageType {
   OFFER = 'offer',
 }
 
-@Table({ tableName: 'chat_messages', timestamps: false })
+@Table({ tableName: 'chat_messages', timestamps: true })
 export class ChatMessage extends Model {
   @PrimaryKey
   @AutoIncrement

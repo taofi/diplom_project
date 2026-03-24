@@ -78,20 +78,20 @@ class SocketClient {
   }
 
   // Chat-specific methods
-  initChat(sellerId: number, productId?: number) {
-    this.emit('initChat', { sellerId, productId });
+  initChat(sellerId: number, productId?: number, userProductId?: number) {
+    this.emit('initChat', { sellerId, productId, userProductId });
   }
 
   joinRoom(roomId: number) {
     this.emit('joinRoom', { roomId });
   }
 
-  leaveRoom(roomId: number, tempChatId?: string) {
-    this.emit('leaveRoom', { roomId, tempChatId });
+  leaveRoom(roomId: number) {
+    this.emit('leaveRoom', { roomId });
   }
 
-  sendMessage(roomId: number | string, content: string, type = 'text', tempChatId?: string) {
-    this.emit('sendMessage', { roomId, content, type, tempChatId });
+  sendMessage(roomId: number, content: string, type = 'text') {
+    this.emit('sendMessage', { roomId, content, type });
   }
 
   typing(roomId: number, isTyping: boolean) {

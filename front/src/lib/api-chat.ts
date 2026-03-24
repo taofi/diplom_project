@@ -1,16 +1,16 @@
 import api from '../lib/api';
-import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, TempChat } from '../types/chat';
+import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder } from '../types/chat';
 
 // Re-export types for convenience
-export type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, TempChat } from '../types/chat';
+export type { ChatRoom, ChatMessage, ChatOffer, CustomOrder } from '../types/chat';
 
 // API endpoints
 const CHAT_API = '/chat';
 
 export const chatApi = {
-  // Temp chat (Redis)
-  initTempChat: async (sellerId: number, productId?: number, userProductId?: number): Promise<TempChat> => {
-    const response = await api.post(`${CHAT_API}/rooms/init`, {
+  // Chat rooms - create directly in DB with visibility: PENDING
+  createChat: async (sellerId: number, productId?: number, userProductId?: number): Promise<ChatRoom> => {
+    const response = await api.post(`${CHAT_API}/rooms`, {
       sellerId,
       productId,
       userProductId,
@@ -18,16 +18,7 @@ export const chatApi = {
     return response.data;
   },
 
-  getTempChat: async (id: string): Promise<TempChat | null> => {
-    const response = await api.get(`${CHAT_API}/rooms/temp/${id}`);
-    return response.data;
-  },
-
-  deleteTempChat: async (id: string): Promise<void> => {
-    await api.delete(`${CHAT_API}/rooms/temp/${id}`);
-  },
-
-  // Chat rooms
+  // Chat rooms - get visible chats only
   getChatRooms: async (page = 1, limit = 20): Promise<{ rows: ChatRoom[]; count: number }> => {
     const response = await api.get(`${CHAT_API}/rooms`, { params: { page, limit } });
     return response.data;

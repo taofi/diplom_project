@@ -1,0 +1,137 @@
+'use client';
+
+import { useI18n } from '@/context/i18n/I18nContext';
+import { ServerImage } from '@/components/Image';
+import type { ChatRoom } from '@/types/chat';
+
+interface ChatListProps {
+  rooms: ChatRoom[];
+  selectedRoomId?: number;
+  onSelectRoom: (room: ChatRoom) => void;
+  currentUserId: number;
+  isSellerView?: boolean;
+}
+
+export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, isSellerView = false }: ChatListProps) {
+  const { t } = useI18n();
+
+  const formatTime = (dateString: string | null) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return t('chat.yesterday');
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+  };
+
+  const getOtherUser = (room: ChatRoom) => {
+    return isSellerView ? room.buyer : room.seller;
+  };
+
+  const getChatTitle = (room: ChatRoom) => {
+    const otherUser = getOtherUser(room);
+    return otherUser?.username || t('chat.unknownUser');
+  };
+
+  if (rooms.length === 0) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <p>{t('chat.noChats')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-gray-100">
+      {rooms.map((room) => {
+        const otherUser = getOtherUser(room);
+        const isSelected = selectedRoomId === room.id;
+        const hasUnread = (room.unreadCount || 0) > 0;
+
+        return (
+          <button
+            key={room.id}
+            onClick={() => onSelectRoom(room)}
+            className={`
+              w-full p-4 text-left transition-colors hover:bg-gray-50
+              ${isSelected ? 'bg-primary/5 border-l-4 border-primary' : ''}
+            `}
+          >
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {otherUser?.avatar ? (
+                  <ServerImage
+                    src={otherUser.avatar}
+                    alt={otherUser.username}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-medium text-gray-600">
+                    {otherUser?.username?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                )}
+              </div>
+
+              {/* Chat info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className={`font-medium truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                    {getChatTitle(room)}
+                  </h4>
+                  <span className="text-xs text-gray-400 flex-shrink-0">
+                    {formatTime(room.last_message_at)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  {/* Product info if exists */}
+                  {room.product && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                      <ServerImage
+                        src={room.product.main_image}
+                        alt={room.product.name}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded object-cover"
+                      />
+                      <span className="truncate max-w-[100px]">{room.product.name}</span>
+                    </div>
+                  )}
+                  
+                  {room.lastMessage && (
+                    <p className={`text-sm truncate ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
+                      {room.lastMessage.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Unread badge */}
+              {hasUnread && (
+                <div className="flex-shrink-0">
+                  <span className="bg-primary text-white text-xs font-medium px-2 py-1 rounded-full">
+                    {room.unreadCount}
+                  </span>
+                </div>
+              )}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

@@ -10,7 +10,8 @@
     "next": "Next",
     "previous": "Previous",
     "search": "Search",
-    "submit": "Submit"
+    "submit": "Submit",
+    "send": "Send"
   },
   "site": {
     "title": "Site Name"
@@ -27,7 +28,8 @@
     "settings": "Settings",
     "products": "Products",
     "orders": "Orders",
-    "catalog": "Catalog"
+    "catalog": "Catalog",
+    "chat": "Chats"
   },
   "auth": {
     "login": "Login",
@@ -411,5 +413,62 @@
       "note": "Verify email to place order",
       "placeOrderDisabled": "Verify email to place order"
     }
+  },
+  "chat": {
+    "title": "Chats",
+    "subtitle": "Communicate with product authors",
+    "myChats": "My Chats",
+    "selectChat": "Select a chat",
+    "chooseChatToStart": "Choose a chat to start messaging",
+    "noChats": "You don't have any chats yet",
+    "unknownUser": "Unknown user",
+    "aboutProduct": "About product",
+    "yesterday": "Yesterday",
+    "typing": "typing...",
+    "read": "Read",
+    "attachment": "Attachment",
+    "startConversation": "Start a conversation",
+    "sendFirstMessage": "Send your first message to start the chat",
+    "typeMessage": "Type a message...",
+    "contactAuthor": "Contact Author",
+    "selectProduct": "Select a product",
+    "message": "Message",
+    "messagePlaceholder": "Write your message to the author...",
+    "startChat": "Start Chat",
+    "noPurchasedProducts": "You don't have any purchased products",
+    "errorLoadingProducts": "Failed to load products",
+    "errorCreatingChat": "Failed to create chat",
+    "connecting": "Connecting...",
+    "offer": "Offer",
+    "from": "From",
+    "seller": "Seller",
+    "offerAccepted": "Accepted",
+    "offerDeclined": "Declined",
+    "acceptOffer": "Accept",
+    "declineOffer": "Decline",
+    "orderCreated": "Order created",
+    "temporary": "Temporary"
+  },
+  "orders": {
+    "title": "My Orders",
+    "subtitle": "Manage your custom work orders",
+    "filterAll": "All",
+    "filterInProgress": "In Progress",
+    "filterReview": "In Review",
+    "filterCompleted": "Completed",
+    "noOrders": "You don't have any orders yet",
+    "noOrdersDescription": "Orders will appear here after accepting offers from authors",
+    "buyerOrders": "Orders as Buyer",
+    "sellerOrders": "Orders as Seller",
+    "customOrder": "Order",
+    "deadline": "Deadline",
+    "viewChat": "View Chat",
+    "approveResult": "Approve Result",
+    "requestRevision": "Request Revision",
+    "orderInProgress": "In Progress",
+    "orderInReview": "In Review",
+    "orderNeedsRevision": "Needs Revision",
+    "orderCompleted": "Completed",
+    "orderCancelled": "Cancelled"
   }
 }

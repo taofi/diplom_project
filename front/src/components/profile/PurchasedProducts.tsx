@@ -52,14 +52,14 @@ export function PurchasedProducts() {
   const handleContactAuthor = async (product: UserProductResponse) => {
     try {
       setContactingId(product.id);
-      // Инициализируем временный чат с автором
-      const tempChat = await chatApi.initTempChat(
+      // Создаём чат напрямую в БД с visibility: PENDING
+      const chat = await chatApi.createChat(
         product.sellerId,
         product.productId,
         product.id
       );
       // Переходим на страницу чатов
-      router.push(`/chat?tempChatId=${tempChat.id}`);
+      router.push(`/chat?roomId=${chat.id}`);
     } catch (error) {
       console.error('Failed to start chat:', error);
     } finally {

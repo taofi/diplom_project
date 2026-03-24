@@ -10,7 +10,8 @@
     "next": "Далее",
     "previous": "Назад",
     "search": "Поиск",
-    "submit": "Отправить"
+    "submit": "Отправить",
+    "send": "Отправить"
   },
   "site": {
     "title": "Название сайта"
@@ -27,7 +28,8 @@
     "settings": "Настройки",
     "products": "Товары",
     "orders": "Заказы",
-    "catalog": "Каталог"
+    "catalog": "Каталог",
+    "chat": "Чаты"
   },
   "auth": {
     "login": "Вход",
@@ -390,5 +392,62 @@
       "note": "Подтвердите email для оформления заказа",
       "placeOrderDisabled": "Подтвердите email для оформления заказа"
     }
+  },
+  "chat": {
+    "title": "Чаты",
+    "subtitle": "Общайтесь с авторами товаров",
+    "myChats": "Мои чаты",
+    "selectChat": "Выберите чат",
+    "chooseChatToStart": "Выберите чат, чтобы начать общение",
+    "noChats": "У вас пока нет чатов",
+    "unknownUser": "Неизвестный пользователь",
+    "aboutProduct": "О товаре",
+    "yesterday": "Вчера",
+    "typing": "печатает...",
+    "read": "Прочитано",
+    "attachment": "Вложение",
+    "startConversation": "Начните разговор",
+    "sendFirstMessage": "Отправьте первое сообщение, чтобы начать чат",
+    "typeMessage": "Введите сообщение...",
+    "contactAuthor": "Связаться с автором",
+    "selectProduct": "Выберите товар",
+    "message": "Сообщение",
+    "messagePlaceholder": "Напишите ваше сообщение автору...",
+    "startChat": "Начать чат",
+    "noPurchasedProducts": "У вас нет купленных товаров",
+    "errorLoadingProducts": "Не удалось загрузить товары",
+    "errorCreatingChat": "Не удалось создать чат",
+    "connecting": "Подключение...",
+    "offer": "Предложение",
+    "from": "От",
+    "seller": "Продавца",
+    "offerAccepted": "Принято",
+    "offerDeclined": "Отклонено",
+    "acceptOffer": "Принять",
+    "declineOffer": "Отклонить",
+    "orderCreated": "Заказ создан",
+    "temporary": "Временный"
+  },
+  "orders": {
+    "title": "Мои заказы",
+    "subtitle": "Управляйте своими заказами на кастомные работы",
+    "filterAll": "Все",
+    "filterInProgress": "В работе",
+    "filterReview": "На проверке",
+    "filterCompleted": "Завершены",
+    "noOrders": "У вас пока нет заказов",
+    "noOrdersDescription": "Заказы появятся здесь после принятия предложений от авторов",
+    "buyerOrders": "Заказы как покупатель",
+    "sellerOrders": "Заказы как продавец",
+    "customOrder": "Заказ",
+    "deadline": "Срок",
+    "viewChat": "Открыть чат",
+    "approveResult": "Одобрить результат",
+    "requestRevision": "Запросить доработку",
+    "orderInProgress": "В работе",
+    "orderInReview": "На проверке",
+    "orderNeedsRevision": "Требует доработки",
+    "orderCompleted": "Завершён",
+    "orderCancelled": "Отменён"
   }
 }

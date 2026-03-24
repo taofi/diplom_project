@@ -14,6 +14,7 @@ export interface ChatRoom {
   product_id: number | null;
   user_product_id: number | null;
   status: 'open' | 'closed';
+  visibility: 'pending' | 'visible';
   last_message_at: string | null;
   created_at: string;
   updated_at: string;
@@ -76,16 +77,6 @@ export interface CustomOrderRevision {
   comment: string | null;
   is_approved: boolean;
   created_at: string;
-}
-
-export interface TempChat {
-  id: string;
-  buyerId: number;
-  sellerId: number;
-  productId: number | null;
-  userProductId: number | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // Chat state types

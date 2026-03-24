@@ -11,4 +11,5 @@ export class UserProductResponse {
   price: number;
   purchasedAt: Date;
   fileUrl: string;
+  sellerId: number;
 }

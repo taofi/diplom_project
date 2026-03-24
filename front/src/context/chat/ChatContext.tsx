@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { socketClient } from '../../lib/socket';
 import { chatApi } from '../../lib/api-chat';
-import type { ChatRoom, ChatMessage, TempChat, ChatOffer, CustomOrder } from '../../types/chat';
+import { getUserById } from '../../lib/api-user';
+import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, ChatUser } from '../../types/chat';
 
 interface ChatContextType {
   // Connection state
@@ -19,10 +20,8 @@ interface ChatContextType {
   messages: ChatMessage[];
   sendMessage: (content: string, type?: string) => Promise<void>;
   
-  // Temp chat (before first message)
-  tempChat: TempChat | null;
-  initTempChat: (sellerId: number, productId?: number, userProductId?: number) => Promise<void>;
-  clearTempChat: () => void;
+  // Create new chat (creates in DB with visibility: PENDING)
+  createChat: (sellerId: number, productId?: number, userProductId?: number) => Promise<ChatRoom | null>;
   
   // Offers
   offers: ChatOffer[];
@@ -46,7 +45,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [tempChat, setTempChat] = useState<TempChat | null>(null);
   const [offers, setOffers] = useState<ChatOffer[]>([]);
   const [orders, setOrders] = useState<CustomOrder[]>([]);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
@@ -95,6 +93,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
+    socketClient.on('chatRoomCreated', (data: unknown) => {
+      const payload = data as { room: ChatRoom };
+      setRooms(prev => {
+        const exists = prev.some(room => room.id === payload.room.id);
+        if (exists) return prev;
+        return [...prev, payload.room];
+      });
+    });
+
     return () => {
       socketClient.disconnect();
       setIsConnected(false);
@@ -107,6 +114,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setRooms(result.rows);
     } catch (error) {
       console.error('Error loading chat rooms:', error);
+    }
+  }, []);
+
+  const loadUserInfo = useCallback(async (userId: number): Promise<ChatUser | null> => {
+    try {
+      const user = await getUserById(userId);
+      return {
+        id: user.id,
+        username: user.name,
+        email: user.email,
+        avatar: user.avatar_url || undefined,
+      };
+    } catch (error) {
+      console.error('Error loading user info:', error);
+      return null;
     }
   }, []);
 
@@ -129,34 +151,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = useCallback(async (content: string, type = 'text') => {
     try {
-      if (tempChat) {
-        // Send via temp chat
-        socketClient.sendMessage(tempChat.id, content, type);
-        setTempChat(null);
-      } else if (currentRoom) {
+      if (currentRoom) {
         // Send to existing room
         socketClient.sendMessage(currentRoom.id, content, type);
       }
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  }, [tempChat, currentRoom]);
+  }, [currentRoom]);
 
-  const initTempChat = useCallback(async (sellerId: number, productId?: number, userProductId?: number) => {
+  const createChat = useCallback(async (sellerId: number, productId?: number, userProductId?: number): Promise<ChatRoom | null> => {
     try {
-      const temp = await chatApi.initTempChat(sellerId, productId, userProductId);
-      setTempChat(temp);
+      // Создаем чат напрямую в БД (с visibility: PENDING)
+      const chat = await chatApi.createChat(sellerId, productId, userProductId);
+      return chat;
     } catch (error) {
-      console.error('Error initializing temp chat:', error);
+      console.error('Error creating chat:', error);
+      return null;
     }
   }, []);
-
-  const clearTempChat = useCallback(() => {
-    if (tempChat) {
-      chatApi.deleteTempChat(tempChat.id);
-    }
-    setTempChat(null);
-  }, [tempChat]);
 
   const createOffer = useCallback(async (
     chatRoomId: number,
@@ -220,9 +233,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         selectRoom,
         messages,
         sendMessage,
-        tempChat,
-        initTempChat,
-        clearTempChat,
+        createChat,
         offers,
         createOffer,
         acceptOffer,

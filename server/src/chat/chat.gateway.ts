@@ -31,13 +31,15 @@ export class ChatGateway
     private readonly configService: ConfigService,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
   }
 
-  async handleConnection(client: Socket) {
+  handleConnection(client: Socket) {
     try {
-      const token =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const token: string | undefined =
         client.handshake.auth.token ||
         client.handshake.headers.authorization?.replace('Bearer ', '');
 
@@ -46,15 +48,17 @@ export class ChatGateway
         return;
       }
 
-      const payload = this.jwtService.verify(token, {
+      const payload: { sub: number; username: string } = this.jwtService.verify(token, {
         secret: this.configService.get<string>('jwt.secret'),
       });
 
-      client.data.userId = payload.sub;
-      client.data.username = payload.username;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (client.data as { userId: number; username: string }).userId = payload.sub;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (client.data as { userId: number; username: string }).username = payload.username;
 
       console.log(`Client connected: ${client.id}, userId: ${payload.sub}`);
-    } catch (error) {
+    } catch {
       console.log('Invalid token, disconnecting client');
       client.disconnect();
     }
@@ -65,24 +69,29 @@ export class ChatGateway
   }
 
   @SubscribeMessage('initChat')
-  async handleInitChat(client: Socket, payload: { sellerId: number; productId?: number }) {
-    const userId = client.data.userId;
+  async handleInitChat(client: Socket, payload: { sellerId: number; productId?: number; userProductId?: number }) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
     }
 
-    const tempChat = await this.chatService.createTempChat(
+    // Создаем чат напрямую в БД с visibility: PENDING
+    const chat = await this.chatService.createPendingChat(
       userId,
       payload.sellerId,
       payload.productId,
+      payload.userProductId,
     );
 
-    return { tempChat };
+    // Возвращаем ID чата (он невидим для автора пока не будет отправлено сообщение)
+    return { chatId: chat.id };
   }
 
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: Socket, payload: { roomId: number }) {
-    const userId = client.data.userId;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
     }
@@ -96,18 +105,14 @@ export class ChatGateway
   }
 
   @SubscribeMessage('leaveRoom')
-  async handleLeaveRoom(client: Socket, payload: { roomId: number; tempChatId?: string }) {
-    const userId = client.data.userId;
+  handleLeaveRoom(client: Socket, payload: { roomId: number }) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
     }
 
     client.leave(`chat:${payload.roomId}`);
-
-    // Если это временный чат и пользователь ушёл без отправки сообщения
-    if (payload.tempChatId) {
-      await this.chatService.deleteTempChat(payload.tempChatId);
-    }
 
     return { success: true };
   }
@@ -115,9 +120,10 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     client: Socket,
-    payload: { roomId: number | string; content: string; type?: string; tempChatId?: string },
+    payload: { roomId: number; content: string; type?: string },
   ) {
-    const userId = client.data.userId;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
     }
@@ -130,23 +136,8 @@ export class ChatGateway
         (payload.type as MessageType) || MessageType.TEXT,
       );
 
-      // Получаем roomId для рассылки (если был tempChatId)
-      let chatRoomId: number;
-      if (typeof payload.roomId === 'string') {
-        const tempChat = await this.chatService.getTempChat(payload.roomId);
-        // После отправки сообщения чат уже создан, находим его
-        const chat = await this.chatService.getOrCreateChat(
-          tempChat!.buyerId,
-          tempChat!.sellerId,
-          tempChat!.productId || undefined,
-        );
-        chatRoomId = chat.id;
-      } else {
-        chatRoomId = payload.roomId;
-      }
-
       // Рассылаем сообщение всем в комнате
-      this.server.to(`chat:${chatRoomId}`).emit('newMessage', { message });
+      this.server.to(`chat:${payload.roomId}`).emit('newMessage', { message });
 
       return { success: true, message };
     } catch (error) {
@@ -157,7 +148,8 @@ export class ChatGateway
 
   @SubscribeMessage('typing')
   handleTyping(client: Socket, payload: { roomId: number; isTyping: boolean }) {
-    const userId = client.data.userId;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return;
     }

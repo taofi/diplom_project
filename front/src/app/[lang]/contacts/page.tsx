@@ -21,9 +21,10 @@ export default function ContactsPage() {
 
     try {
       setLoading(true);
-      // Для общего чата не указываем productId
-      const tempChat = await chatApi.initTempChat(0);
-      router.push(`/chat?tempChatId=${tempChat.id}`);
+      // Для общего чата создаём чат с sellerId = 0 (общий чат с поддержкой)
+      // Примечание: в реальном приложении здесь должен быть ID администратора/поддержки
+      const chat = await chatApi.createChat(0);
+      router.push(`/chat?roomId=${chat.id}`);
     } catch (error) {
       console.error('Failed to start chat:', error);
     } finally {

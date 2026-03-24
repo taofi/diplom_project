@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ChatRoom, ChatRoomStatus } from '../db/models/chat-room.model';
+import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../db/models/chat-room.model';
 import { ChatMessage, MessageType } from '../db/models/chat-message.model';
 import { ChatOffer, ChatOfferStatus } from '../db/models/chat-offer.model';
 import { CustomOrder, CustomOrderStatus } from '../db/models/custom-order.model';
@@ -8,13 +8,19 @@ import { CustomOrderRevision } from '../db/models/custom-order-revision.model';
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
 import { ChatOfferRepository } from './repositories/chat-offer.repository';
-import { TempChatService } from './temp-chat.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
-import { Op, FindOptions } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import { UserProduct } from '../db/models/user-product.model';
 import { Product } from '../db/models/product.model';
 import { ProductLicense } from '../db/models/product-license.model';
+
+interface ChatRoomWhereClause {
+  [Op.or]: Array<{ buyer_id: number; seller_id: number }>;
+  status: ChatRoomStatus;
+  visibility: ChatRoomVisibility;
+  product_id?: number | null;
+}
 
 @Injectable()
 export class ChatService {
@@ -22,7 +28,6 @@ export class ChatService {
     private readonly chatRoomRepository: ChatRoomRepository,
     private readonly chatMessageRepository: ChatMessageRepository,
     private readonly chatOfferRepository: ChatOfferRepository,
-    private readonly tempChatService: TempChatService,
     @InjectModel(ChatRoom)
     private readonly chatRoomModel: typeof ChatRoom,
     @InjectModel(ChatMessage)
@@ -86,50 +91,76 @@ export class ChatService {
     return this.hasUserPurchasedProduct(userId, productId);
   }
 
-  // ==================== Temp Chat (Redis) ====================
+  // ==================== Chat Visibility ====================
 
   /**
-   * Создать временный чат в Redis
+   * Создать чат напрямую в БД с visibility: PENDING
+   * Чат не будет виден автору пока покупатель не напишет первое сообщение
    */
-  async createTempChat(
+  async createPendingChat(
     buyerId: number,
-    sellerId: number,
+    sellerId: number | undefined,
     productId?: number,
     userProductId?: number,
-  ) {
-    return this.tempChatService.createTempChat(
+  ): Promise<ChatRoom> {
+    // Проверяем, что sellerId валиден
+    if (!sellerId || sellerId <= 0) {
+      throw new BadRequestException('Valid seller ID is required');
+    }
+
+    // Проверить, нет ли уже существующего чата
+    const existingChat = await this.findExistingChat(buyerId, sellerId, productId);
+    if (existingChat) {
+      return existingChat;
+    }
+
+    // Проверить, нет ли уже PENDING чата
+    const pendingChat = await this.chatRoomRepository.findPendingByParticipants(
+      buyerId,
+      sellerId,
+      productId,
+    );
+    if (pendingChat) {
+      return pendingChat;
+    }
+
+    // Создать новый чат с visibility: PENDING
+    const createChatDto: CreateChatRoomDto = {
       buyerId,
       sellerId,
       productId,
       userProductId,
-    );
+      status: ChatRoomStatus.OPEN,
+      visibility: ChatRoomVisibility.PENDING,
+    };
+
+    return this.chatRoomRepository.create(createChatDto);
   }
 
   /**
-   * Получить временный чат из Redis
+   * Сделать чат видимым (при отправке первого сообщения)
    */
-  async getTempChat(id: string) {
-    return this.tempChatService.getTempChat(id);
-  }
-
-  /**
-   * Удалить временный чат из Redis
-   */
-  async deleteTempChat(id: string) {
-    return this.tempChatService.deleteTempChat(id);
+  async makeChatVisible(chatRoomId: number): Promise<ChatRoom> {
+    return this.chatRoomRepository.makeVisible(chatRoomId);
   }
 
   // ==================== Chat Rooms ====================
 
   /**
-   * Получить все чаты пользователя
+   * Получить все видимые чаты пользователя
+   * Возвращает только чаты с visibility: VISIBLE
    */
   async getUserChatRooms(userId: number, page = 1, limit = 20) {
-    return this.chatRoomRepository.findAndCountAll({
-      page,
+    // Используем findVisibleByUserId чтобы получить только видимые чаты
+    const chats = await this.chatRoomRepository.findVisibleByUserId(userId, {
+      order: [['created_at', 'DESC']],
       limit,
-      userId,
+      offset: (page - 1) * limit,
     });
+    
+    const count = chats.length;
+    
+    return { rows: chats, count };
   }
 
   /**
@@ -160,94 +191,62 @@ export class ChatService {
   }
 
   /**
-   * Найти существующий чат по параметрам
+   * Найти существующий чат по параметрам (только VISIBLE чаты)
    */
   async findExistingChat(
     buyerId: number,
     sellerId: number,
     productId?: number,
   ): Promise<ChatRoom | null> {
-    const where: any = {
+    const where: ChatRoomWhereClause = {
       [Op.or]: [
         { buyer_id: buyerId, seller_id: sellerId },
         { buyer_id: sellerId, seller_id: buyerId },
       ],
       status: ChatRoomStatus.OPEN,
+      visibility: ChatRoomVisibility.VISIBLE,
     };
 
     if (productId) {
       where.product_id = productId;
     } else {
-      (where as Record<string, unknown>).product_id = null;
+      where.product_id = null;
     }
 
-    return this.chatRoomModel.findOne({ where } as FindOptions);
+    return this.chatRoomModel.findOne({ where: where as WhereOptions });
   }
 
   /**
-   * Создать чат (или получить существующий)
+   * Создать чат (или получить существующий VISIBLE чат)
    */
   async getOrCreateChat(
     buyerId: number,
     sellerId: number,
     productId?: number,
   ): Promise<ChatRoom> {
-    // Попробовать найти существующий чат
+    // Попробовать найти существующий VISIBLE чат
     const existingChat = await this.findExistingChat(buyerId, sellerId, productId);
     if (existingChat) {
       return existingChat;
     }
 
-    // Создать новый чат
+    // Создать новый чат с visibility: PENDING
     const createChatDto: CreateChatRoomDto = {
       buyerId,
       sellerId,
       productId,
       status: ChatRoomStatus.OPEN,
+      visibility: ChatRoomVisibility.PENDING,
     };
 
     return this.chatRoomRepository.create(createChatDto);
-  }
-
-  /**
-   * Создать чат из временного (при отправке первого сообщения)
-   */
-  async createChatFromTempChat(tempChatId: string): Promise<ChatRoom> {
-    const tempChat = await this.tempChatService.getTempChat(tempChatId);
-    if (!tempChat) {
-      throw new NotFoundException('Temp chat not found');
-    }
-
-    // Проверить, нет ли уже существующего чата
-    const existingChat = await this.findExistingChat(
-      tempChat.buyerId,
-      tempChat.sellerId,
-      tempChat.productId || undefined,
-    );
-
-    if (existingChat) {
-      // Удалить временный чат и вернуть существующий
-      await this.tempChatService.deleteTempChat(tempChatId);
-      return existingChat;
-    }
-
-    // Создать новый чат
-    const chat = await this.getOrCreateChat(
-      tempChat.buyerId,
-      tempChat.sellerId,
-      tempChat.productId || undefined,
-    );
-
-    // Удалить временный чат
-    await this.tempChatService.deleteTempChat(tempChatId);
-
-    return chat;
   }
 
   // ==================== Messages ====================
 
   /**
    * Отправить сообщение
+   * При отправке первого сообщения делает чат видимым
    */
   async sendMessage(
     chatRoomId: number | string,
@@ -258,18 +257,23 @@ export class ChatService {
   ): Promise<ChatMessage> {
     let roomId: number;
 
-    // Если это временный чат (строка), создаем постоянный чат
-    if (typeof chatRoomId === 'string') {
-      const chat = await this.createChatFromTempChat(chatRoomId);
-      roomId = chat.id;
-    } else {
+    // Если это PENDING чат (число), создаем VISIBLE чат
+    if (typeof chatRoomId === 'number') {
       roomId = chatRoomId;
+    } else {
+      // Legacy: поддержка старых temp чатов из Redis
+      throw new BadRequestException('Temp chat is no longer supported. Use chat ID directly.');
     }
 
     // Проверить, что чат существует
     const chatRoom = await this.chatRoomRepository.findById(roomId);
     if (!chatRoom) {
       throw new NotFoundException('Chat room not found');
+    }
+
+    // Если чат PENDING, сделать его VISIBLE
+    if (chatRoom.visibility === ChatRoomVisibility.PENDING) {
+      await this.makeChatVisible(roomId);
     }
 
     // Создать сообщение
@@ -480,13 +484,17 @@ export class ChatService {
   }
 
   /**
-   * Получить чаты покупателей для автора
+   * Получить чаты покупателей для автора (только VISIBLE)
    */
   async getSellerChats(sellerId: number, page = 1, limit = 20) {
-    return this.chatRoomRepository.findAndCountAll({
-      page,
+    const chats = await this.chatRoomRepository.findVisibleByUserId(sellerId, {
+      order: [['created_at', 'DESC']],
       limit,
-      userId: sellerId,
+      offset: (page - 1) * limit,
     });
+    
+    const count = chats.length;
+    
+    return { rows: chats, count };
   }
 }

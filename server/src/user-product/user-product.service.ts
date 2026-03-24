@@ -121,6 +121,7 @@ export class UserProductService {
         price: Number(productLicense.price),
         purchasedAt: up.purchased_at || new Date(),
         fileUrl: product.file_url,
+        sellerId: product.seller_id,
       });
     }
 
