@@ -11,6 +11,9 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
 import { MessageType } from '../db/models/chat-message.model';
+import { ChatStateService } from './services/chat-state.service';
+import { ChatMessageService } from './services/chat-message.service';
+import { ChatNotificationService } from './services/chat-notification.service';
 
 @WebSocketGateway({
   namespace: '/chat',
@@ -29,11 +32,18 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly chatStateService: ChatStateService,
+    private readonly chatMessageService: ChatMessageService,
+    private readonly chatNotificationService: ChatNotificationService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
+    
+    // Передаем сервер в сервисы для рассылки сообщений
+    this.chatMessageService.setServer(server);
+    this.chatNotificationService.setServer(server);
   }
 
   handleConnection(client: Socket) {
@@ -65,7 +75,13 @@ export class ChatGateway
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    const userId = (client.data as { userId: number }).userId;
+    console.log(`Client disconnected: ${client.id}, userId: ${userId}`);
+    
+    // Обрабатываем отключение сокета через ChatStateService
+    if (userId) {
+      this.chatStateService.onUserDisconnect(userId, client.id);
+    }
   }
 
   @SubscribeMessage('initChat')
@@ -98,6 +114,9 @@ export class ChatGateway
 
     client.join(`chat:${payload.roomId}`);
     
+    // Устанавливаем активную комнату в Redis для отслеживания состояния
+    await this.chatStateService.setUserActiveRoom(userId, client.id, payload.roomId);
+    
     // Отмечаем сообщения как прочитанные
     await this.chatService.markMessagesAsRead(payload.roomId, userId);
 
@@ -105,7 +124,7 @@ export class ChatGateway
   }
 
   @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(client: Socket, payload: { roomId: number }) {
+  async handleLeaveRoom(client: Socket, payload: { roomId: number }) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
@@ -113,6 +132,9 @@ export class ChatGateway
     }
 
     client.leave(`chat:${payload.roomId}`);
+
+    // Очищаем активную комнату в Redis
+    await this.chatStateService.clearUserActiveRoom(userId, client.id);
 
     return { success: true };
   }
@@ -128,23 +150,51 @@ export class ChatGateway
       return { error: 'Unauthorized' };
     }
 
-    try {
-      const message = await this.chatService.sendMessage(
-        payload.roomId,
-        userId,
-        payload.content,
-        (payload.type as MessageType) || MessageType.TEXT,
-        payload.attachmentUrl,
-      );
+    // Делегируем отправку сообщения в ChatMessageService
+    const result = await this.chatMessageService.sendMessage({
+      roomId: payload.roomId,
+      senderId: userId,
+      content: payload.content,
+      type: (payload.type as MessageType) || MessageType.TEXT,
+      attachmentUrl: payload.attachmentUrl,
+    });
 
-      // Рассылаем сообщение всем в комнате
-      this.server.to(`chat:${payload.roomId}`).emit('newMessage', { message });
-
-      return { success: true, message };
-    } catch (error) {
-      console.error('Error sending message:', error);
-      return { error: 'Failed to send message' };
+    if (!result.success) {
+      return { error: result.error || 'Failed to send message' };
     }
+
+    return { success: true, message: result.message };
+  }
+
+  /**
+   * Установить активную комнату (вызывается при переключении вкладок)
+   * Это позволяет отслеживать, в каком чате пользователь на каждой вкладке
+   */
+  @SubscribeMessage('setActiveRoom')
+  async handleSetActiveRoom(client: Socket, payload: { roomId: number }) {
+    const userId = (client.data as { userId: number }).userId;
+    if (!userId) {
+      return { error: 'Unauthorized' };
+    }
+
+    await this.chatStateService.setUserActiveRoom(userId, client.id, payload.roomId);
+    
+    return { success: true };
+  }
+
+  /**
+   * Очистить активную комнату (вызывается при закрытии вкладки)
+   */
+  @SubscribeMessage('clearActiveRoom')
+  async handleClearActiveRoom(client: Socket) {
+    const userId = (client.data as { userId: number }).userId;
+    if (!userId) {
+      return { error: 'Unauthorized' };
+    }
+
+    await this.chatStateService.clearUserActiveRoom(userId, client.id);
+    
+    return { success: true };
   }
 
   @SubscribeMessage('typing')

@@ -27,6 +27,9 @@ import { ChatOfferRepository } from './repositories/chat-offer.repository';
 // Services
 import { ChatService } from './chat.service';
 import { TempChatService } from './temp-chat.service';
+import { ChatStateService } from './services/chat-state.service';
+import { ChatMessageService } from './services/chat-message.service';
+import { ChatNotificationService } from './services/chat-notification.service';
 
 // Controllers
 import { ChatController } from './chat.controller';
@@ -37,10 +40,14 @@ import { ChatGateway } from './chat.gateway';
 // Translation
 import { TranslationModule } from '../translation/translation.module';
 
+// Redis
+import { RedisModule } from '../redis/redis.module';
+
 @Module({
   imports: [
     AuthModule,
     TranslationModule,
+    RedisModule,
     SequelizeModule.forFeature([
       ChatRoom,
       ChatMessage,
@@ -66,11 +73,14 @@ import { TranslationModule } from '../translation/translation.module';
   providers: [
     ChatService,
     TempChatService,
+    ChatStateService,
+    ChatMessageService,
+    ChatNotificationService,
     ChatRoomRepository,
     ChatMessageRepository,
     ChatOfferRepository,
     ChatGateway,
   ],
-  exports: [ChatService, TempChatService],
+  exports: [ChatService, TempChatService, ChatStateService],
 })
 export class ChatModule {}
