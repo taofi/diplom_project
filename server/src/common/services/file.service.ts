@@ -536,4 +536,78 @@ export class FileService {
     
     return { stream, filename, mimeType };
   }
+
+  // ==================== Методы для работы с Offer (заказами) ====================
+
+  /**
+   * Переместить временные media файлы в папку оффера (public/media/offers/{offerId}/)
+   * @param tempUrls - Массив временных URL медиа
+   * @param offerId - ID оффера
+   */
+  moveTempMediaToOffer(tempUrls: string[], offerId: number): FileUploadResult[] {
+    const targetDir = path.join(
+      this.publicMediaBasePath,
+      MediaFolder.OFFERS,
+      offerId.toString(),
+    );
+
+    const results: FileUploadResult[] = [];
+    for (const tempUrl of tempUrls) {
+      const result = this.moveFile(tempUrl, targetDir);
+      if (result) {
+        results.push(result);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Переместить временный файл в папку оффера (files/offers/{offerId}/)
+   * @param tempUrl - Временный URL файла
+   * @param offerId - ID оффера
+   */
+  moveTempFileToOffer(tempUrl: string, offerId: number): FileUploadResult | null {
+    const targetDir = path.join(
+      this.filesBasePath,
+      FileFolder.OFFERS,
+      offerId.toString(),
+    );
+
+    return this.moveFile(tempUrl, targetDir);
+  }
+
+  /**
+   * Сохранить превью заказа
+   * @param file - Загруженный файл
+   * @param offerId - ID оффера
+   */
+  saveOfferPreview(file: MulterFile, offerId: number): FileUploadResult {
+    return this.saveMediaFile(file, MediaFolder.OFFERS, offerId);
+  }
+
+  /**
+   * Сохранить исходный файл заказа
+   * @param file - Загруженный файл
+   * @param offerId - ID оффера
+   */
+  saveOfferSourceFile(file: MulterFile, offerId: number): FileUploadResult {
+    return this.saveProductFile(file, FileFolder.OFFERS, offerId);
+  }
+
+  /**
+   * Удалить все файлы оффера (media)
+   * @param offerId - ID оффера
+   */
+  deleteOfferMediaFiles(offerId: number): void {
+    this.deleteMediaFolderFiles(MediaFolder.OFFERS, offerId);
+  }
+
+  /**
+   * Удалить все файлы оффера (files)
+   * @param offerId - ID оффера
+   */
+  deleteOfferFiles(offerId: number): void {
+    this.deleteFileFolderFiles(FileFolder.OFFERS, offerId);
+  }
 }

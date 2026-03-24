@@ -43,5 +43,5 @@ export { CustomOrder, CustomOrderStatus } from './custom-order.model';
 export { CustomOrderRevision } from './custom-order-revision.model';
 
 // Offers
-export { Offer, OfferStatus, OfferFileType } from './offer.model';
+export { Offer, OfferFile, OfferStatus, OfferFileType } from './offer.model';
 export type { IOfferFile } from './offer.model';

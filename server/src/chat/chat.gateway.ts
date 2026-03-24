@@ -239,4 +239,92 @@ export class ChatGateway
     // Это можно расширить для реализации уведомлений
     this.server.emit(event, data);
   }
+
+  /**
+   * Уведомление о создании нового заказа
+   */
+  notifyOfferCreated(offer: unknown) {
+    const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    if (chatRoomId) {
+      this.server.to(`chat:${chatRoomId}`).emit('offer:created', { offer: this.serializeOffer(offer) });
+    }
+  }
+
+  /**
+   * Уведомление об изменении статуса заказа
+   */
+  notifyStatusChanged(offer: unknown) {
+    const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    if (chatRoomId) {
+      this.server.to(`chat:${chatRoomId}`).emit('offer:statusChanged', { offer: this.serializeOffer(offer) });
+    }
+  }
+
+  /**
+   * Уведомление об изменении цены
+   */
+  notifyPriceChanged(offer: unknown) {
+    const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    if (chatRoomId) {
+      this.server.to(`chat:${chatRoomId}`).emit('offer:priceChanged', { offer: this.serializeOffer(offer) });
+    }
+  }
+
+  /**
+   * Уведомление о загрузке файлов
+   */
+  notifyFilesUploaded(offer: unknown) {
+    const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    if (chatRoomId) {
+      this.server.to(`chat:${chatRoomId}`).emit('offer:filesUploaded', { offer: this.serializeOffer(offer) });
+    }
+  }
+
+  /**
+   * Уведомление об оплате заказа
+   */
+  notifyPaymentCompleted(offer: unknown) {
+    const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    if (chatRoomId) {
+      this.server.to(`chat:${chatRoomId}`).emit('offer:paid', { offer: this.serializeOffer(offer) });
+    }
+  }
+
+  /**
+   * Сериализация данных заказа для отправки клиенту
+   */
+  private serializeOffer(offer: unknown) {
+    const o = offer as {
+      id?: number;
+      chat_room_id?: number;
+      creator_id?: number;
+      author_id?: number;
+      description?: string;
+      price?: number;
+      original_price?: number | null;
+      status?: string;
+      preview_url?: string | null;
+      source_files_urls?: string | null;
+      is_paid?: boolean;
+      paid_at?: Date | null;
+      created_at?: Date;
+      updated_at?: Date;
+    };
+    return {
+      id: o?.id,
+      chat_room_id: o?.chat_room_id,
+      creator_id: o?.creator_id,
+      author_id: o?.author_id,
+      description: o?.description,
+      price: o?.price,
+      original_price: o?.original_price,
+      status: o?.status,
+      preview_url: o?.preview_url,
+      source_files_urls: o?.source_files_urls ? JSON.parse(o.source_files_urls as string) : null,
+      is_paid: o?.is_paid,
+      paid_at: o?.paid_at,
+      created_at: o?.created_at,
+      updated_at: o?.updated_at,
+    };
+  }
 }

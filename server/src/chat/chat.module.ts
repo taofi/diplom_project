@@ -14,6 +14,8 @@ import {
   UserProduct,
   Product,
   ProductLicense,
+  Offer,
+  OfferFile,
 } from '../db/models';
 
 // Auth module for JwtAuthGuard
@@ -23,6 +25,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
 import { ChatOfferRepository } from './repositories/chat-offer.repository';
+import { OfferRepository } from './repositories/offer.repository';
 
 // Services
 import { ChatService } from './chat.service';
@@ -31,9 +34,11 @@ import { ChatStateService } from './services/chat-state.service';
 import { ChatMessageService } from './services/chat-message.service';
 import { ChatNotificationService } from './services/chat-notification.service';
 import { ChatCacheService } from './services/chat-cache.service';
+import { OfferService } from './services/offer.service';
 
 // Controllers
 import { ChatController } from './chat.controller';
+import { ChatOffersController } from './chat-offers.controller';
 
 // Gateway
 import { ChatGateway } from './chat.gateway';
@@ -58,6 +63,8 @@ import { RedisModule } from '../redis/redis.module';
       UserProduct,
       Product,
       ProductLicense,
+      Offer,
+      OfferFile,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -70,7 +77,7 @@ import { RedisModule } from '../redis/redis.module';
       }),
     }),
   ],
-  controllers: [ChatController],
+  controllers: [ChatController, ChatOffersController],
   providers: [
     ChatService,
     TempChatService,
@@ -81,8 +88,10 @@ import { RedisModule } from '../redis/redis.module';
     ChatRoomRepository,
     ChatMessageRepository,
     ChatOfferRepository,
+    OfferRepository,
+    OfferService,
     ChatGateway,
   ],
-  exports: [ChatService, TempChatService, ChatStateService, ChatCacheService],
+  exports: [ChatService, TempChatService, ChatStateService, ChatCacheService, OfferService],
 })
 export class ChatModule {}
