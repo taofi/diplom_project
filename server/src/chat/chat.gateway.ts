@@ -120,7 +120,7 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     client: Socket,
-    payload: { roomId: number; content: string; type?: string },
+    payload: { roomId: number; content: string; type?: string; attachmentUrl?: string },
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = (client.data as { userId: number }).userId;
@@ -134,6 +134,7 @@ export class ChatGateway
         userId,
         payload.content,
         (payload.type as MessageType) || MessageType.TEXT,
+        payload.attachmentUrl,
       );
 
       // Рассылаем сообщение всем в комнате

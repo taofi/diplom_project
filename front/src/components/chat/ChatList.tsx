@@ -10,9 +10,10 @@ interface ChatListProps {
   onSelectRoom: (room: ChatRoom) => void;
   currentUserId: number;
   isSellerView?: boolean;
+  isHovered?: boolean;
 }
 
-export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, isSellerView = false }: ChatListProps) {
+export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, isSellerView = false, isHovered = false }: ChatListProps) {
   const { t } = useI18n();
 
   const formatTime = (dateString: string | null) => {
@@ -56,9 +57,15 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
       </div>
     );
   }
-  console.log(rooms);
+  // Handle wheel event to prevent scroll propagation when hovering over chat list
+  const handleWheel = (e: React.WheelEvent) => {
+    if (isHovered) {
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="divide-y divide-gray-100" onWheel={handleWheel}>
       {rooms.map((room) => {
         const otherUser = getOtherUser(room);
         const isSelected = selectedRoomId === room.id;

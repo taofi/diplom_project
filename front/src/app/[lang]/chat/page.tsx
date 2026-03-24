@@ -34,6 +34,7 @@ function ChatContent() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [isChatHovered, setIsChatHovered] = useState(false);
   const isMountedRef = useRef(false);
 
   // Load chat rooms on mount
@@ -128,7 +129,11 @@ function ChatContent() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+        <div 
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]"
+          onMouseEnter={() => setIsChatHovered(true)}
+          onMouseLeave={() => setIsChatHovered(false)}
+        >
           {/* Chat list */}
           <div className="lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
             <div className="p-4 border-b border-gray-200">

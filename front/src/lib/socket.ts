@@ -90,8 +90,8 @@ class SocketClient {
     this.emit('leaveRoom', { roomId });
   }
 
-  sendMessage(roomId: number, content: string, type = 'text') {
-    this.emit('sendMessage', { roomId, content, type });
+  sendMessage(roomId: number, content: string, type = 'text', attachmentUrl?: string) {
+    this.emit('sendMessage', { roomId, content, type, attachmentUrl });
   }
 
   typing(roomId: number, isTyping: boolean) {

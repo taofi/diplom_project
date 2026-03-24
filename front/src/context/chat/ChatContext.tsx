@@ -50,10 +50,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<ChatOffer[]>([]);
   const [orders, setOrders] = useState<CustomOrder[]>([]);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
+  // Кэш пользователей для подстановки имени и аватара по sender_id
+  const [usersCache, setUsersCache] = useState<Map<number, ChatUser>>(new Map());
 
   // Refs for preventing duplicate requests
   const isLoadingRoomsRef = useRef(false);
   const isLoadingRoomRef = useRef<number | null>(null);
+  // Ref для доступа к usersCache внутри useEffect
+  const usersCacheRef = useRef(usersCache);
+  usersCacheRef.current = usersCache;
 
   // Connect to WebSocket on mount
   useEffect(() => {
@@ -70,6 +75,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Set up event listeners
     socketClient.on('newMessage', (data: unknown) => {
       const payload = data as { message: ChatMessage };
+      // Подставляем данные отправителя из кэша
+      const sender = usersCacheRef.current.get(payload.message.sender_id);
+      if (sender) {
+        payload.message.sender = sender;
+      }
       setMessages(prev => [...prev, payload.message]);
     });
 
@@ -158,6 +168,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setCurrentRoom(result.chatRoom);
       setMessages(result.messages);
       
+      // Сохраняем участников чата в кэш
+      const newUsersCache = new Map(usersCacheRef.current);
+      const buyer = result.chatRoom.buyer as ChatUser & { avatar_url?: string } | undefined;
+      const seller = result.chatRoom.seller as ChatUser & { avatar_url?: string } | undefined;
+      
+      if (buyer) {
+        newUsersCache.set(buyer.id, {
+          id: buyer.id,
+          name: buyer.name,
+          email: buyer.email,
+          avatar: buyer.avatar || buyer.avatar_url,
+        });
+      }
+      if (seller) {
+        newUsersCache.set(seller.id, {
+          id: seller.id,
+          name: seller.name,
+          email: seller.email,
+          avatar: seller.avatar || seller.avatar_url,
+        });
+      }
+      // Также сохраняем sender из всех сообщений
+      result.messages.forEach((msg: ChatMessage) => {
+        if (msg.sender) {
+          newUsersCache.set(msg.sender.id, msg.sender);
+        }
+      });
+      setUsersCache(newUsersCache);
+      
       // Join WebSocket room
       socketClient.joinRoom(roomId);
       
@@ -171,11 +210,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [locale]);
 
-  const sendMessage = useCallback(async (content: string, type = 'text') => {
+  const sendMessage = useCallback(async (content: string, type = 'text', attachmentUrl?: string) => {
     try {
       if (currentRoom) {
         // Send to existing room
-        socketClient.sendMessage(currentRoom.id, content, type);
+        socketClient.sendMessage(currentRoom.id, content, type, attachmentUrl);
       }
     } catch (error) {
       console.error('Error sending message:', error);
