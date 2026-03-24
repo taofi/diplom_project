@@ -2,11 +2,19 @@ import { Language } from '../../common/enums/language.enum';
 
 /**
  * Нормализовать язык для поиска в базе данных
- * @param language - язык переданный в запросе (может быть в любом регистре)
+ * @param language - язык переданный в запросе (может быть в любом регистре, включая заголовок Accept-Language)
  * @returns нормализованный язык в нижнем регистре
  */
 export function normalizeLanguage(language?: string): string {
-  return language?.toLowerCase() || Language.RUSSIAN;
+  if (!language) {
+    return Language.RUSSIAN;
+  }
+
+  // Извлекаем первый язык из заголовка Accept-Language
+  // Например: "ru,en-US;q=0.9,en;q=0.8" -> "ru"
+  const firstLanguage = language.split(',')[0].split('-')[0];
+
+  return firstLanguage.toLowerCase() || Language.RUSSIAN;
 }
 
 /**
@@ -15,10 +23,10 @@ export function normalizeLanguage(language?: string): string {
  * @param language - язык (может быть в любом регистре)
  * @returns найденный перевод или первый из массива
  */
-export function findTranslationByLanguage(
-  translations: unknown[] | undefined,
+export function findTranslationByLanguage<T>(
+  translations: T[] | undefined,
   language?: string,
-): unknown | undefined {
+): T | undefined {
   if (!translations || translations.length === 0) {
     return undefined;
   }

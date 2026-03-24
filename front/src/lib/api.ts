@@ -36,10 +36,14 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
     const csrfToken = Cookies.get('csrf_token');
+    const locale = Cookies.get('locale') || 'ru';
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Добавляем Accept-Language заголовок для сервера
+    config.headers['Accept-Language'] = locale;
 
     // Добавляем CSRF токен для мутаций
     if (

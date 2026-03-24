@@ -14,6 +14,7 @@ import { UserProductService } from './user-product.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { UserProductResponse } from './dto/user-product.dto';
+import { normalizeLanguage } from '../translation/utils/language.utils';
 
 @Controller('user/products')
 @UseGuards(JwtAuthGuard)
@@ -28,7 +29,10 @@ export class UserProductController {
     @CurrentUserId() userId: number,
     @Headers('accept-language') locale?: string,
   ): Promise<UserProductResponse[]> {
-    const normalizedLocale = this.normalizeLocale(locale);
+    const normalizedLocale = normalizeLanguage(locale);
+    console.log('[DEBUG user-products] userId:', userId);
+    console.log('[DEBUG user-products] accept-language header:', locale);
+    console.log('[DEBUG user-products] normalizedLocale:', normalizedLocale);
     return this.userProductService.getUserProducts(userId, normalizedLocale);
   }
 
@@ -55,9 +59,4 @@ export class UserProductController {
     return this.userProductService.downloadProduct(userId, userProductId);
   }
 
-  private normalizeLocale(locale?: string): string {
-    if (!locale) return 'en';
-    // Извлекаем первый язык из заголовка (например, "en-US" -> "en")
-    return locale.split(',')[0].split('-')[0];
   }
-}
