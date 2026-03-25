@@ -225,7 +225,8 @@ export class ProductService {
 
   async update(
     id: number,
-    sellerId: number,
+    userId: number,
+    isAdmin: boolean,
     updateProductDto: UpdateProductDto,
   ) {
     const product = await this.productRepository.findById(id);
@@ -233,8 +234,8 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    // Check ownership or admin (admin check would be done via guard)
-    if (product.seller_id !== sellerId) {
+    // Check ownership or admin
+    if (!isAdmin && product.seller_id !== userId) {
       throw new ForbiddenException('You can only update your own products');
     }
 
@@ -242,7 +243,7 @@ export class ProductService {
 
     // Обрабатываем временные файлы с помощью унифицированной функции
     const processedFiles = this.processTempFiles(
-      sellerId,
+      userId,
       id,
       updateProductDto,
     );
@@ -299,27 +300,27 @@ export class ProductService {
     return this.productRepository.update(id, cleanDto as UpdateProductDto);
   }
 
-  async delete(id: number, sellerId: number) {
+  async delete(id: number, userId: number, isAdmin: boolean) {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
     // Check ownership or admin
-    if (product.seller_id !== sellerId) {
+    if (!isAdmin && product.seller_id !== userId) {
       throw new ForbiddenException('You can only delete your own products');
     }
 
     await this.productRepository.delete(id);
   }
 
-  async activate(id: number, sellerId: number) {
+  async activate(id: number, userId: number, isAdmin: boolean) {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    if (product.seller_id !== sellerId) {
+    if (!isAdmin && product.seller_id !== userId) {
       throw new ForbiddenException('You can only activate your own products');
     }
 
@@ -327,13 +328,13 @@ export class ProductService {
     return product;
   }
 
-  async deactivate(id: number, sellerId: number) {
+  async deactivate(id: number, userId: number, isAdmin: boolean) {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    if (product.seller_id !== sellerId) {
+    if (!isAdmin && product.seller_id !== userId) {
       throw new ForbiddenException('You can only deactivate your own products');
     }
 

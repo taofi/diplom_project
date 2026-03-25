@@ -140,6 +140,14 @@ export const chatApi = {
   },
 
   /**
+   * Изменить цену (Заказчик)
+   */
+  counterOfferFromCreator: async (offerId: number, dto: CounterOfferDto): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/counter-from-creator`, dto);
+    return response.data;
+  },
+
+  /**
    * Подтвердить цену (Заказчик)
    */
   confirmPrice: async (offerId: number): Promise<Offer> => {

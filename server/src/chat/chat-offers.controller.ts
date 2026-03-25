@@ -111,6 +111,20 @@ export class ChatOffersController {
   }
 
   /**
+   * POST /chat/offers/:id/counter-from-creator
+   * Изменить цену (Заказчик)
+   */
+  @Post(':id/counter-from-creator')
+  @HttpCode(HttpStatus.OK)
+  async counterOfferFromCreator(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+    @Body() dto: CounterOfferDto,
+  ): Promise<Offer> {
+    return this.offerService.counterOfferFromCreator(parseInt(id, 10), userId, dto);
+  }
+
+  /**
    * POST /chat/offers/:id/confirm-price
    * Подтвердить цену (Заказчик)
    */

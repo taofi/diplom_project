@@ -6,6 +6,7 @@ import { Button, Card } from '@/components/ui';
 import { ServerImage } from '@/components/Image';
 import { ImageModal } from './ImageModal';
 import { PaymentModal } from './PaymentModal';
+import { PriceChangeModal } from './PriceChangeModal';
 import type { Offer } from '@/types/chat';
 import { UploadFilesModal } from './UploadFilesModal';
 
@@ -43,6 +44,8 @@ export function OfferCard({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPriceChangeModalOpen, setIsPriceChangeModalOpen] = useState(false);
+  const [isCreatorPriceChangeModalOpen, setIsCreatorPriceChangeModalOpen] = useState(false);
   
   // Определение роли: author - это продавец, creator - покупатель
   const isAuthor = offer.author_id === currentUserId;
@@ -60,12 +63,15 @@ export function OfferCard({
   const showBothPrices = offer.original_price !== null && offer.original_price !== offer.price;
 
   const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-    }).format(numPrice);
-  };
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  return new Intl.NumberFormat('be-BY', {
+    style: 'currency',
+    currency: 'BYN',
+    // Если нужно гарантировать 2 знака после запятой, можно добавить:
+    minimumFractionDigits: 2,
+  }).format(numPrice);
+};
 
   const handleAccept = async () => {
     if (!onAccept) return;
@@ -155,7 +161,7 @@ export function OfferCard({
         <div>
           <h4 className="font-semibold text-gray-900">{t('chat.offer')}</h4>
           <p className="text-sm text-gray-500">
-            {getRoleLabel()}
+            {t('chat.from') + ' ' + t('chat.buyer')}
           </p>
         </div>
         {getStatusBadge()}
@@ -210,51 +216,64 @@ export function OfferCard({
 
       {/* Кнопки действий */}
       
-      {/* Статус WAITING_AUTHOR - автор может принять или отклонить */}
+      {/* Статус WAITING_AUTHOR - автор может принять, отклонить или изменить цену */}
       {(showActions === 'all') && isWaitingAuthor && isAuthor && (
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2">
+            <Button
+              onClick={(e) => { e.stopPropagation(); handleAccept(); }}
+              disabled={loading || isLoading}
+              variant="primary"
+              size="sm"
+              className="flex-1"
+            >
+              {loading || isLoading ? t('common.loading') : t('chat.acceptOffer')}
+            </Button>
+            <Button
+              onClick={(e) => { e.stopPropagation(); handleDecline(); }}
+              disabled={loading || isLoading}
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+            >
+              {t('chat.declineOffer')}
+            </Button>
+          </div>
           <Button
-            onClick={(e) => { e.stopPropagation(); handleAccept(); }}
+            onClick={(e) => { e.stopPropagation(); setIsPriceChangeModalOpen(true); }}
             disabled={loading || isLoading}
-            variant="primary"
+            variant="outline"
             size="sm"
-            className="flex-1"
+            className="w-full"
           >
-            {loading || isLoading ? t('common.loading') : t('chat.acceptOffer')}
-          </Button>
-          <Button
-            onClick={(e) => { e.stopPropagation(); handleDecline(); }}
-            disabled={loading || isLoading}
-            variant="secondary"
-            size="sm"
-            className="flex-1"
-          >
-            {t('chat.declineOffer')}
+            {t('chat.changePrice')}
           </Button>
         </div>
       )}
 
       {/* Статус WAITING_USER - заказчик может согласиться или предложить свою цену */}
       {(showActions === 'all') && isWaitingUser && isCreator && (
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button
-            onClick={(e) => { e.stopPropagation(); onConfirmPrice?.(offer); }}
-            disabled={loading || isLoading}
-            variant="primary"
-            size="sm"
-            className="flex-1"
-          >
-            {t('chat.confirmPrice')}
-          </Button>
-          <Button
-            onClick={(e) => { e.stopPropagation(); onCounterOffer?.(offer); }}
-            disabled={loading || isLoading}
-            variant="secondary"
-            size="sm"
-            className="flex-1"
-          >
-            {t('chat.counterOffer')}
-          </Button>
+        <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2">
+            <Button
+              onClick={(e) => { e.stopPropagation(); onConfirmPrice?.(offer); }}
+              disabled={loading || isLoading}
+              variant="primary"
+              size="sm"
+              className="flex-1"
+            >
+              {t('chat.confirmPrice')}
+            </Button>
+            <Button
+              onClick={(e) => { e.stopPropagation(); setIsCreatorPriceChangeModalOpen(true); }}
+              disabled={loading || isLoading}
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+            >
+              {t('chat.counterOffer')}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -337,6 +356,34 @@ export function OfferCard({
           offer={offer}
           onSuccess={(updatedOffer) => {
             onPay?.(updatedOffer);
+          }}
+        />
+      </div>
+
+      {/* Модальное окно изменения цены (для автора в статусе waiting_author) */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <PriceChangeModal
+          isOpen={isPriceChangeModalOpen}
+          onClose={() => setIsPriceChangeModalOpen(false)}
+          offerId={offer.id}
+          currentPrice={offer.price}
+          userType="author"
+          onSuccess={(updatedOffer) => {
+            onCounterOffer?.(updatedOffer as Offer);
+          }}
+        />
+      </div>
+
+      {/* Модальное окно изменения цены (для заказчика в статусе waiting_user) */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <PriceChangeModal
+          isOpen={isCreatorPriceChangeModalOpen}
+          onClose={() => setIsCreatorPriceChangeModalOpen(false)}
+          offerId={offer.id}
+          currentPrice={offer.price}
+          userType="creator"
+          onSuccess={(updatedOffer) => {
+            onCounterOffer?.(updatedOffer as Offer);
           }}
         />
       </div>

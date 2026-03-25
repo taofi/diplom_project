@@ -186,8 +186,7 @@ export function ChatWindow({
     // Принудительный скролл вниз после отправки своего сообщения
     setTimeout(() => scrollToBottom('smooth'), 100);
   };
-
-  const otherUser = room?.seller || room?.buyer;
+  const otherUser = room?.seller?.id === currentUserId ? room?.buyer : room?.seller;
   const roomTypingUsers = room ? typingUsers.get(room.id) : undefined;
   const isTyping = roomTypingUsers ? roomTypingUsers.size > 0 : false;
 

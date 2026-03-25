@@ -224,13 +224,17 @@ export class ProductRepository {
       where.is_featured = isFeatured;
     }
 
+    // Фильтрация по минимальной цене лицензий (а не по базовому полю price)
     if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
+      const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
+      
       if (minPrice !== undefined) {
-        where.price[Op.gte] = minPrice;
+        where[Op.and] = where[Op.and] || [];
+        (where[Op.and] as unknown[]).push(this.sequelize.literal(`${priceSubquery} >= ${minPrice}`));
       }
       if (maxPrice !== undefined) {
-        where.price[Op.lte] = maxPrice;
+        where[Op.and] = where[Op.and] || [];
+        (where[Op.and] as unknown[]).push(this.sequelize.literal(`${priceSubquery} <= ${maxPrice}`));
       }
     }
 
@@ -246,12 +250,22 @@ export class ProductRepository {
       };
     }
 
+    // Сортировка
+    let order: FindOptions<Product>['order'];
+    if (sortBy === 'price') {
+      // Сортировка по минимальной цене лицензий
+      const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
+      order = [[this.sequelize.literal(priceSubquery), sortOrder.toUpperCase() as 'ASC' | 'DESC']];
+    } else {
+      order = [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']];
+    }
+
     const result = await this.productModel.findAndCountAll({
       where,
       offset,
       limit,
       distinct: true, // Важно для правильного подсчета count при использовании include
-      order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
+      order,
       include: [
         categoryInclude,
         { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
@@ -350,13 +364,17 @@ export class ProductRepository {
       where.is_featured = isFeatured;
     }
 
+    // Фильтрация по минимальной цене лицензий (а не по базовому полю price)
     if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
+      const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
+      
       if (minPrice !== undefined) {
-        where.price[Op.gte] = minPrice;
+        where[Op.and] = where[Op.and] || [];
+        (where[Op.and] as unknown[]).push(this.sequelize.literal(`${priceSubquery} >= ${minPrice}`));
       }
       if (maxPrice !== undefined) {
-        where.price[Op.lte] = maxPrice;
+        where[Op.and] = where[Op.and] || [];
+        (where[Op.and] as unknown[]).push(this.sequelize.literal(`${priceSubquery} <= ${maxPrice}`));
       }
     }
 
@@ -372,12 +390,22 @@ export class ProductRepository {
       };
     }
 
+    // Сортировка
+    let order: FindOptions<Product>['order'];
+    if (sortBy === 'price') {
+      // Сортировка по минимальной цене лицензий
+      const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
+      order = [[this.sequelize.literal(priceSubquery), sortOrder.toUpperCase() as 'ASC' | 'DESC']];
+    } else {
+      order = [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']];
+    }
+
     const result = await this.productModel.findAndCountAll({
       where,
       offset,
       limit,
       distinct: true, // Важно для правильного подсчета count при использовании include
-      order: [[sortBy, sortOrder.toUpperCase() as 'ASC' | 'DESC']],
+      order,
       include: [
         categoryInclude,
         { model: ProductMedia },

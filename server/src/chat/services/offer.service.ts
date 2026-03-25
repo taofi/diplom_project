@@ -220,6 +220,43 @@ export class OfferService {
   }
 
   /**
+   * Изменить цену (Заказчик)
+   * Работает для статуса WAITING_USER - заказчик предлагает свою цену
+   */
+  async counterOfferFromCreator(offerId: number, userId: number, dto: CounterOfferDto): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+    if (offer.creator_id !== userId) {
+      throw new ForbiddenException('Not your offer');
+    }
+    if (offer.status !== OfferStatus.WAITING_USER) {
+      throw new ForbiddenException('Cannot change price at this status');
+    }
+
+    // Сохраняем текущую цену как original_price (это цена автора)
+    const updated = await this.offerRepository.updatePrice(
+      offerId,
+      dto.newPrice,
+      offer.price,
+    );
+
+    // Меняем статус обратно на waiting_author
+    await this.offerRepository.updateStatus(offerId, OfferStatus.WAITING_AUTHOR);
+    updated.status = OfferStatus.WAITING_AUTHOR;
+
+    const serialized = this.serializeOffer(updated);
+    
+    // WebSocket: уведомить создателя
+    await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:priceChanged', { offer: serialized });
+    // WebSocket: уведомить автора
+    await this.chatNotificationService.notifyUser(offer.author_id, 'offer:priceChanged', { offer: serialized });
+    
+    return updated;
+  }
+
+  /**
    * Подтвердить цену (Заказчик)
    */
   async confirmPrice(offerId: number, userId: number): Promise<Offer> {

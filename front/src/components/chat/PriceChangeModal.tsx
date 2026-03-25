@@ -11,6 +11,7 @@ interface PriceChangeModalProps {
   onClose: () => void;
   offerId: number;
   currentPrice: number;
+  userType?: 'author' | 'creator';
   onSuccess?: (offer: unknown) => void;
 }
 
@@ -19,6 +20,7 @@ export function PriceChangeModal({
   onClose,
   offerId,
   currentPrice,
+  userType = 'author',
   onSuccess,
 }: PriceChangeModalProps) {
   const { t } = useI18n();
@@ -43,7 +45,12 @@ export function PriceChangeModal({
     setLoading(true);
     try {
       const dto: CounterOfferDto = { newPrice };
-      const offer = await chatApi.counterOffer(offerId, dto);
+      let offer;
+      if (userType === 'creator') {
+        offer = await chatApi.counterOfferFromCreator(offerId, dto);
+      } else {
+        offer = await chatApi.counterOffer(offerId, dto);
+      }
       onSuccess?.(offer);
       handleClose();
     } catch (err) {

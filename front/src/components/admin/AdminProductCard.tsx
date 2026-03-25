@@ -13,7 +13,16 @@ interface AdminProductCardProps {
   onToggleActive: (product: ProductResponse) => void;
   onDelete: (id: number) => void;
 }
-
+const formatPrice = (price: number | string) => {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  return new Intl.NumberFormat('be-BY', {
+    style: 'currency',
+    currency: 'BYN',
+    // Если нужно гарантировать 2 знака после запятой, можно добавить:
+    minimumFractionDigits: 2,
+  }).format(numPrice);
+};
 export function AdminProductCard({
   product,
   onEdit,
@@ -83,11 +92,11 @@ export function AdminProductCard({
         
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg font-bold text-primary">
-            ${Number(product.price).toFixed(2)}
+            {formatPrice(Number(product.price))}
           </span>
           {product.discountPrice && (
             <span className="text-sm text-gray-400 line-through">
-              ${Number(product.discountPrice).toFixed(2)}
+              {formatPrice(Number(product.discountPrice))}
             </span>
           )}
         </div>

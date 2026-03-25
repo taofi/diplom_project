@@ -35,7 +35,7 @@ export default function AdminProductsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Статус товара (для фильтрации)
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('true');
 
   // Категории и фильтры
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
@@ -219,7 +219,6 @@ export default function AdminProductsPage() {
                   value={statusFilter}
                   onChange={(val) => setStatusFilter(val)}
                   options={[
-                    { value: '', label: t('admin.products.allStatuses') || 'All statuses' },
                     { value: 'true', label: t('admin.products.active') || 'Active' },
                     { value: 'false', label: t('admin.products.inactive') || 'Inactive' },
                   ]}

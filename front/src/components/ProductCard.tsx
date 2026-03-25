@@ -13,12 +13,20 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className = '' }: ProductCardProps) {
   const { locale } = useI18n();
-  
+
   // Используем mainImage или первое изображение из media
   const imageUrl = product.mainImage || product.media?.[0]?.url || null;
-
-  // Вычисляем цену: если есть скидка - показываем её
-  const displayPrice = Number(product.discountPrice ?? product.price);
+const formatPrice = (price: number | string) => {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  return new Intl.NumberFormat('be-BY', {
+    style: 'currency',
+    currency: 'BYN',
+    // Если нужно гарантировать 2 знака после запятой, можно добавить:
+    minimumFractionDigits: 2,
+  }).format(numPrice);
+};
+  const displayPrice = formatPrice(Number(product.discountPrice ?? product.price));
 
   return (
     <Link
@@ -58,17 +66,14 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
         </div>
       </div>
 
-      {/* Блок с названием и ценой */}
-      <div className="px-6 py-4 flex flex-row gap-2">
-        {/* Название товара */}
+      <div className="px-6 py-4 flex flex-row items-center justify-between">
         <h3 className="text-lg font-medium text-gray-950 truncate pr-4">
           {product.name}
         </h3>
 
-        {/* Отображение цены внизу, как на фото */}
-        <div className="flex items-center gap-1.5 text-gray-600 bg-[#EBDAEB] px-3 py-1.5 rounded-sm">
+        <div className="flex items-center gap-1.5 text-gray-600 bg-[#EBDAEB] px-3 py-1.5 rounded-sm flex-shrink-0">
           <span className="text-xl font-bold text-[#E298E2]">
-            ${displayPrice.toFixed(2)}
+            {displayPrice} 
           </span>
         </div>
       </div>

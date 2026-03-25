@@ -32,6 +32,8 @@ function ChatContent() {
     createOffer,
     acceptOffer,
     declineOffer,
+    counterOffer,
+    confirmPrice,
     typingUsers,
     setTyping,
     onlineUsers,
@@ -115,6 +117,26 @@ function ChatContent() {
       console.error('Error declining offer:', error);
     }
   }, [declineOffer, loadChatRooms]);
+
+  // Handle counter offer (change price)
+  const handleCounterOffer = useCallback(async (offer: Offer) => {
+    try {
+      // PriceChangeModal calls API directly, this is just for reloading
+      await loadChatRooms();
+    } catch (error) {
+      console.error('Error with counter offer:', error);
+    }
+  }, [loadChatRooms]);
+
+  // Handle confirm price
+  const handleConfirmPrice = useCallback(async (offer: Offer) => {
+    try {
+      await confirmPrice(offer.id);
+      await loadChatRooms();
+    } catch (error) {
+      console.error('Error confirming price:', error);
+    }
+  }, [confirmPrice, loadChatRooms]);
 
   // Handle download files
   const handleDownloadFiles = useCallback(async (offer: Offer) => {
@@ -228,6 +250,8 @@ function ChatContent() {
               currentUserId={user.id}
               onAccept={handleAcceptOffer}
               onDecline={handleDeclineOffer}
+              onCounterOffer={handleCounterOffer}
+              onConfirmPrice={handleConfirmPrice}
               onDownloadFiles={handleDownloadFiles}
             />
           </div>

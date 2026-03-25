@@ -46,7 +46,7 @@ function OrdersContent() {
   // Handle click on order to open chat
   const handleOrderClick = (order: CustomOrder) => {
     // Navigate to chat page with the room ID
-    router.push(`/chat?room=${order.chat_room_id}`);
+    router.push(`/chat?roomId=${order.chat_room_id}`);
   };
 
   // Handle download files - use the same implementation as chat page

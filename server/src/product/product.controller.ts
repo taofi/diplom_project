@@ -22,6 +22,8 @@ import { AddMediaDto } from './dto/add-media.dto';
 import { AddLicenseDto } from './dto/add-license.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User, UserRoleType } from '../db/models/user.model';
 import { FileService, MediaFolder } from '../common/services/file.service';
 import type { MulterFile } from '../common/services/file.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -77,37 +79,49 @@ export class ProductController {
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUserId() sellerId: number,
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: User,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    return this.productService.update(id, sellerId, updateProductDto);
+    const userRoles = (user as unknown as { role?: UserRoleType[] }).role ?? [];
+    const isAdmin = userRoles.includes('admin');
+    return this.productService.update(id, userId, isAdmin, updateProductDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   async delete(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUserId() sellerId: number,
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: User,
   ) {
-    return this.productService.delete(id, sellerId);
+    const userRoles = (user as unknown as { role?: UserRoleType[] }).role ?? [];
+    const isAdmin = userRoles.includes('admin');
+    return this.productService.delete(id, userId, isAdmin);
   }
 
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard)
   async activate(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUserId() sellerId: number,
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: User,
   ) {
-    return this.productService.activate(id, sellerId);
+    const userRoles = (user as unknown as { role?: UserRoleType[] }).role ?? [];
+    const isAdmin = userRoles.includes('admin');
+    return this.productService.activate(id, userId, isAdmin);
   }
 
   @Patch(':id/deactivate')
   @UseGuards(JwtAuthGuard)
   async deactivate(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUserId() sellerId: number,
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: User,
   ) {
-    return this.productService.deactivate(id, sellerId);
+    const userRoles = (user as unknown as { role?: UserRoleType[] }).role ?? [];
+    const isAdmin = userRoles.includes('admin');
+    return this.productService.deactivate(id, userId, isAdmin);
   }
 
   @Post(':id/media/upload')
