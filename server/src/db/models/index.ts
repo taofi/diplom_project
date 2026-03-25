@@ -37,10 +37,6 @@ export { UserProduct } from './user-product.model';
 export { ChatRoom, ChatRoomStatus } from './chat-room.model';
 export { ChatMessage, MessageType } from './chat-message.model';
 
-// Custom Orders
-export { CustomOrder, CustomOrderStatus } from './custom-order.model';
-export { CustomOrderRevision } from './custom-order-revision.model';
-
 // Offers
 export { Offer, OfferFile, OfferStatus, OfferFileType } from './offer.model';
 export type { IOfferFile } from './offer.model';

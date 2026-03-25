@@ -66,6 +66,17 @@ export class OfferRepository {
     return offer;
   }
 
+  async updatePriceOnly(id: number, price: number): Promise<Offer> {
+    const offer = await this.findById(id);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    offer.price = price;
+    await offer.save();
+    return offer;
+  }
+
   async setFiles(
     id: number,
     previewUrl: string,
@@ -92,6 +103,14 @@ export class OfferRepository {
     offer.paid_at = new Date();
     offer.status = OfferStatus.COMPLETED;
     await offer.save();
+    return offer;
+  }
+
+  async findByIdOrFail(id: number): Promise<Offer> {
+    const offer = await this.findById(id);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
     return offer;
   }
 }

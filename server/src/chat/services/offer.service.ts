@@ -32,6 +32,7 @@ export class OfferService {
 
   /**
    * Принять заказ (Автор)
+   * Если original_price существует - устанавливаем price = original_price
    */
   async acceptOffer(offerId: number, userId: number): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
@@ -40,6 +41,11 @@ export class OfferService {
     }
     if (offer.author_id !== userId) {
       throw new ForbiddenException('Not your offer');
+    }
+
+    // Если есть original_price (автор предложил свою цену) - используем её
+    if (offer.original_price !== null && typeof offer.original_price === 'number') {
+      await this.offerRepository.updatePriceOnly(offerId, offer.original_price);
     }
 
     const updated = await this.offerRepository.updateStatus(
@@ -213,11 +219,32 @@ export class OfferService {
 
     // Исходники доступны ТОЛЬКО если completed И is_paid
     if (offer.status === OfferStatus.COMPLETED && offer.is_paid) {
-      result.source_files_urls = offer.source_files_urls
-        ? JSON.parse(offer.source_files_urls)
-        : null;
+      const sourceUrls = offer.source_files_urls;
+      if (typeof sourceUrls === 'string' && sourceUrls.length > 0) {
+        try {
+          result.source_files_urls = JSON.parse(sourceUrls) as string[];
+        } catch {
+          result.source_files_urls = null;
+        }
+      } else {
+        result.source_files_urls = null;
+      }
     }
 
     return result;
+  }
+
+  /**
+   * Получить все заказы в чате
+   */
+  async getRoomOffers(roomId: number): Promise<Offer[]> {
+    return this.offerRepository.findByChatRoom(roomId);
+  }
+
+  /**
+   * Получить заказ по ID
+   */
+  async getOfferById(offerId: number): Promise<Offer> {
+    return this.offerRepository.findByIdOrFail(offerId);
   }
 }

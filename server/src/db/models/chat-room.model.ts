@@ -17,7 +17,6 @@ import { User } from './user.model';
 import { Product } from './product.model';
 import { UserProduct } from './user-product.model';
 import { ChatMessage } from './chat-message.model';
-import { CustomOrder } from './custom-order.model';
 
 export enum ChatRoomStatus {
   OPEN = 'open',
@@ -86,6 +85,4 @@ export class ChatRoom extends Model {
   @HasMany(() => ChatMessage, 'chat_room_id')
   declare messages: ChatMessage[];
 
-  @HasMany(() => CustomOrder, 'chat_room_id')
-  declare custom_orders: CustomOrder[];
 }

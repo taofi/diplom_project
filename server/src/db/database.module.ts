@@ -24,8 +24,8 @@ import {
   UserProduct,
   ChatRoom,
   ChatMessage,
-  CustomOrder,
-  CustomOrderRevision,
+  Offer,
+  OfferFile,
 } from './models';
 
 const models = [
@@ -49,8 +49,8 @@ const models = [
   UserProduct,
   ChatRoom,
   ChatMessage,
-  CustomOrder,
-  CustomOrderRevision,
+  Offer,
+  OfferFile,
 ];
 
 // Токен для внедрения Sequelize

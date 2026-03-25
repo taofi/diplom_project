@@ -17,7 +17,6 @@ import { Order } from './order.model';
 import { UserProduct } from './user-product.model';
 import { ChatRoom } from './chat-room.model';
 import { ChatMessage } from './chat-message.model';
-import { CustomOrder } from './custom-order.model';
 import { UserRole as UserRoleModel } from './user-role.model';
 
 export enum UserRoleEnum {
@@ -82,12 +81,6 @@ export class User extends Model {
 
   @HasMany(() => ChatMessage, 'sender_id')
   declare chat_messages: ChatMessage[];
-
-  @HasMany(() => CustomOrder, 'buyer_id')
-  declare buyer_custom_orders: CustomOrder[];
-
-  @HasMany(() => CustomOrder, 'seller_id')
-  declare seller_custom_orders: CustomOrder[];
 
   // Явная сериализация - роли теперь берутся из связанной таблицы user_roles
   toJSON(): Record<string, unknown> {

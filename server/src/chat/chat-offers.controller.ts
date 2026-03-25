@@ -38,7 +38,7 @@ export class ChatOffersController {
    */
   @Get(':id')
   async getOffer(@Param('id') id: string): Promise<Offer> {
-    return this.offerService.getOfferFiles(parseInt(id, 10), 0) as unknown as Promise<Offer>;
+    return await this.offerService.getOfferById(parseInt(id, 10));
   }
 
   /**
@@ -135,12 +135,11 @@ export class ChatOffersController {
   }
 
   /**
-   * GET /chat/rooms/:roomId/offers
+   * GET /chat/offers/rooms/:roomId/offers
    * Получить все заказы в чате
    */
   @Get('rooms/:roomId/offers')
-  async getRoomOffers(@Param('roomId') roomId: string) {
-    // TODO: Реализовать получение заказов комнаты через repository
-    return [];
+  async getRoomOffers(@Param('roomId') roomId: string): Promise<Offer[]> {
+    return await this.offerService.getRoomOffers(parseInt(roomId, 10));
   }
 }
