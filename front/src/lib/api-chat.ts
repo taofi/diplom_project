@@ -1,8 +1,10 @@
 import api from '../lib/api';
-import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder } from '../types/chat';
+import type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
+import type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, UploadFilesDto, PayOrderDto } from '../types/chat/offer.types';
 
 // Re-export types for convenience
-export type { ChatRoom, ChatMessage, ChatOffer, CustomOrder } from '../types/chat';
+export type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
+export type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, UploadFilesDto, PayOrderDto } from '../types/chat/offer.types';
 
 // API endpoints
 const CHAT_API = '/chat';
@@ -19,17 +21,15 @@ export const chatApi = {
   },
 
   // Chat rooms - get visible chats only
-  getChatRooms: async (locale?: string, page = 1, limit = 20): Promise<{ rows: ChatRoom[]; count: number }> => {
+  getChatRooms: async (locale?: string): Promise<{ rows: ChatRoom[]; count: number }> => {
     const response = await api.get(`${CHAT_API}/rooms`, { 
-      params: { page, limit },
       headers: locale ? { 'accept-language': locale } : {}
     });
     return response.data;
   },
 
-  getChatRoom: async (id: number, locale?: string, page = 1, limit = 50): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
+  getChatRoom: async (id: number, locale?: string): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
     const response = await api.get(`${CHAT_API}/rooms/${id}`, { 
-      params: { page, limit },
       headers: locale ? { 'accept-language': locale } : {}
     });
     return response.data;
@@ -37,7 +37,9 @@ export const chatApi = {
 
   // Messages
   getMessages: async (chatRoomId: number, page = 1, limit = 50): Promise<{ rows: ChatMessage[]; count: number }> => {
-    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/messages`, { params: { page, limit } });
+    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/messages`, {
+      params: { page, limit },
+    });
     return response.data;
   },
 
@@ -51,42 +53,9 @@ export const chatApi = {
     return response.data;
   },
 
-  // Offers
-  createOffer: async (
-    chatRoomId: number,
-    sellerId: number,
-    description: string,
-    price: number,
-    deadline: string,
-  ): Promise<ChatOffer> => {
-    const response = await api.post(`${CHAT_API}/offers`, {
-      chatRoomId,
-      sellerId,
-      description,
-      price,
-      deadline,
-    });
-    return response.data;
-  },
-
-  acceptOffer: async (offerId: number): Promise<CustomOrder> => {
-    const response = await api.post(`${CHAT_API}/offers/${offerId}/accept`);
-    return response.data;
-  },
-
-  declineOffer: async (offerId: number): Promise<ChatOffer> => {
-    const response = await api.post(`${CHAT_API}/offers/${offerId}/decline`);
-    return response.data;
-  },
-
-  getChatOffers: async (chatRoomId: number): Promise<ChatOffer[]> => {
-    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/offers`);
-    return response.data;
-  },
-
   // Custom orders
-  getUserOrders: async (page = 1, limit = 20): Promise<{ rows: CustomOrder[]; count: number }> => {
-    const response = await api.get(`${CHAT_API}/orders`, { params: { page, limit } });
+  getUserOrders: async (): Promise<{ rows: CustomOrder[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/orders`);
     return response.data;
   },
 
@@ -120,5 +89,120 @@ export const chatApi = {
 
   markRoomAsRead: async (roomId: number): Promise<void> => {
     await api.post(`${CHAT_API}/rooms/${roomId}/read`);
+  },
+
+  // ==================== Offer (заказы на редактирование) ====================
+
+  /**
+   * Создать заказ (Заказчик)
+   */
+  createEditOffer: async (dto: CreateOfferDto): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers`, dto);
+    return response.data;
+  },
+
+  /**
+   * Получить заказ по ID
+   */
+  getOffer: async (offerId: number): Promise<Offer> => {
+    const response = await api.get(`${CHAT_API}/offers/${offerId}`);
+    return response.data;
+  },
+
+  /**
+   * Принять заказ (Автор)
+   */
+  acceptEditOffer: async (offerId: number): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/accept`);
+    return response.data;
+  },
+
+  /**
+   * Отклонить заказ (Любой участник)
+   */
+  rejectOffer: async (offerId: number): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/reject`);
+    return response.data;
+  },
+
+  /**
+   * Изменить цену (Автор)
+   */
+  counterOffer: async (offerId: number, dto: CounterOfferDto): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/counter`, dto);
+    return response.data;
+  },
+
+  /**
+   * Подтвердить цену (Заказчик)
+   */
+  confirmPrice: async (offerId: number): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/confirm-price`);
+    return response.data;
+  },
+
+  /**
+   * Загрузить файлы (Автор)
+   */
+  uploadOfferFiles: async (offerId: number, dto: UploadFilesDto): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/files`, dto);
+    return response.data;
+  },
+
+  /**
+   * Оплатить заказ (Заказчик)
+   */
+  payOrder: async (offerId: number, dto?: PayOrderDto): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/pay`, dto || {});
+    return response.data;
+  },
+
+  /**
+   * Получить файлы заказа (с проверкой доступа)
+   */
+  getOfferFiles: async (offerId: number): Promise<OfferFiles> => {
+    const response = await api.get(`${CHAT_API}/offers/${offerId}/files`);
+    return response.data;
+  },
+
+  /**
+   * Получить все заказы в чате
+   */
+  getRoomOffers: async (roomId: number): Promise<Offer[]> => {
+    const response = await api.get(`${CHAT_API}/offers/rooms/${roomId}/offers`);
+    return response.data;
+  },
+
+  // Алиасы для обратной совместимости с ChatContext
+  getChatOffers: async (chatRoomId: number): Promise<Offer[]> => {
+    const response = await api.get(`${CHAT_API}/rooms/${chatRoomId}/offers`);
+    return response.data;
+  },
+
+  createOffer: async (
+    chatRoomId: number,
+    sellerId: number,
+    description: string,
+    price: number,
+    deadline: string,
+  ): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers`, {
+      chatRoomId,
+      sellerId,
+      description,
+      price,
+      deadline,
+    });
+    return response.data;
+  },
+
+  acceptOffer: async (offerId: number): Promise<CustomOrder> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/accept`);
+    return response.data;
+  },
+
+  declineOffer: async (offerId: number): Promise<Offer> => {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/decline`);
+    return response.data;
   },
 };

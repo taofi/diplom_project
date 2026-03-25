@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { chatApi } from '@/lib/api-chat';
 import { Button, Card } from '@/components/ui';
-import type { ChatOffer, ChatUser } from '@/types/chat';
+import type { Offer, ChatUser } from '@/types/chat';
 
 interface OfferCardProps {
-  offer: ChatOffer;
+  offer: Offer;
   currentUserId: number;
-  onAccept?: (offer: ChatOffer) => void;
-  onDecline?: (offer: ChatOffer) => void;
+  onAccept?: (offer: Offer) => void;
+  onDecline?: (offer: Offer) => void;
+  onCounterOffer?: (offer: Offer) => void;
+  onConfirmPrice?: (offer: Offer) => void;
   isLoading?: boolean;
 }
 
@@ -19,15 +21,16 @@ export function OfferCard({ offer, currentUserId, onAccept, onDecline, isLoading
   const [loading, setLoading] = useState(false);
   
   const isSeller = offer.seller_id === currentUserId;
-  const isPending = offer.status === 'pending';
-  const isAccepted = offer.status === 'accepted';
-  const isDeclined = offer.status === 'declined';
+  const isPending = offer.status === 'waiting_author' || offer.status === 'waiting_user';
+  const isAccepted = offer.status === 'in_progress' || offer.status === 'awaiting_payment' || offer.status === 'completed';
+  const isDeclined = offer.status === 'rejected';
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | string) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
-    }).format(price);
+    }).format(numPrice);
   };
 
   const formatDate = (dateString: string) => {
@@ -104,7 +107,7 @@ export function OfferCard({ offer, currentUserId, onAccept, onDecline, isLoading
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="text-gray-600">{formatDate(offer.deadline)}</span>
+            <span className="text-gray-600">{offer.deadline ? formatDate(offer.deadline) : '-'}</span>
           </div>
         </div>
       </div>

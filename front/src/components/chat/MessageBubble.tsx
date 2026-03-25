@@ -15,20 +15,16 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
   const isOwn = message.sender_id === currentUserId;
   const sender = message.sender;
 
+  if (isOffer) {
+    return null;
+  }
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const renderContent = () => {
-    if (isOffer) {
-      return (
-        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-800">{message.message}</p>
-        </div>
-      );
-    }
-
     switch (message.message_type) {
       case 'image':
         return message.attachment_url ? (

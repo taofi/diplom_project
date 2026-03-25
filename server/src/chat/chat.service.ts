@@ -1,16 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../db/models/chat-room.model';
 import { ChatMessage, MessageType } from '../db/models/chat-message.model';
-import { ChatOffer, ChatOfferStatus } from '../db/models/chat-offer.model';
-import { CustomOrder, CustomOrderStatus } from '../db/models/custom-order.model';
-import { CustomOrderRevision } from '../db/models/custom-order-revision.model';
+import { Offer, OfferStatus } from '../db/models/offer.model';
 import { User } from '../db/models/user.model';
 import { Product } from '../db/models/product.model';
 import { ProductMedia } from '../db/models/product-media.model';
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
-import { ChatOfferRepository } from './repositories/chat-offer.repository';
+import { OfferRepository } from './repositories/offer.repository';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { TranslationService } from '../translation/translation.service';
 import { normalizeLanguage } from '../translation/utils/language.utils';
@@ -31,18 +29,14 @@ export class ChatService {
   constructor(
     private readonly chatRoomRepository: ChatRoomRepository,
     private readonly chatMessageRepository: ChatMessageRepository,
-    private readonly chatOfferRepository: ChatOfferRepository,
+    private readonly offerRepository: OfferRepository,
     private readonly translationService: TranslationService,
     @InjectModel(ChatRoom)
     private readonly chatRoomModel: typeof ChatRoom,
     @InjectModel(ChatMessage)
     private readonly chatMessageModel: typeof ChatMessage,
-    @InjectModel(ChatOffer)
-    private readonly chatOfferModel: typeof ChatOffer,
-    @InjectModel(CustomOrder)
-    private readonly customOrderModel: typeof CustomOrder,
-    @InjectModel(CustomOrderRevision)
-    private readonly customOrderRevisionModel: typeof CustomOrderRevision,
+    @InjectModel(Offer)
+    private readonly offerModel: typeof Offer,
     @InjectModel(UserProduct)
     private readonly userProductModel: typeof UserProduct,
     @InjectModel(Product)
@@ -264,6 +258,16 @@ export class ChatService {
    * Получить чат с сообщениями
    */
   async getChatRoomWithMessages(chatRoomId: number, page = 1, limit = 50, locale?: string) {
+    // Проверяем, что комната существует
+    const existingChatRoom = await this.chatRoomRepository.findById(chatRoomId);
+    if (!existingChatRoom) {
+      throw new NotFoundException('Chat room not found');
+    }
+
+    // Нормализуем язык (по умолчанию используем 'en' если не передан)
+    const normalizedLang = normalizeLanguage(locale) || 'en';
+
+    // Получаем данные о чате без сообщений (они загружаются отдельно с пагинацией)
     const chatRoom = await this.chatRoomRepository.findById(chatRoomId, {
       include: [
         { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
@@ -280,7 +284,6 @@ export class ChatService {
             },
           ],
         },
-        { model: this.chatMessageModel, as: 'messages' },
         // Добавляем UserProduct для получения данных о лицензии и цене
         {
           model: UserProduct,
@@ -299,9 +302,6 @@ export class ChatService {
     if (!chatRoom) {
       throw new NotFoundException('Chat room not found');
     }
-
-    // Нормализуем язык (по умолчанию используем 'en' если не передан)
-    const normalizedLang = normalizeLanguage(locale) || 'en';
 
     // Формируем чистый объект ответа
     const chatRoomResponse: Record<string, unknown> = {
@@ -384,6 +384,7 @@ export class ChatService {
       }
     }
 
+    // Получаем сообщения с пагинацией
     const messages = await this.chatMessageRepository.findAndCountAll({
       page,
       limit,
@@ -580,180 +581,225 @@ export class ChatService {
 
   /**
    * Создать предложение
+   * Защита: только участник чата (покупатель) может создать предложение
    */
   async createOffer(
     chatRoomId: number,
     messageId: number,
-    sellerId: number,
+    buyerId: number,
+    authorId: number,
     description: string,
     price: number,
-    deadline: Date,
-  ): Promise<ChatOffer> {
-    const offerData = {
+  ): Promise<Offer> {
+    // Проверяем, что пользователь является участником чата
+    const chatRoom = await this.chatRoomRepository.findById(chatRoomId);
+    if (!chatRoom) {
+      throw new NotFoundException('Chat room not found');
+    }
+
+    // Защита: только покупатель (buyer в чате) может создать предложение
+    if (chatRoom.buyer_id !== buyerId) {
+      throw new ForbiddenException('Only chat participant (buyer) can create offers');
+    }
+
+    const offer = await this.offerRepository.create({
       chat_room_id: chatRoomId,
-      message_id: messageId,
-      seller_id: sellerId,
+      creator_id: buyerId,
+      author_id: authorId,
       description,
       price,
-      deadline,
-      status: ChatOfferStatus.PENDING,
-    };
-
-    return this.chatOfferRepository.create(offerData);
+      status: OfferStatus.WAITING_AUTHOR,
+    });
+    return offer;
   }
 
   /**
    * Принять предложение
+   * Защита: только автор (продавец) может принять предложение
    */
-  async acceptOffer(offerId: number, buyerId: number): Promise<CustomOrder> {
-    const offer = await this.chatOfferRepository.findById(offerId, {
-      include: [this.chatRoomModel],
-    });
+  async acceptOffer(offerId: number, userId: number): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
 
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
-    if (offer.status !== ChatOfferStatus.PENDING) {
-      throw new BadRequestException('Offer is not pending');
+    // Защита: только автор (продавец) может принять предложение
+    if (offer.author_id !== userId) {
+      throw new ForbiddenException('Only offer author (seller) can accept the offer');
+    }
+
+    if (offer.status !== OfferStatus.WAITING_AUTHOR) {
+      throw new BadRequestException('Offer is not waiting for author');
     }
 
     // Обновить статус предложения
-    await this.chatOfferRepository.update(offerId, {
-      status: ChatOfferStatus.ACCEPTED,
-      responded_at: new Date(),
-    });
-
-    // Создать кастомный заказ
-    const orderData = {
-      chat_offer_id: offerId,
-      buyer_id: buyerId,
-      seller_id: offer.seller_id,
-      chat_room_id: offer.chat_room_id,
-      description: offer.description,
-      price: offer.price,
-      status: CustomOrderStatus.IN_PROGRESS,
-      deadline: offer.deadline,
-    };
-
-    const order = await this.customOrderModel.create(orderData as any);
-    return order;
+    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.IN_PROGRESS);
+    return updated;
   }
 
   /**
    * Отклонить предложение
+   * Защита: только участники сделки могут отклонить
+   * Поддерживает: WAITING_AUTHOR, WAITING_USER
    */
-  async declineOffer(offerId: number): Promise<ChatOffer> {
-    const offer = await this.chatOfferRepository.findById(offerId);
+  async declineOffer(offerId: number, userId: number): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
 
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
-    if (offer.status !== ChatOfferStatus.PENDING) {
-      throw new BadRequestException('Offer is not pending');
+    // Защита: только автор (продавец) или создатель (покупатель) может отклонить
+    if (offer.author_id !== userId && offer.creator_id !== userId) {
+      throw new ForbiddenException('Only offer participants can decline the offer');
     }
 
-    await this.chatOfferRepository.update(offerId, {
-      status: ChatOfferStatus.DECLINED,
-      responded_at: new Date(),
-    });
+    // Поддержка WAITING_AUTHOR и WAITING_USER
+    if (offer.status !== OfferStatus.WAITING_AUTHOR && offer.status !== OfferStatus.WAITING_USER) {
+      throw new BadRequestException('Offer cannot be declined at this status');
+    }
 
-    // Приводим к типу ChatOffer, так как мы уже проверили, что offer существует
-    return this.chatOfferRepository.findById(offerId) as Promise<ChatOffer>;
+    // Если отклоняем после изменения цены - сбрасываем original_price
+    if (offer.status === OfferStatus.WAITING_USER && offer.original_price) {
+      // Просто сбрасываем цену обратно
+      const offerToUpdate = await this.offerRepository.findById(offerId);
+      if (offerToUpdate) {
+        offerToUpdate.price = offer.original_price;
+        offerToUpdate.original_price = null;
+        await offerToUpdate.save();
+      }
+    }
+
+    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.REJECTED);
+    return updated;
+  }
+
+  /**
+   * Изменить цену предложения (автор/продавец)
+   * Защита: только автор может изменить цену
+   * Переводит: WAITING_AUTHOR → WAITING_USER
+   */
+  async counterOffer(offerId: number, userId: number, newPrice: number): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    // Защита: только автор (продавец) может изменить цену
+    if (offer.author_id !== userId) {
+      throw new ForbiddenException('Only offer author (seller) can change the price');
+    }
+
+    // Только из статуса WAITING_AUTHOR можно менять цену
+    if (offer.status !== OfferStatus.WAITING_AUTHOR) {
+      throw new BadRequestException('Cannot change price at this status');
+    }
+
+    // Сохраняем старую цену как original_price
+    await this.offerRepository.updatePrice(offerId, newPrice, offer.price);
+
+    // Переводим в статус ожидания подтверждения от пользователя
+    await this.offerRepository.updateStatus(offerId, OfferStatus.WAITING_USER);
+    
+    const updatedOffer = await this.offerRepository.findById(offerId);
+    if (!updatedOffer) {
+      throw new NotFoundException('Offer not found after update');
+    }
+    return updatedOffer;
+  }
+
+  /**
+   * Подтвердить цену (покупатель)
+   * Защита: только создатель может подтвердить цену
+   * Переводит: WAITING_USER → IN_PROGRESS
+   */
+  async confirmPrice(offerId: number, userId: number): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    // Защита: только создатель (покупатель) может подтвердить цену
+    if (offer.creator_id !== userId) {
+      throw new ForbiddenException('Only offer creator (buyer) can confirm the price');
+    }
+
+    // Только из статуса WAITING_USER можно подтвердить
+    if (offer.status !== OfferStatus.WAITING_USER) {
+      throw new BadRequestException('Offer is not waiting for price confirmation');
+    }
+
+    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.IN_PROGRESS);
+    return updated;
   }
 
   /**
    * Получить предложения чата
    */
-  async getChatOffers(chatRoomId: number) {
-    return this.chatOfferRepository.findByChatRoomId(chatRoomId);
+  async getChatOffers(chatRoomId: number): Promise<Offer[]> {
+    return this.offerRepository.findByChatRoom(chatRoomId);
   }
 
-  // ==================== Custom Orders ====================
+  // ==================== Orders ====================
 
   /**
-   * Получить заказы пользователя
+   * Получить активные заказы пользователя
    */
-  async getUserOrders(userId: number, page = 1, limit = 20) {
-    return this.customOrderModel.findAndCountAll({
-      where: {
-        [Op.or]: [{ buyer_id: userId }, { seller_id: userId }],
-      },
-      order: [['created_at', 'DESC']],
-      limit,
-      offset: (page - 1) * limit,
-    });
+  async getUserOrders(userId: number) {
+    const offers = await this.offerRepository.findActiveByUser(userId);
+    return {
+      rows: offers,
+      count: offers.length,
+    };
   }
 
   /**
-   * Получить заказ с ревизиями
+   * Получить заказ с файлами
    */
   async getOrderWithRevisions(orderId: number) {
-    const order = await this.customOrderModel.findByPk(orderId, {
-      include: [
-        { model: this.chatOfferModel },
-        { model: User, as: 'buyer', attributes: ['id', 'name', 'avatar_url'] },
-        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
-      ],
-    });
+    const offer = await this.offerRepository.findById(orderId);
 
-    if (!order) {
+    if (!offer) {
       throw new NotFoundException('Order not found');
     }
 
-    const revisions = await this.customOrderRevisionModel.findAll({
-      where: { custom_order_id: orderId },
-      order: [['created_at', 'ASC']],
-    });
-
-    return { order, revisions };
+    return { order: offer, revisions: [] };
   }
 
   /**
-   * Добавить ревизию
+   * Добавить ревизию (загрузить файлы)
+   * Теперь это делается через OfferService
    */
-  async addRevision(orderId: number, fileUrl: string, comment?: string) {
-    const order = await this.customOrderModel.findByPk(orderId);
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    await this.customOrderRevisionModel.create({
-      custom_order_id: orderId,
-      file_url: fileUrl,
-      comment,
-      is_approved: false,
-    });
-
-    // Обновить статус заказа
-    await order.update({ status: CustomOrderStatus.REVIEW });
-  }
+  //async addRevision(_orderId: number, _fileUrl: string, _comment?: string) {
+    //throw new BadRequestException('Use OfferService for file uploads');
+  //}
 
   /**
    * Одобрить заказ
    */
   async approveOrder(orderId: number) {
-    const order = await this.customOrderModel.findByPk(orderId);
-    if (!order) {
+    const offer = await this.offerRepository.findById(orderId);
+    if (!offer) {
       throw new NotFoundException('Order not found');
     }
 
-    await order.update({ status: CustomOrderStatus.COMPLETED });
-    return order;
+    return this.offerRepository.updateStatus(orderId, OfferStatus.COMPLETED);
   }
 
   /**
    * Запросить доработку
    */
   async requestRevision(orderId: number) {
-    const order = await this.customOrderModel.findByPk(orderId);
-    if (!order) {
+    const offer = await this.offerRepository.findById(orderId);
+    if (!offer) {
       throw new NotFoundException('Order not found');
     }
 
-    await order.update({ status: CustomOrderStatus.REVISION });
-    return order;
+    // В Offer нет статуса revision, возвращаем ошибку
+    throw new BadRequestException('Use Offer workflow for revisions');
   }
 
   // ==================== Seller Chats ====================

@@ -8,8 +8,11 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatWindow } from '@/components/chat/ChatWindow';
+import { CreateOfferModal } from '@/components/chat/CreateOfferModal';
+import { OffersPanel } from '@/components/chat/OffersPanel';
 import { Spinner } from '@/components/ui';
-import type { ChatRoom, ChatOffer } from '@/types/chat';
+import type { ChatRoom } from '@/types/chat';
+import type { Offer } from '@/types/chat/offer.types';
 
 function ChatContent() {
   const { user } = useAuth();
@@ -31,12 +34,18 @@ function ChatContent() {
     typingUsers,
     setTyping,
     onlineUsers,
+    loadOlderMessages,
+    hasMoreMessages,
+    isLoadingOlderMessages,
   } = useChat();
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [isChatHovered, setIsChatHovered] = useState(false);
   const isMountedRef = useRef(false);
+
+  // Состояние для модального окна создания заказа
+  const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = useState(false);
 
   // Load chat rooms on mount
   useEffect(() => {
@@ -85,7 +94,7 @@ function ChatContent() {
   }, [sendMessage, loadChatRooms]);
 
   // Handle accept offer
-  const handleAcceptOffer = useCallback(async (offer: ChatOffer) => {
+  const handleAcceptOffer = useCallback(async (offer: Offer) => {
     try {
       await acceptOffer(offer.id);
       // Reload rooms to update offer status
@@ -96,7 +105,7 @@ function ChatContent() {
   }, [acceptOffer, loadChatRooms]);
 
   // Handle decline offer
-  const handleDeclineOffer = useCallback(async (offer: ChatOffer) => {
+  const handleDeclineOffer = useCallback(async (offer: Offer) => {
     try {
       await declineOffer(offer.id);
       // Reload rooms to update offer status
@@ -105,6 +114,14 @@ function ChatContent() {
       console.error('Error declining offer:', error);
     }
   }, [declineOffer, loadChatRooms]);
+
+  // Обработчик успешного создания заказа
+  const handleCreateOfferSuccess = useCallback(async () => {
+    // Закрыть модальное окно
+    setIsCreateOfferModalOpen(false);
+    // Перезагрузить комнаты
+    await loadChatRooms();
+  }, [loadChatRooms]);
 
   // Determine if user is seller in current room
   const isSellerView = currentRoom ? currentRoom.seller_id === user?.id : false;
@@ -131,7 +148,7 @@ function ChatContent() {
         </div>
 
         <div 
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]"
+          className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-250px)]"
           onMouseEnter={() => setIsChatHovered(true)}
           onMouseLeave={() => setIsChatHovered(false)}
         >
@@ -164,19 +181,42 @@ function ChatContent() {
             <ChatWindow
               room={currentRoom}
               messages={messages}
-              offers={offers}
               currentUserId={user.id}
               onSendMessage={handleSendMessage}
-              onAcceptOffer={handleAcceptOffer}
-              onDeclineOffer={handleDeclineOffer}
               typingUsers={typingUsers}
               onTyping={setTyping}
               isLoading={isLoading}
               onlineUsers={onlineUsers}
+              onCreateOffer={() => setIsCreateOfferModalOpen(true)}
+              isSeller={isSellerView}
+              hasMoreMessages={hasMoreMessages}
+              isLoadingOlderMessages={isLoadingOlderMessages}
+              onLoadOlderMessages={loadOlderMessages}
+            />
+          </div>
+
+          {/* Offers panel */}
+          <div className="hidden lg:block lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
+            <OffersPanel
+              offers={offers}
+              currentUserId={user.id}
+              onAccept={handleAcceptOffer}
+              onDecline={handleDeclineOffer}
             />
           </div>
         </div>
       </div>
+
+      {/* Модальное окно создания заказа */}
+      {currentRoom && !isSellerView && (
+        <CreateOfferModal
+          isOpen={isCreateOfferModalOpen}
+          onClose={() => setIsCreateOfferModalOpen(false)}
+          chatRoomId={currentRoom.id}
+          sellerId={currentRoom.seller_id}
+          onSuccess={handleCreateOfferSuccess}
+        />
+      )}
     </div>
   );
 }

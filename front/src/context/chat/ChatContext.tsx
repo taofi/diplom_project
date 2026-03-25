@@ -5,7 +5,9 @@ import { socketClient } from '../../lib/socket';
 import { chatApi } from '../../lib/api-chat';
 import { getUserById } from '../../lib/api-user';
 import { useI18n } from '../../context/i18n/I18nContext';
-import type { ChatRoom, ChatMessage, ChatOffer, CustomOrder, ChatUser } from '../../types/chat';
+import type { ChatRoom, ChatMessage, CustomOrder, ChatUser } from '../../types/chat';
+import type { Offer, CounterOfferDto } from '../../types/chat/offer.types';
+import { OfferStatus } from '../../types/chat/offer.types';
 
 interface ChatContextType {
   // Connection state
@@ -20,15 +22,20 @@ interface ChatContextType {
   // Messages
   messages: ChatMessage[];
   sendMessage: (content: string, type?: string) => Promise<void>;
+  loadOlderMessages: () => Promise<void>;
+  hasMoreMessages: boolean;
+  isLoadingOlderMessages: boolean;
   
   // Create new chat (creates in DB with visibility: PENDING)
   createChat: (sellerId: number, productId?: number, userProductId?: number) => Promise<ChatRoom | null>;
   
   // Offers
-  offers: ChatOffer[];
+  offers: Offer[];
   createOffer: (chatRoomId: number, sellerId: number, description: string, price: number, deadline: string) => Promise<void>;
   acceptOffer: (offerId: number) => Promise<CustomOrder>;
   declineOffer: (offerId: number) => Promise<void>;
+  counterOffer: (offerId: number, newPrice: number) => Promise<void>;
+  confirmPrice: (offerId: number) => Promise<void>;
   
   // Custom orders
   orders: CustomOrder[];
@@ -68,11 +75,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [offers, setOffers] = useState<ChatOffer[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [orders, setOrders] = useState<CustomOrder[]>([]);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
   // Кэш пользователей для подстановки имени и аватара по sender_id
   const [usersCache, setUsersCache] = useState<Map<number, ChatUser>>(new Map());
+  
+  // ==================== Pagination for messages ====================
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   
   // ==================== Tab Support & Online Status ====================
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
@@ -144,13 +156,45 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    socketClient.on('offerCreated', (data: unknown) => {
-      const payload = data as { offer: ChatOffer };
+    socketClient.on('offer:created', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:created received:', payload.offer.id);
       setOffers(prev => [...prev, payload.offer]);
     });
 
-    socketClient.on('offerUpdated', (data: unknown) => {
-      const payload = data as { offer: ChatOffer };
+    socketClient.on('offer:statusChanged', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:statusChanged received:', payload.offer.id, payload.offer.status);
+      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+    });
+
+    socketClient.on('offer:priceChanged', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:priceChanged received:', payload.offer.id);
+      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+    });
+
+    socketClient.on('offer:filesUploaded', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:filesUploaded received:', payload.offer.id);
+      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+    });
+
+    socketClient.on('offer:paid', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:paid received:', payload.offer.id);
+      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+    });
+
+    socketClient.on('offer:filesUploaded', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:filesUploaded received:', payload.offer.id);
+      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+    });
+
+    socketClient.on('offer:paid', (data: unknown) => {
+      const payload = data as { offer: Offer };
+      console.log('[ChatContext] offer:paid received:', payload.offer.id);
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
@@ -248,7 +292,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       const result = await chatApi.getChatRoom(roomId, locale);
       setCurrentRoom(result.chatRoom);
-      setMessages(result.messages);
+      // Реверсируем сообщения: сервер отправляет новые first, а нам нужно новые внизу
+      setMessages([...result.messages].reverse());
+      
+      // Устанавливаем информацию о пагинации
+      setCurrentPage(1);
+      setHasMoreMessages(result.messages.length < result.total);
       
       // Установить активную комнату для правильной обработки входящих сообщений
       setActiveRoomId(roomId);
@@ -315,6 +364,45 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [currentRoom]);
 
+  // Загрузка старых сообщений (пагинация)
+  const loadOlderMessages = useCallback(async () => {
+    if (!currentRoom || isLoadingOlderMessages || !hasMoreMessages) {
+      return;
+    }
+    
+    setIsLoadingOlderMessages(true);
+    
+    try {
+      const nextPage = currentPage + 1;
+      const result = await chatApi.getMessages(currentRoom.id, nextPage);
+      
+      // Добавляем старые сообщения в начало (они older, т.е. более старые по времени)
+      // Сервер отправляет новые first, поэтому реверсируем перед добавлением
+      const olderMessages = [...result.rows].reverse();
+      
+      // Подставляем данные отправителя из usersCache в старые сообщения
+      const olderMessagesWithSender = olderMessages.map(msg => {
+        const cachedSender = usersCacheRef.current.get(msg.sender_id);
+        if (cachedSender) {
+          return { ...msg, sender: cachedSender };
+        }
+        // Если sender уже есть в сообщении (с сервера), сохраняем его
+        return msg;
+      });
+      
+      setMessages(prev => [...olderMessagesWithSender, ...prev]);
+      
+      // Обновляем информацию о пагинации
+      setCurrentPage(nextPage);
+      // Проверяем, есть ли еще сообщения для загрузки
+      setHasMoreMessages(messages.length + result.rows.length < result.count);
+    } catch (error) {
+      console.error('Error loading older messages:', error);
+    } finally {
+      setIsLoadingOlderMessages(false);
+    }
+  }, [currentRoom, currentPage, isLoadingOlderMessages, hasMoreMessages, messages.length]);
+
   const createChat = useCallback(async (sellerId: number, productId?: number, userProductId?: number): Promise<ChatRoom | null> => {
     try {
       // Создаем чат напрямую в БД (с visibility: PENDING)
@@ -356,10 +444,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       await chatApi.declineOffer(offerId);
       setOffers(prev => prev.map(o => 
-        o.id === offerId ? { ...o, status: 'declined' as const } : o
+        o.id === offerId ? { ...o, status: OfferStatus.REJECTED } : o
       ));
     } catch (error) {
       console.error('Error declining offer:', error);
+    }
+  }, []);
+
+  const counterOffer = useCallback(async (offerId: number, newPrice: number) => {
+    try {
+      const dto: CounterOfferDto = { newPrice };
+      const offer = await chatApi.counterOffer(offerId, dto);
+      setOffers(prev => prev.map(o => 
+        o.id === offerId ? offer : o
+      ));
+    } catch (error) {
+      console.error('Error counter-offering:', error);
+      throw error;
+    }
+  }, []);
+
+  const confirmPrice = useCallback(async (offerId: number) => {
+    try {
+      const offer = await chatApi.confirmPrice(offerId);
+      setOffers(prev => prev.map(o => 
+        o.id === offerId ? offer : o
+      ));
+    } catch (error) {
+      console.error('Error confirming price:', error);
+      throw error;
     }
   }, []);
 
@@ -439,11 +552,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         selectRoom,
         messages,
         sendMessage,
+        loadOlderMessages,
+        hasMoreMessages,
+        isLoadingOlderMessages,
         createChat,
         offers,
         createOffer,
         acceptOffer,
         declineOffer,
+        counterOffer,
+        confirmPrice,
         orders,
         loadOrders,
         setTyping,

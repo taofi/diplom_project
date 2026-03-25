@@ -14,7 +14,7 @@ import {
 } from 'sequelize-typescript';
 import { User } from './user.model';
 import { ChatRoom } from './chat-room.model';
-import { ChatOffer } from './chat-offer.model';
+import { Offer } from './offer.model';
 import { CustomOrderRevision } from './custom-order-revision.model';
 
 export enum CustomOrderStatus {
@@ -32,7 +32,7 @@ export class CustomOrder extends Model {
   @Column(DataType.INTEGER)
   declare id: number;
 
-  @ForeignKey(() => ChatOffer)
+  @ForeignKey(() => Offer)
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare chat_offer_id: number;
 
@@ -68,8 +68,8 @@ export class CustomOrder extends Model {
   declare updated_at: Date;
 
   // Associations
-  @BelongsTo(() => ChatOffer, 'chat_offer_id')
-  declare chat_offer: ChatOffer;
+  @BelongsTo(() => Offer, 'chat_offer_id')
+  declare chat_offer: Offer;
 
   @BelongsTo(() => User, 'buyer_id')
   declare buyer: User;

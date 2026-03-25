@@ -3,31 +3,38 @@
 import { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { MessageBubble } from './MessageBubble';
-import { OfferCard } from './OfferCard';
 import { Button, Spinner } from '@/components/ui';
 import { ServerImage } from '@/components/Image';
-import type { ChatRoom, ChatMessage, ChatOffer } from '@/types/chat';
+import type { ChatRoom, ChatMessage } from '@/types/chat';
+import type { Offer } from '@/types/chat/offer.types';
 
 interface ChatWindowProps {
   room: ChatRoom | null;
   messages: ChatMessage[];
-  offers: ChatOffer[];
+  offers?: Offer[];
   currentUserId: number;
   onSendMessage: (content: string, type?: string) => void;
-  onAcceptOffer: (offer: ChatOffer) => Promise<void>;
-  onDeclineOffer: (offer: ChatOffer) => Promise<void>;
+  onAcceptOffer?: (offer: Offer) => Promise<void>;
+  onDeclineOffer?: (offer: Offer) => Promise<void>;
   typingUsers: Map<number, Set<number>>;
   onTyping: (isTyping: boolean) => void;
   isLoading?: boolean;
   isHovered?: boolean;
   // Online status
   onlineUsers?: Map<number, boolean>;
+  // Для создания заказов (только для покупателя)
+  onCreateOffer?: () => void;
+  isSeller?: boolean;
+  // Пагинация сообщений
+  hasMoreMessages?: boolean;
+  isLoadingOlderMessages?: boolean;
+  onLoadOlderMessages?: () => void;
 }
 
 export function ChatWindow({
   room,
   messages,
-  offers,
+  offers = [],
   currentUserId,
   onSendMessage,
   onAcceptOffer,
@@ -37,6 +44,11 @@ export function ChatWindow({
   isLoading = false,
   isHovered = false,
   onlineUsers = new Map(),
+  onCreateOffer,
+  isSeller = false,
+  hasMoreMessages = false,
+  isLoadingOlderMessages = false,
+  onLoadOlderMessages,
 }: ChatWindowProps) {
   const { t } = useI18n();
   const [message, setMessage] = useState('');
@@ -45,6 +57,17 @@ export function ChatWindow({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  // Track previous scroll height for maintaining position after loading older messages
+  const prevScrollHeightRef = useRef<number>(0);
+  // Track initial load to scroll to bottom when chat is first opened
+  const isInitialLoadRef = useRef(true);
+  
+  // Сброс initial load при смене комнаты
+  useEffect(() => {
+    if (room) {
+      isInitialLoadRef.current = true;
+    }
+  }, [room]);
 
   // 1. Функция скролла вниз (использует scrollTo для изоляции скролла внутри div)
   const scrollToBottom = useCallback((behaviorOrEvent?: ScrollBehavior | React.MouseEvent) => {
@@ -98,14 +121,45 @@ export function ChatWindow({
     const threshold = 100;
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     setIsAtBottom(isNearBottom);
-  }, []);
+    
+    // Если прокрутили вверх и есть еще сообщения - загружаем старые
+    if (container.scrollTop < 100 && hasMoreMessages && !isLoadingOlderMessages && onLoadOlderMessages) {
+      // Сохраняем текущую высоту скролла перед загрузкой
+      prevScrollHeightRef.current = container.scrollHeight;
+      onLoadOlderMessages();
+    }
+  }, [hasMoreMessages, isLoadingOlderMessages, onLoadOlderMessages]);
 
   // 5. Авто-скролл при новых сообщениях
   useEffect(() => {
+    // Если загружаем старые сообщения, восстанавливаем позицию скролла
+    if (isLoadingOlderMessages && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const newScrollHeight = container.scrollHeight;
+      const heightDiff = newScrollHeight - prevScrollHeightRef.current;
+      // Восстанавливаем позицию (добавляем разницу высоты)
+      container.scrollTop = heightDiff;
+      prevScrollHeightRef.current = 0;
+      return;
+    }
+    
+    // При начальной загрузке (первое появление сообщений) - скроллим вниз
+    if (isInitialLoadRef.current && messages.length > 0 && messagesContainerRef.current) {
+      // Используем requestAnimationFrame для гарантии, что контент уже отрендерен
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      });
+      isInitialLoadRef.current = false;
+      return;
+    }
+    
+    // Обычный скролл вниз при новых сообщениях
     if (isAtBottom && (messages.length > 0 || offers.length > 0)) {
       scrollToBottom('smooth');
     }
-  }, [messages.length, offers.length, isAtBottom, scrollToBottom]);
+  }, [messages.length, offers.length, isAtBottom, scrollToBottom, isLoadingOlderMessages]);
 
   // Обработка ввода
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,14 +253,15 @@ export function ChatWindow({
         ) : (
           <div className="min-h-full flex flex-col justify-end">
             <div className="w-full">
-              {offers.map((offer) => (
-                <div key={offer.id} className="mb-4">
-                  <OfferCard
-                    offer={offer} currentUserId={currentUserId}
-                    onAccept={onAcceptOffer} onDecline={onDeclineOffer}
-                  />
+              {/* Индикатор загрузки старых сообщений */}
+              {isLoadingOlderMessages && (
+                <div className="flex justify-center py-4">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Spinner size="sm" />
+                    <span className="text-sm">{t('chat.loadingOlder') || 'Загрузка сообщений...'}</span>
+                  </div>
                 </div>
-              ))}
+              )}
               {messages.map((msg) => (
                 <MessageBubble 
                   key={msg.id} message={msg} 
@@ -243,6 +298,17 @@ export function ChatWindow({
               placeholder={t('chat.typeMessage')}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
+            {/* Кнопка создания заказа - только для покупателя */}
+            {onCreateOffer && !isSeller && room && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onCreateOffer}
+                className="whitespace-nowrap"
+              >
+                {t('chat.createOrder')}
+              </Button>
+            )}
             <Button type="submit" disabled={!message.trim()}>{t('common.send')}</Button>
           </form>
         </div>

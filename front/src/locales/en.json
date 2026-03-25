@@ -448,7 +448,10 @@
     "declineOffer": "Decline",
     "orderCreated": "Order created",
     "temporary": "Temporary",
-    "chatWith": "Chat with"
+    "chatWith": "Chat with",
+    "createOrder": "Create Order",
+    "deadlineRequired": "Deadline is required",
+    "orderDeadline": "Deadline"
   },
   "orders": {
     "title": "My Orders",

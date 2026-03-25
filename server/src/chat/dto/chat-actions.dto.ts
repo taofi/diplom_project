@@ -1,5 +1,5 @@
-import { IsNumber, IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
-import { ChatOfferStatus } from '../../db/models/chat-offer.model';
+import { IsNumber, IsString, IsOptional, IsDateString, IsEnum, Min } from 'class-validator';
+import { OfferStatus } from '../../db/models/offer.model';
 
 export class CreateOfferDto {
   @IsNumber({}, { message: 'Chat room ID must be a number' })
@@ -12,10 +12,17 @@ export class CreateOfferDto {
   description: string;
 
   @IsNumber({}, { message: 'Price must be a number' })
+  @Min(0, { message: 'Price must be at least 0' })
   price: number;
 
   @IsDateString({}, { message: 'Deadline must be a valid date' })
   deadline: string;
+}
+
+export class CounterOfferDto {
+  @IsNumber({}, { message: 'New price must be a number' })
+  @Min(0, { message: 'New price must be at least 0' })
+  newPrice: number;
 }
 
 export class AcceptOfferDto {

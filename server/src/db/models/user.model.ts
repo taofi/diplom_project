@@ -17,7 +17,6 @@ import { Order } from './order.model';
 import { UserProduct } from './user-product.model';
 import { ChatRoom } from './chat-room.model';
 import { ChatMessage } from './chat-message.model';
-import { ChatOffer } from './chat-offer.model';
 import { CustomOrder } from './custom-order.model';
 import { UserRole as UserRoleModel } from './user-role.model';
 
@@ -83,9 +82,6 @@ export class User extends Model {
 
   @HasMany(() => ChatMessage, 'sender_id')
   declare chat_messages: ChatMessage[];
-
-  @HasMany(() => ChatOffer, 'seller_id')
-  declare chat_offers: ChatOffer[];
 
   @HasMany(() => CustomOrder, 'buyer_id')
   declare buyer_custom_orders: CustomOrder[];

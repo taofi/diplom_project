@@ -18,7 +18,8 @@ import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
 import {
   CreateOfferDto,
-  CreateRevisionDto,
+  CounterOfferDto,
+  //CreateRevisionDto,
 } from './dto/chat-actions.dto';
 import { MessageType } from '../db/models/chat-message.model';
 
@@ -174,10 +175,10 @@ export class ChatController {
     return this.chatService.createOffer(
       dto.chatRoomId,
       message.id,
-      dto.sellerId,
+      userId, // buyerId - текущий пользователь
+      dto.sellerId, // authorId - продавец
       dto.description,
       dto.price,
-      new Date(dto.deadline),
     );
   }
 
@@ -200,8 +201,38 @@ export class ChatController {
    */
   @Post('offers/:id/decline')
   @HttpCode(HttpStatus.OK)
-  async declineOffer(@Param('id') id: string) {
-    return this.chatService.declineOffer(parseInt(id, 10));
+  async declineOffer(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+  ) {
+    return this.chatService.declineOffer(parseInt(id, 10), userId);
+  }
+
+  /**
+   * POST /chat/offers/:id/counter
+   * Изменить цену предложения (автор/продавец)
+   */
+  @Post('offers/:id/counter')
+  @HttpCode(HttpStatus.OK)
+  async counterOffer(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+    @Body() dto: CounterOfferDto,
+  ) {
+    return this.chatService.counterOffer(parseInt(id, 10), userId, dto.newPrice);
+  }
+
+  /**
+   * POST /chat/offers/:id/confirm-price
+   * Подтвердить цену (покупатель)
+   */
+  @Post('offers/:id/confirm-price')
+  @HttpCode(HttpStatus.OK)
+  async confirmPrice(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+  ) {
+    return this.chatService.confirmPrice(parseInt(id, 10), userId);
   }
 
   /**
@@ -222,14 +253,8 @@ export class ChatController {
   @Get('orders')
   async getUserOrders(
     @CurrentUserId() userId: number,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
   ) {
-    return this.chatService.getUserOrders(
-      userId,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
-    );
+    return this.chatService.getUserOrders(userId);
   }
 
   /**
@@ -244,7 +269,6 @@ export class ChatController {
   /**
    * POST /custom-orders/:id/revision
    * Добавить ревизию с файлом
-   */
   @Post('orders/:id/revision')
   @HttpCode(HttpStatus.CREATED)
   async addRevision(
@@ -257,6 +281,7 @@ export class ChatController {
       dto.comment,
     );
   }
+   */
 
   /**
    * POST /custom-orders/:id/approve
@@ -278,3 +303,4 @@ export class ChatController {
     return this.chatService.requestRevision(parseInt(id, 10));
   }
 }
+

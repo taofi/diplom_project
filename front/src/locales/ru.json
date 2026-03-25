@@ -448,7 +448,10 @@
     "declineOffer": "Отклонить",
     "orderCreated": "Заказ создан",
     "temporary": "Временный",
-    "chatWith": "Чат с"
+    "chatWith": "Чат с",
+    "createOrder": "Создать заказ",
+    "deadlineRequired": "Срок выполнения обязателен",
+    "orderDeadline": "Срок выполнения"
   },
   "orders": {
     "title": "Мои заказы",

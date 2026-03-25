@@ -24,7 +24,6 @@ import {
   UserProduct,
   ChatRoom,
   ChatMessage,
-  ChatOffer,
   CustomOrder,
   CustomOrderRevision,
 } from './models';
@@ -50,7 +49,6 @@ const models = [
   UserProduct,
   ChatRoom,
   ChatMessage,
-  ChatOffer,
   CustomOrder,
   CustomOrderRevision,
 ];

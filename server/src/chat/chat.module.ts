@@ -8,9 +8,6 @@ import { StringValue } from 'ms';
 import {
   ChatRoom,
   ChatMessage,
-  ChatOffer,
-  CustomOrder,
-  CustomOrderRevision,
   UserProduct,
   Product,
   ProductLicense,
@@ -24,7 +21,6 @@ import { AuthModule } from '../auth/auth.module';
 // Repositories
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
-import { ChatOfferRepository } from './repositories/chat-offer.repository';
 import { OfferRepository } from './repositories/offer.repository';
 
 // Services
@@ -57,9 +53,6 @@ import { RedisModule } from '../redis/redis.module';
     SequelizeModule.forFeature([
       ChatRoom,
       ChatMessage,
-      ChatOffer,
-      CustomOrder,
-      CustomOrderRevision,
       UserProduct,
       Product,
       ProductLicense,
@@ -87,7 +80,6 @@ import { RedisModule } from '../redis/redis.module';
     ChatCacheService,
     ChatRoomRepository,
     ChatMessageRepository,
-    ChatOfferRepository,
     OfferRepository,
     OfferService,
     ChatGateway,

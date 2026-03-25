@@ -36,7 +36,6 @@ export { UserProduct } from './user-product.model';
 // Chat
 export { ChatRoom, ChatRoomStatus } from './chat-room.model';
 export { ChatMessage, MessageType } from './chat-message.model';
-export { ChatOffer, ChatOfferStatus } from './chat-offer.model';
 
 // Custom Orders
 export { CustomOrder, CustomOrderStatus } from './custom-order.model';

@@ -81,7 +81,7 @@ export class ChatMessageRepository {
       where,
       offset,
       limit,
-      order: [['created_at', 'ASC']],
+      order: [['created_at', 'DESC']],
       include,
     };
 

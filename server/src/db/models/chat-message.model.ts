@@ -9,12 +9,10 @@ import {
   AllowNull,
   ForeignKey,
   BelongsTo,
-  HasOne,
   CreatedAt,
 } from 'sequelize-typescript';
 import { User } from './user.model';
 import { ChatRoom } from './chat-room.model';
-import { ChatOffer } from './chat-offer.model';
 
 export enum MessageType {
   TEXT = 'text',
@@ -63,7 +61,4 @@ export class ChatMessage extends Model {
 
   @BelongsTo(() => User, 'sender_id')
   declare sender: User;
-
-  @HasOne(() => ChatOffer, 'message_id')
-  declare offer: ChatOffer;
 }

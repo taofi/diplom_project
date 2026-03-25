@@ -61,18 +61,9 @@ export interface ChatMessage {
   sender?: ChatUser;
 }
 
-export interface ChatOffer {
-  id: number;
-  chat_room_id: number;
-  message_id: number;
-  seller_id: number;
-  description: string;
-  price: number;
-  deadline: string;
-  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
-  responded_at: string | null;
-  created_at: string;
-}
+import { Offer, OfferStatus } from './offer.types';
+
+export type { Offer, OfferStatus };
 
 export interface CustomOrder {
   id: number;
@@ -86,7 +77,7 @@ export interface CustomOrder {
   deadline: string;
   created_at: string;
   updated_at: string;
-  offer?: ChatOffer;
+  offer?: Offer;
 }
 
 export interface CustomOrderRevision {
@@ -117,11 +108,11 @@ export interface MessageUpdatedPayload {
 }
 
 export interface OfferCreatedPayload {
-  offer: ChatOffer;
+  offer: Offer;
 }
 
 export interface OfferUpdatedPayload {
-  offer: ChatOffer;
+  offer: Offer;
 }
 
 export interface UserTypingPayload {
