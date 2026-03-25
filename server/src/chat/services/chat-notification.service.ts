@@ -88,23 +88,27 @@ export class ChatNotificationService {
    * Отправить уведомление конкретному пользователю на все его сокеты
    */
   async notifyUser(userId: number, event: string, data: unknown): Promise<void> {
+    this.logger.log(`[ChatNotificationService] notifyUser: userId=${userId}, event=${event}`);
+    
     if (!this.server) {
-      this.logger.warn('Server not set, cannot notify user');
+      this.logger.warn('[ChatNotificationService] Server not set, cannot notify user');
       return;
     }
 
     const sockets = await this.chatStateService.getUserSockets(userId);
+    this.logger.log(`[ChatNotificationService] Found ${sockets.length} sockets for user ${userId}:`, sockets);
 
     if (sockets.length === 0) {
-      this.logger.log(`User ${userId} is offline, cannot send ${event}`);
+      this.logger.log(`[ChatNotificationService] User ${userId} is offline, cannot send ${event}`);
       return;
     }
 
     for (const socketId of sockets) {
+      this.logger.log(`[ChatNotificationService] Sending to socketId=${socketId}, event=${event}`);
       this.server.to(socketId).emit(event, data);
     }
 
-    this.logger.log(`Sent ${event} to user ${userId} on ${sockets.length} socket(s)`);
+    this.logger.log(`[ChatNotificationService] Sent ${event} to user ${userId} on ${sockets.length} socket(s)`);
   }
 
   /**

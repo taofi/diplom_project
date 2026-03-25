@@ -10,7 +10,7 @@ interface CreateOfferModalProps {
   isOpen: boolean;
   onClose: () => void;
   chatRoomId: number;
-  sellerId: number;
+  authorId: number;
   onSuccess?: (offer: unknown) => void;
 }
 
@@ -18,13 +18,12 @@ export function CreateOfferModal({
   isOpen,
   onClose,
   chatRoomId,
-  sellerId,
+  authorId,
   onSuccess,
 }: CreateOfferModalProps) {
   const { t } = useI18n();
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
-  const [deadline, setDeadline] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,28 +41,16 @@ export function CreateOfferModal({
       return;
     }
 
-    if (!deadline) {
-      setError(t('chat.errors.deadlineRequired'));
-      return;
-    }
-
     setLoading(true);
     try {
-      const dto = {
+      const dto: CreateOfferDto = {
         chatRoomId,
-        sellerId,
+        authorId,
         description: description.trim(),
         price,
-        deadline,
       };
 
-      const result = await chatApi.createOffer(
-        dto.chatRoomId,
-        dto.sellerId,
-        dto.description,
-        dto.price,
-        dto.deadline,
-      );
+      const result = await chatApi.createEditOffer(dto);
       onSuccess?.(result);
       handleClose();
     } catch (err) {
@@ -76,7 +63,6 @@ export function CreateOfferModal({
   const handleClose = () => {
     setDescription('');
     setPrice(0);
-    setDeadline('');
     setError(null);
     onClose();
   };
@@ -101,19 +87,6 @@ export function CreateOfferModal({
             onChange={setDescription}
             placeholder={t('chat.orderDescriptionPlaceholder')}
             rows={4}
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('chat.orderDeadline')}
-          </label>
-          <Input
-            name="deadline"
-            type="date"
-            value={deadline}
-            onChange={(val) => setDeadline(val as string)}
             disabled={loading}
           />
         </div>

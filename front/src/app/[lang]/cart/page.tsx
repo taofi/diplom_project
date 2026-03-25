@@ -10,13 +10,14 @@ import { toastSuccess, toastError } from '@/lib/toast';
 export default function CartPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { items, count, isLoading, removeItem, clearCart } = useCart();
+  const { items, count, isLoading, removeItem, updateQuantity, clearCart } = useCart();
 
-  // Вычисление общей суммы (без умножения на quantity - каждый товар = 1)
+  // Вычисление общей суммы с учётом quantity
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const total = items.reduce((sum: number, item: any) => {
     const price = Number(item.product?.price) || 0;
-    return sum + price;
+    const quantity = item.quantity || 1;
+    return sum + price * quantity;
   }, 0);
 
   const handleRemoveItem = async (itemId: number) => {
@@ -28,9 +29,13 @@ export default function CartPage() {
     }
   };
 
-  // Больше не поддерживается изменение количества
   const handleQuantityChange = async (itemId: number, newQuantity: number) => {
-    // Quantity больше не поддерживается - всегда 1
+    if (newQuantity < 1) return;
+    try {
+      await updateQuantity(itemId, newQuantity);
+    } catch (err) {
+      toastError(t('errors.updateQuantityFailed') || 'Failed to update quantity');
+    }
   };
 
   const handleClearCart = async () => {

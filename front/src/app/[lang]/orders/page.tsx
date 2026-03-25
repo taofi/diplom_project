@@ -2,31 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth/AuthContext';
-import { ChatProvider, useChat } from '@/context/chat/ChatContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useI18n } from '@/context/i18n/I18nContext';
-import { OrderCard } from '@/components/chat/OrderCard';
+import { OfferCard } from '@/components/chat/OfferCard';
 import { Spinner } from '@/components/ui';
-import type { CustomOrder } from '@/types/chat';
+import { chatApi } from '@/lib/api-chat';
+import type { CustomOrder, Offer } from '@/types/chat';
+import { useRouter } from 'next/navigation';
 
 function OrdersContent() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const { orders, loadOrders } = useChat();
+  const router = useRouter();
+  const [orders, setOrders] = useState<CustomOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'in_progress' | 'review' | 'completed'>('all');
 
-  // Load orders on mount
+  // Load orders on mount using the new API
   useEffect(() => {
     const load = async () => {
       try {
-        await loadOrders();
+        const result = await chatApi.getAllUserOrders();
+        setOrders(result.rows);
+      } catch (error) {
+        console.error('Error loading orders:', error);
       } finally {
         setIsLoading(false);
       }
     };
     load();
-  }, [loadOrders]);
+  }, []);
 
   // Filter orders
   const filteredOrders = orders.filter(order => {
@@ -37,6 +42,37 @@ function OrdersContent() {
   // Separate orders by role
   const buyerOrders = filteredOrders.filter(order => order.buyer_id === user?.id);
   const sellerOrders = filteredOrders.filter(order => order.seller_id === user?.id);
+
+  // Handle click on order to open chat
+  const handleOrderClick = (order: CustomOrder) => {
+    // Navigate to chat page with the room ID
+    router.push(`/chat?room=${order.chat_room_id}`);
+  };
+
+  // Handle download files - use the same implementation as chat page
+  const handleDownloadFiles = async (offer: Offer) => {
+    if (!offer.source_files_urls || offer.source_files_urls.length === 0) {
+      console.error('No source files available');
+      return;
+    }
+
+    try {
+      // Скачиваем первый файл
+      const blob = await chatApi.downloadSourceFile(offer.id, 0);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Используем имя файла из URL
+      const fileName = offer.source_files_urls[0].split('/').pop() || 'file';
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading files:', error);
+    }
+  };
 
   if (!user) {
     return null;
@@ -59,7 +95,6 @@ function OrdersContent() {
           {[
             { value: 'all', label: t('orders.filterAll') },
             { value: 'in_progress', label: t('orders.filterInProgress') },
-            { value: 'review', label: t('orders.filterReview') },
             { value: 'completed', label: t('orders.filterCompleted') },
           ].map((tab) => (
             <button
@@ -112,10 +147,13 @@ function OrdersContent() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {buyerOrders.map((order) => (
-                    <OrderCard
+                    <OfferCard
                       key={order.id}
-                      order={order}
+                      offer={order.offer!}
                       currentUserId={user.id}
+                      showActions="completed-only"
+                      onDownloadFiles={handleDownloadFiles}
+                      onClick={() => handleOrderClick(order)}
                     />
                   ))}
                 </div>
@@ -130,10 +168,13 @@ function OrdersContent() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {sellerOrders.map((order) => (
-                    <OrderCard
+                    <OfferCard
                       key={order.id}
-                      order={order}
+                      offer={order.offer!}
                       currentUserId={user.id}
+                      showActions="completed-only"
+                      onDownloadFiles={handleDownloadFiles}
+                      onClick={() => handleOrderClick(order)}
                     />
                   ))}
                 </div>
@@ -149,9 +190,7 @@ function OrdersContent() {
 export default function OrdersPage() {
   return (
     <ProtectedRoute>
-      <ChatProvider>
-        <OrdersContent />
-      </ChatProvider>
+      <OrdersContent />
     </ProtectedRoute>
   );
 }

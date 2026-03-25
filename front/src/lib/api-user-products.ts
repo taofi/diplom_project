@@ -15,6 +15,7 @@ export interface UserProductResponse {
   purchasedAt: string;
   fileUrl: string;
   sellerId: number; // ID автора товара для создания чата
+  count: number; // Количество единиц товара
 }
 
 /**

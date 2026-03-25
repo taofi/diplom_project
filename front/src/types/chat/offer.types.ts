@@ -2,6 +2,19 @@
  * Типы для работы с заказами (Offer) на фронтенде
  */
 
+// Интерфейс для файлов заказа (из базы данных)
+export interface OfferFile {
+  id: number;
+  offer_id: number;
+  type: OfferFileType;
+  original_name: string;
+  filename: string;
+  url: string;
+  size: number;
+  mime_type: string;
+  created_at: string | Date;
+}
+
 export enum OfferStatus {
   WAITING_AUTHOR = 'waiting_author',
   WAITING_USER = 'waiting_user',

@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const loggerInstance = WinstonModule.createLogger({
@@ -43,6 +44,9 @@ async function bootstrap() {
       origin: ['http://localhost:4000', 'http://localhost:3000', 'http://localhost:3001'],
       credentials: true,
     });
+
+    // Применяем глобальный фильтр исключений
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.listen(process.env.PORT ?? 3000);
   } catch (err) {

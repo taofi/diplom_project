@@ -11,6 +11,7 @@ export interface CartItemResponse {
   id: number;
   productId: number;
   licenseTypeId: number;
+  quantity: number;
   product: {
     id: number;
     name: string;
@@ -145,6 +146,7 @@ export class CartService {
       id: 0, // Will be set by caller
       productId: product?.id || 0,
       licenseTypeId: productLicense.license_type_id || 0,
+      quantity: 1, // Для гостевой корзины quantity всегда 1
       product: {
         id: product?.id || 0,
         name: productName,
@@ -370,7 +372,9 @@ export class CartService {
     );
 
     if (existingItem) {
-      // Товар уже есть - возвращаем существующий (не увеличиваем количество)
+      // Товар уже есть - увеличиваем количество на quantity из DTO
+      const newQuantity = (existingItem.quantity || 1) + (dto.quantity || 1);
+      await existingItem.update({ quantity: newQuantity });
       await existingItem.reload();
       
       const fullItem = await this.cartItemRepository.findById(existingItem.id, {
@@ -385,11 +389,11 @@ export class CartService {
       return this.formatCartItem(fullItem!, locale);
     }
 
-    // Создаем новый элемент корзины (quantity всегда 1)
+    // Создаем новый элемент корзины с quantity из DTO (по умолчанию 1)
     const cartItem = await this.cartItemRepository.create({
       user_id: userId,
       product_license_id: productLicense.id,
-      quantity: 1,
+      quantity: dto.quantity || 1,
     });
 
     // Загружаем с связями для возврата
@@ -411,7 +415,6 @@ export class CartService {
 
   /**
    * Обновить количество товара в корзине
-   * (больше не поддерживается - quantity всегда 1)
    */
   async updateItemQuantity(
     userId: number,
@@ -430,8 +433,8 @@ export class CartService {
       throw new NotFoundException('Cart item removed');
     }
 
-    // Все равно всегда устанавливаем 1 (quantity не поддерживается)
-    await cartItem.update({ quantity: 1 });
+    // Обновляем количество
+    await cartItem.update({ quantity });
     await cartItem.reload();
 
     return this.formatCartItem(cartItem, locale);
@@ -462,8 +465,8 @@ export class CartService {
    */
   async getCartCount(userId: number): Promise<number> {
     const cartItems = await this.cartItemRepository.findByUserId(userId);
-    // Всегда 1 на товар
-    return cartItems.length;
+    // Сумма всех quantity
+    return cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   }
 
   /**
@@ -536,6 +539,7 @@ export class CartService {
       id: cartItem.id,
       productId: product?.id || 0,
       licenseTypeId: license?.license_type_id || 0,
+      quantity: cartItem.quantity || 1,
       product: product
         ? {
             id: product.id,

@@ -38,7 +38,6 @@ export const cartApi = {
 
   /**
    * Обновить количество товара в корзине пользователя
-   * (больше не используется - quantity всегда 1)
    */
   async updateItemQuantity(itemId: number, quantity: number): Promise<CartItem> {
     const locale = getLocale();

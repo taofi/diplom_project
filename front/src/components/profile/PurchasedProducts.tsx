@@ -107,6 +107,11 @@ export function PurchasedProducts() {
                 <div className="min-w-0">
                   <h4 className="font-medium text-gray-900 truncate">
                     {product.productName}
+                    {product.count > 1 && (
+                      <span className="ml-2 text-sm font-normal text-gray-500">
+                        (x{product.count})
+                      </span>
+                    )}
                   </h4>
                   <p className="text-sm text-gray-500">
                     <span className="font-medium">{t('profile.license')}:</span> {product.licenseTypeName}

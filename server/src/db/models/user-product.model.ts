@@ -34,6 +34,9 @@ export class UserProduct extends Model {
   @Column({ type: DataType.DATE, field: 'purchased_at' })
   declare purchased_at: Date;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
+  declare count: number;
+
   @BelongsTo(() => User)
   declare user: User;
 

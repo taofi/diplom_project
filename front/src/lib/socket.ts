@@ -23,15 +23,22 @@ class SocketClient {
     });
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      console.log('[SocketClient] WebSocket connected');
     });
 
     this.socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+      console.log('[SocketClient] WebSocket disconnected');
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      console.error('[SocketClient] WebSocket connection error:', error);
+    });
+
+    // Логирование всех входящих событий для отладки offer событий
+    this.socket.onAny((event, ...args) => {
+      if (event.startsWith('offer:')) {
+        console.log(`[SocketClient] Received offer event: ${event}`, args);
+      }
     });
 
     return this.socket;

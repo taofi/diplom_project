@@ -159,24 +159,15 @@
   },
   "admin": {
     "title": "Admin Panel",
-    "comingSoon": "Coming soon",
     "dashboard": {
       "description": "Manage your application from this panel",
       "statistics": "Statistics",
       "statisticsComingSoon": "Statistics will be available here",
       "sections": "Sections"
     },
-    "products": {
-      "title": "Manage Products",
-      "description": "Manage products, create new products, edit existing ones"
-    },
     "categoriesLicenses": {
       "description": "Manage categories and license types"
     },
-    "users": {
-      "description": "Manage users and their roles"
-    },
-    "comingSoon": "Section coming soon",
     "tabs": {
       "categoriesLicenses": "Categories & Licenses",
       "users": "Users"
@@ -204,24 +195,6 @@
       "deleteConfirm": "Are you sure you want to delete this license type?",
       "noLicenseTypes": "No license types found",
       "cannotDelete": "Cannot delete license type that is used by products"
-    },
-    "users": {
-      "title": "Users",
-      "description": "Manage users and their roles",
-      "searchPlaceholder": "Search by name or email...",
-      "name": "Name",
-      "email": "Email",
-      "rolesTitle": "Roles",
-      "locale": "Language",
-      "createdAt": "Created",
-      "changeRoles": "Change roles",
-      "noUsers": "No users found",
-      "roles": {
-        "admin": "Administrator",
-        "author": "Author",
-        "user": "User",
-        "none": "No roles"
-      }
     },
     "common": {
       "name": "Name",
@@ -451,7 +424,63 @@
     "chatWith": "Chat with",
     "createOrder": "Create Order",
     "deadlineRequired": "Deadline is required",
-    "orderDeadline": "Deadline"
+    "orderDeadline": "Deadline",
+    "offerAwaitingPayment": "Awaiting Payment",
+    "offerCompleted": "Completed",
+    "payOrder": "Pay for Order",
+    "buyerPrice": "Buyer Price",
+    "finalPrice": "Final Price",
+    "previewAvailable": "Preview available",
+    "downloadFiles": "Download Files",
+    "uploadFiles": "Upload Files",
+    "uploadPreview": "Upload Preview",
+    "uploadSourceFiles": "Upload Source Files",
+    "selectPreview": "Select Preview",
+    "selectFiles": "Select Files",
+    "dragDropPreview": "Drag preview here or click to select",
+    "dragDropFiles": "Drag files here or click to select",
+    "filesSelected": "files selected",
+    "save": "Save",
+    "cancel": "Cancel",
+    "uploading": "Uploading...",
+    "uploadSuccess": "Files uploaded",
+    "uploadError": "Upload error",
+    "confirmPrice": "Confirm Price",
+    "counterOffer": "Make Counter Offer",
+    "inProgress": "In Progress",
+    "orderCompleted": "Order completed",
+    "buyer": "Buyer",
+    "filterAll": "All",
+    "filterWaiting": "Waiting",
+    "filterAwaitingPayment": "Payment",
+    "filterCompleted": "Completed",
+    "noOffers": "No offers",
+    "noOffersHint": "Offers will appear here",
+    "offers": "Offers",
+    "offersCount": "offers",
+    "online": "Online",
+    "loadingOlder": "Loading older messages...",
+    "errors": {
+      "descriptionRequired": "Description is required",
+      "priceRequired": "Price is required",
+      "createFailed": "Failed to create offer",
+      "pricePositive": "Price must be positive",
+      "priceSame": "Price cannot be the same",
+      "updateFailed": "Failed to update offer"
+    },
+    "orderDescription": "Order description",
+    "orderDescriptionPlaceholder": "Describe your requirements...",
+    "orderPrice": "Price",
+    "priceFormatted": "Formatted price",
+    "changePrice": "Change Price",
+    "currentPrice": "Current Price",
+    "newPrice": "New Price",
+    "priceIncrease": "Price increase",
+    "priceDecrease": "Price decrease",
+    "submitPrice": "Submit Price",
+    "orderDetails": "Order Details",
+    "paymentSuccess": "Payment successful!",
+    "paymentFailed": "Payment failed"
   },
   "orders": {
     "title": "My Orders",
@@ -473,6 +502,10 @@
     "orderInReview": "In Review",
     "orderNeedsRevision": "Needs Revision",
     "orderCompleted": "Completed",
-    "orderCancelled": "Cancelled"
+    "orderCancelled": "Cancelled",
+    "orderFiles": "Order Files",
+    "viewPreview": "View Preview",
+    "downloadFile": "Download File",
+    "preview": "Preview"
   }
 }

@@ -245,7 +245,9 @@ export class ChatGateway
    */
   notifyOfferCreated(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    console.log(`[ChatGateway] notifyOfferCreated: chatRoomId=${chatRoomId}`);
     if (chatRoomId) {
+      console.log(`[ChatGateway] Emitting offer:created to room chat:${chatRoomId}`);
       this.server.to(`chat:${chatRoomId}`).emit('offer:created', { offer: this.serializeOffer(offer) });
     }
   }
@@ -255,6 +257,7 @@ export class ChatGateway
    */
   notifyStatusChanged(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
+    console.log(`[ChatGateway] notifyStatusChanged: chatRoomId=${chatRoomId}`);
     if (chatRoomId) {
       this.server.to(`chat:${chatRoomId}`).emit('offer:statusChanged', { offer: this.serializeOffer(offer) });
     }

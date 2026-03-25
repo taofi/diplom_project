@@ -22,6 +22,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLicense, setSelectedLicense] = useState<LicenseInfo | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Загрузка товара
@@ -57,6 +58,12 @@ export default function ProductPage() {
     setSelectedLicense(license);
   };
 
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity >= 1 && newQuantity <= 99) {
+      setQuantity(newQuantity);
+    }
+  };
+
   const handleAddToCart = async () => {
     if (!selectedLicense || !product) return;
     
@@ -65,6 +72,7 @@ export default function ProductPage() {
       await addItem({
         productId: product.id,
         licenseTypeId: selectedLicense.licenseTypeId,
+        quantity,
       });
       toastSuccess(t('product.addedToCart') || 'Added to cart!');
     } catch (err) {
@@ -141,6 +149,8 @@ export default function ProductPage() {
               licenses={product.licenses || []}
               selectedLicense={selectedLicense}
               onLicenseChange={handleLicenseChange}
+              onQuantityChange={handleQuantityChange}
+              quantity={quantity}
               onAddToCart={handleAddToCart}
               onBuyNow={handleBuyNow}
               isAddingToCart={isAddingToCart}

@@ -2,6 +2,7 @@ export interface CartItem {
   id: number;
   productId: number;
   licenseTypeId: number;
+  quantity: number;
   product: {
     id: number;
     name: string;
@@ -23,6 +24,7 @@ export interface CartResponse {
 export interface AddToCartPayload {
   productId: number;
   licenseTypeId: number;
+  quantity?: number;
 }
 
 // Guest cart item (stored in cookies)

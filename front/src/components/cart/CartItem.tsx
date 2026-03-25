@@ -7,6 +7,7 @@ interface CartItemProps {
   item: {
     id: number;
     productLicenseId?: number;
+    quantity?: number;
     product?: {
       name: string;
       price: number;
@@ -30,6 +31,18 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
     : `Product #${item.productLicenseId || item.id}`;
   const productPrice = Number(item.product?.price) || 0;
   const productImage = item.product?.coverImage;
+  const quantity = item.quantity || 1;
+  const itemTotal = productPrice * quantity;
+
+  const handleDecrease = () => {
+    if (quantity > 1) {
+      onQuantityChange(item.id, quantity - 1);
+    }
+  };
+
+  const handleIncrease = () => {
+    onQuantityChange(item.id, quantity + 1);
+  };
 
   return (
     <div className="flex items-center gap-4 p-4 border-b last:border-b-0">
@@ -49,13 +62,40 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
         </p>
       </div>
 
-      {/* Больше нет управления количеством - всегда 1 товар */}
+      {/* Управление количеством */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleDecrease}
+          disabled={quantity <= 1}
+          className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title={t('cart.decreaseQuantity') || 'Decrease'}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+          </svg>
+        </button>
+        <span className="w-8 text-center font-medium">{quantity}</span>
+        <button
+          onClick={handleIncrease}
+          className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 transition-colors"
+          title={t('cart.increaseQuantity') || 'Increase'}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
 
       {/* Сумма */}
       <div className="w-24 text-right">
         <p className="font-semibold text-gray-900">
-          ${productPrice.toFixed(2)}
+          ${itemTotal.toFixed(2)}
         </p>
+        {quantity > 1 && (
+          <p className="text-xs text-gray-500">
+            ${productPrice.toFixed(2)} × {quantity}
+          </p>
+        )}
       </div>
 
       {/* Кнопка удаления */}

@@ -78,6 +78,10 @@ export interface CustomOrder {
   created_at: string;
   updated_at: string;
   offer?: Offer;
+  // Дополнительные поля для страницы заказов
+  is_paid?: boolean;
+  preview_url?: string | null;
+  source_files_urls?: string[] | null;
 }
 
 export interface CustomOrderRevision {

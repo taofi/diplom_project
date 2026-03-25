@@ -43,6 +43,23 @@ export class OfferRepository {
     });
   }
 
+  /**
+   * Найти все заказы пользователя (включая завершённые)
+   * Используется для страницы заказов
+   */
+  async findAllByUser(userId: number): Promise<Offer[]> {
+    return this.offerModel.findAll({
+      where: {
+        [Op.or]: [
+          { creator_id: userId },
+          { author_id: userId },
+        ],
+      },
+      include: ['chat_room', 'creator', 'author'],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
   async updateStatus(id: number, status: OfferStatus): Promise<Offer> {
     const offer = await this.findById(id);
     if (!offer) {
@@ -79,7 +96,7 @@ export class OfferRepository {
 
   async setFiles(
     id: number,
-    previewUrl: string,
+    previewUrl: string | null,
     sourceFilesUrls: string[],
   ): Promise<Offer> {
     const offer = await this.findById(id);

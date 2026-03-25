@@ -66,9 +66,9 @@ export class OrderService {
       throw new NotFoundException('Cart is empty');
     }
 
-    // Рассчитываем общую сумму (quantity всегда 1, приводим к числу)
+    // Рассчитываем общую сумму (учитываем quantity)
     const totalAmount = cartItems.reduce((sum, item) => {
-      return sum + Number(item.product?.price || 0);
+      return sum + Number(item.product?.price || 0) * (item.quantity || 1);
     }, 0);
 
     // Создаём заказ в транзакции
@@ -94,6 +94,7 @@ export class OrderService {
             order_id: newOrder.id,
             product_license_id: productLicense.id,
             price_at_purchase: Number(productLicense.price),
+            quantity: item.quantity || 1,
           }, { transaction });
         }
       }
@@ -230,16 +231,21 @@ export class OrderService {
             where: {
               user_id: userId,
               product_license_id: orderItem.product_license_id,
-              order_id: order.id,
             },
           });
 
-          if (!existingUserProduct) {
+          if (existingUserProduct) {
+            // Обновляем существующий UserProduct - увеличиваем count
+            const newCount = (existingUserProduct.count || 1) + (orderItem.quantity || 1);
+            await existingUserProduct.update({ count: newCount }, { transaction });
+          } else {
+            // Создаём новый UserProduct с count = quantity
             await this.userProductModel.create({
               user_id: userId,
               product_license_id: orderItem.product_license_id,
               order_id: order.id,
               purchased_at: order.created_at,
+              count: orderItem.quantity || 1,
             }, { transaction });
           }
         }
@@ -273,7 +279,7 @@ export class OrderService {
         licenseTypeId: license?.license_type_id || 0,
         licenseTypeName: '',
         price: Number(item.price_at_purchase),
-        quantity: 1,
+        quantity: item.quantity || 1,
       };
     });
 

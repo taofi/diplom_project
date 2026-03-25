@@ -5,8 +5,8 @@ export class CreateOfferDto {
   @IsNumber({}, { message: 'Chat room ID must be a number' })
   chatRoomId: number;
 
-  @IsNumber({}, { message: 'Seller ID must be a number' })
-  sellerId: number;
+  @IsNumber({}, { message: 'Author ID must be a number' })
+  authorId: number;
 
   @IsString({ message: 'Description must be a string' })
   description: string;
@@ -14,9 +14,6 @@ export class CreateOfferDto {
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0, { message: 'Price must be at least 0' })
   price: number;
-
-  @IsDateString({}, { message: 'Deadline must be a valid date' })
-  deadline: string;
 }
 
 export class CounterOfferDto {

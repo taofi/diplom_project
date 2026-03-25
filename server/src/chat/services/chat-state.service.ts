@@ -186,9 +186,11 @@ export class ChatStateService {
   async getUserSockets(userId: number): Promise<string[]> {
     try {
       const activeRoomsKey = this.getActiveRoomsKey(userId);
-      return await this.redisService.hKeys(activeRoomsKey);
+      const sockets = await this.redisService.hKeys(activeRoomsKey);
+      this.logger.log(`[ChatStateService] getUserSockets: userId=${userId}, found ${sockets.length} sockets:`, sockets);
+      return sockets;
     } catch (error) {
-      this.logger.error(`Error getting user sockets for ${userId}:`, error);
+      this.logger.error(`[ChatStateService] Error getting user sockets for ${userId}:`, error);
       return [];
     }
   }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../db/models/chat-room.model';
 import { ChatMessage, MessageType } from '../db/models/chat-message.model';
@@ -582,7 +582,6 @@ export class ChatService {
   /**
    * Создать предложение
    * Защита: только участник чата (покупатель) может создать предложение
-   */
   async createOffer(
     chatRoomId: number,
     messageId: number,
@@ -612,133 +611,8 @@ export class ChatService {
     });
     return offer;
   }
-
-  /**
-   * Принять предложение
-   * Защита: только автор (продавец) может принять предложение
    */
-  async acceptOffer(offerId: number, userId: number): Promise<Offer> {
-    const offer = await this.offerRepository.findById(offerId);
 
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
-    }
-
-    // Защита: только автор (продавец) может принять предложение
-    if (offer.author_id !== userId) {
-      throw new ForbiddenException('Only offer author (seller) can accept the offer');
-    }
-
-    if (offer.status !== OfferStatus.WAITING_AUTHOR) {
-      throw new BadRequestException('Offer is not waiting for author');
-    }
-
-    // Обновить статус предложения
-    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.IN_PROGRESS);
-    return updated;
-  }
-
-  /**
-   * Отклонить предложение
-   * Защита: только участники сделки могут отклонить
-   * Поддерживает: WAITING_AUTHOR, WAITING_USER
-   */
-  async declineOffer(offerId: number, userId: number): Promise<Offer> {
-    const offer = await this.offerRepository.findById(offerId);
-
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
-    }
-
-    // Защита: только автор (продавец) или создатель (покупатель) может отклонить
-    if (offer.author_id !== userId && offer.creator_id !== userId) {
-      throw new ForbiddenException('Only offer participants can decline the offer');
-    }
-
-    // Поддержка WAITING_AUTHOR и WAITING_USER
-    if (offer.status !== OfferStatus.WAITING_AUTHOR && offer.status !== OfferStatus.WAITING_USER) {
-      throw new BadRequestException('Offer cannot be declined at this status');
-    }
-
-    // Если отклоняем после изменения цены - сбрасываем original_price
-    if (offer.status === OfferStatus.WAITING_USER && offer.original_price) {
-      // Просто сбрасываем цену обратно
-      const offerToUpdate = await this.offerRepository.findById(offerId);
-      if (offerToUpdate) {
-        offerToUpdate.price = offer.original_price;
-        offerToUpdate.original_price = null;
-        await offerToUpdate.save();
-      }
-    }
-
-    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.REJECTED);
-    return updated;
-  }
-
-  /**
-   * Изменить цену предложения (автор/продавец)
-   * Защита: только автор может изменить цену
-   * Переводит: WAITING_AUTHOR → WAITING_USER
-   */
-  async counterOffer(offerId: number, userId: number, newPrice: number): Promise<Offer> {
-    const offer = await this.offerRepository.findById(offerId);
-
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
-    }
-
-    // Защита: только автор (продавец) может изменить цену
-    if (offer.author_id !== userId) {
-      throw new ForbiddenException('Only offer author (seller) can change the price');
-    }
-
-    // Только из статуса WAITING_AUTHOR можно менять цену
-    if (offer.status !== OfferStatus.WAITING_AUTHOR) {
-      throw new BadRequestException('Cannot change price at this status');
-    }
-
-    // Сохраняем старую цену как original_price
-    await this.offerRepository.updatePrice(offerId, newPrice, offer.price);
-
-    // Переводим в статус ожидания подтверждения от пользователя
-    await this.offerRepository.updateStatus(offerId, OfferStatus.WAITING_USER);
-    
-    const updatedOffer = await this.offerRepository.findById(offerId);
-    if (!updatedOffer) {
-      throw new NotFoundException('Offer not found after update');
-    }
-    return updatedOffer;
-  }
-
-  /**
-   * Подтвердить цену (покупатель)
-   * Защита: только создатель может подтвердить цену
-   * Переводит: WAITING_USER → IN_PROGRESS
-   */
-  async confirmPrice(offerId: number, userId: number): Promise<Offer> {
-    const offer = await this.offerRepository.findById(offerId);
-
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
-    }
-
-    // Защита: только создатель (покупатель) может подтвердить цену
-    if (offer.creator_id !== userId) {
-      throw new ForbiddenException('Only offer creator (buyer) can confirm the price');
-    }
-
-    // Только из статуса WAITING_USER можно подтвердить
-    if (offer.status !== OfferStatus.WAITING_USER) {
-      throw new BadRequestException('Offer is not waiting for price confirmation');
-    }
-
-    const updated = await this.offerRepository.updateStatus(offerId, OfferStatus.IN_PROGRESS);
-    return updated;
-  }
-
-  /**
-   * Получить предложения чата
-   */
   async getChatOffers(chatRoomId: number): Promise<Offer[]> {
     return this.offerRepository.findByChatRoom(chatRoomId);
   }
@@ -753,6 +627,85 @@ export class ChatService {
     return {
       rows: offers,
       count: offers.length,
+    };
+  }
+
+  /**
+   * Получить все заказы пользователя (включая завершённые)
+   * Используется для страницы заказов
+   */
+  async getAllUserOrders(userId: number) {
+    const offers = await this.offerRepository.findAllByUser(userId);
+    
+    // Map Offer to CustomOrder format for frontend compatibility
+    const customOrders = offers.map(offer => this.serializeOfferAsCustomOrder(offer));
+    
+    return {
+      rows: customOrders,
+      count: customOrders.length,
+    };
+  }
+
+  /**
+   * Преобразовать Offer в формат CustomOrder для фронтенда
+   */
+  private serializeOfferAsCustomOrder(offer: Offer): Record<string, unknown> {
+    // Parse source_files_urls from JSON string
+    let sourceFilesUrls: string[] | null = null;
+    if (offer.source_files_urls && typeof offer.source_files_urls === 'string') {
+      try {
+        sourceFilesUrls = JSON.parse(offer.source_files_urls) as string[];
+      } catch {
+        sourceFilesUrls = null;
+      }
+    }
+
+    // Map OfferStatus to CustomOrder status
+    const statusMap: Record<string, string> = {
+      [OfferStatus.WAITING_AUTHOR]: 'in_progress',
+      [OfferStatus.WAITING_USER]: 'in_progress',
+      [OfferStatus.REJECTED]: 'cancelled',
+      [OfferStatus.IN_PROGRESS]: 'in_progress',
+      [OfferStatus.AWAITING_PAYMENT]: 'review',
+      [OfferStatus.COMPLETED]: 'completed',
+    };
+
+    // Determine if current user is buyer or seller (for reference)
+    // const isBuyer = offer.creator_id === currentUserId;
+    // const isSeller = offer.author_id === currentUserId;
+
+    return {
+      id: offer.id,
+      chat_offer_id: offer.id,
+      buyer_id: offer.creator_id,
+      seller_id: offer.author_id,
+      chat_room_id: offer.chat_room_id,
+      description: offer.description,
+      price: Number(offer.price),
+      status: statusMap[offer.status] || 'in_progress',
+      deadline: offer.created_at ? new Date(new Date(offer.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date().toISOString(), // Default 7 days from creation
+      created_at: offer.created_at,
+      updated_at: offer.updated_at,
+      is_paid: offer.is_paid,
+      preview_url: offer.preview_url,
+      source_files_urls: sourceFilesUrls,
+      // Include offer for backward compatibility
+      offer: {
+        id: offer.id,
+        chat_room_id: offer.chat_room_id,
+        creator_id: offer.creator_id,
+        author_id: offer.author_id,
+        description: offer.description,
+        price: Number(offer.price),
+        original_price: offer.original_price ? Number(offer.original_price) : null,
+        status: offer.status,
+        preview_url: offer.preview_url,
+        source_files_urls: sourceFilesUrls,
+        is_paid: offer.is_paid,
+        paid_at: offer.paid_at,
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+      },
     };
   }
 

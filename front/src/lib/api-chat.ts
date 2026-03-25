@@ -1,10 +1,10 @@
 import api from '../lib/api';
 import type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
-import type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, UploadFilesDto, PayOrderDto } from '../types/chat/offer.types';
+import type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto } from '../types/chat/offer.types';
 
 // Re-export types for convenience
 export type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
-export type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, UploadFilesDto, PayOrderDto } from '../types/chat/offer.types';
+export type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto } from '../types/chat/offer.types';
 
 // API endpoints
 const CHAT_API = '/chat';
@@ -56,6 +56,12 @@ export const chatApi = {
   // Custom orders
   getUserOrders: async (): Promise<{ rows: CustomOrder[]; count: number }> => {
     const response = await api.get(`${CHAT_API}/orders`);
+    return response.data;
+  },
+
+  // Получить все заказы пользователя (включая завершённые)
+  getAllUserOrders: async (): Promise<{ rows: CustomOrder[]; count: number }> => {
+    const response = await api.get(`${CHAT_API}/orders/all`);
     return response.data;
   },
 
@@ -144,8 +150,22 @@ export const chatApi = {
   /**
    * Загрузить файлы (Автор)
    */
-  uploadOfferFiles: async (offerId: number, dto: UploadFilesDto): Promise<Offer> => {
-    const response = await api.post(`${CHAT_API}/offers/${offerId}/files`, dto);
+  uploadOfferFiles: async (offerId: number, preview: File | null, files: File[]): Promise<Offer> => {
+    const formData = new FormData();
+    
+    if (preview) {
+      formData.append('preview', preview);
+    }
+    
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/files`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
@@ -204,5 +224,23 @@ export const chatApi = {
   declineOffer: async (offerId: number): Promise<Offer> => {
     const response = await api.post(`${CHAT_API}/offers/${offerId}/decline`);
     return response.data;
+  },
+
+  /**
+   * Скачать исходный файл заказа
+   */
+  downloadSourceFile: async (offerId: number, fileIndex: number): Promise<Blob> => {
+    const response = await api.get(`${CHAT_API}/offers/${offerId}/download/${fileIndex}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
+   * Скачать файл (альтернативный способ через window.open)
+   */
+  downloadSourceFileUrl: (offerId: number, fileIndex: number): string => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_URL}${CHAT_API}/offers/${offerId}/download/${fileIndex}`;
   },
 };

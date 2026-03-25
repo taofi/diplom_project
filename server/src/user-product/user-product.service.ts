@@ -122,6 +122,7 @@ export class UserProductService {
         purchasedAt: up.purchased_at || new Date(),
         fileUrl: product.file_url,
         sellerId: product.seller_id,
+        count: up.count || 1,
       });
     }
 
@@ -179,5 +180,40 @@ export class UserProductService {
     
     const readStream = createReadStream(fullPath);
     return new StreamableFile(readStream);
+  }
+
+  /**
+   * Создать или обновить UserProduct
+   * При повторной покупке увеличивает count
+   */
+  async addOrUpdateUserProduct(
+    userId: number,
+    productLicenseId: number,
+    orderId: number,
+    quantity: number,
+  ): Promise<UserProduct> {
+    // Ищем существующий UserProduct
+    const existingUserProduct = await this.userProductModel.findOne({
+      where: {
+        user_id: userId,
+        product_license_id: productLicenseId,
+      },
+    });
+
+    if (existingUserProduct) {
+      // Обновляем существующий - увеличиваем count
+      const newCount = (existingUserProduct.count || 1) + quantity;
+      await existingUserProduct.update({ count: newCount, order_id: orderId });
+      return existingUserProduct;
+    }
+
+    // Создаём новый UserProduct
+    return this.userProductModel.create({
+      user_id: userId,
+      product_license_id: productLicenseId,
+      order_id: orderId,
+      purchased_at: new Date(),
+      count: quantity,
+    });
   }
 }

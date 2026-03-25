@@ -155,9 +155,10 @@ export class CheckoutService {
     userContext: { userId: number | null; guestEmail: string | null },
     dto: CreateCheckoutDto,
   ): Promise<OrderResponse> {
-    // Рассчитываем общую сумму (приводим к числу)
+    // Рассчитываем общую сумму с учётом quantity
     const totalAmount = cartItems.reduce((sum, item) => {
-      return sum + Number(item.product?.price || 0);
+      const quantity = item.quantity || 1;
+      return sum + Number(item.product?.price || 0) * quantity;
     }, 0);
 
     // Создаём заказ в транзакции
@@ -184,20 +185,43 @@ export class CheckoutService {
         });
 
         if (productLicense) {
+          const quantity = item.quantity || 1;
+          
           await this.orderItemModel.create({
             order_id: newOrder.id,
             product_license_id: productLicense.id,
             price_at_purchase: Number(productLicense.price),
+            quantity,
           }, { transaction });
 
           // Создаём UserProduct для авторизованного пользователя
           if (userContext.userId) {
-            await this.userProductModel.create({
-              user_id: userContext.userId,
-              product_license_id: productLicense.id,
-              order_id: newOrder.id,
-              purchased_at: new Date(),
-            }, { transaction });
+            // Проверяем, есть ли уже такой товар у пользователя
+            const existingUserProduct = await this.userProductModel.findOne({
+              where: {
+                user_id: userContext.userId,
+                product_license_id: productLicense.id,
+              },
+              transaction,
+            });
+
+            if (existingUserProduct) {
+              // Увеличиваем количество на quantity
+              const newCount = (existingUserProduct.count || 1) + quantity;
+              await existingUserProduct.update(
+                { count: newCount, order_id: newOrder.id },
+                { transaction }
+              );
+            } else {
+              // Создаём новую запись
+              await this.userProductModel.create({
+                user_id: userContext.userId,
+                product_license_id: productLicense.id,
+                order_id: newOrder.id,
+                purchased_at: new Date(),
+                count: quantity,
+              }, { transaction });
+            }
           }
         }
       }

@@ -12,21 +12,21 @@ import {
 } from '@nestjs/common';
 import { normalizeLanguage } from '../translation/utils/language.utils';
 import { ChatService } from './chat.service';
+import { OfferService } from './services/offer.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
-import {
-  CreateOfferDto,
-  CounterOfferDto,
-  //CreateRevisionDto,
-} from './dto/chat-actions.dto';
+
 import { MessageType } from '../db/models/chat-message.model';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly offerService: OfferService,
+  ) {}
 
   // ==================== Chat Rooms ====================
 
@@ -152,155 +152,33 @@ export class ChatController {
     );
   }
 
-  // ==================== Offers ====================
-
-  /**
-   * POST /chat/offers
-   * Создать предложение
-   */
-  @Post('offers')
-  @HttpCode(HttpStatus.CREATED)
-  async createOffer(
-    @CurrentUserId() userId: number,
-    @Body() dto: CreateOfferDto,
-  ) {
-    // Создаём сообщение с типом OFFER
-    const message = await this.chatService.sendMessage(
-      dto.chatRoomId,
-      userId,
-      '',
-      MessageType.OFFER,
-    );
-
-    return this.chatService.createOffer(
-      dto.chatRoomId,
-      message.id,
-      userId, // buyerId - текущий пользователь
-      dto.sellerId, // authorId - продавец
-      dto.description,
-      dto.price,
-    );
-  }
-
-  /**
-   * POST /chat/offers/:id/accept
-   * Принять предложение
-   */
-  @Post('offers/:id/accept')
-  @HttpCode(HttpStatus.CREATED)
-  async acceptOffer(
-    @CurrentUserId() userId: number,
-    @Param('id') id: string,
-  ) {
-    return this.chatService.acceptOffer(parseInt(id, 10), userId);
-  }
-
-  /**
-   * POST /chat/offers/:id/decline
-   * Отклонить предложение
-   */
-  @Post('offers/:id/decline')
-  @HttpCode(HttpStatus.OK)
-  async declineOffer(
-    @CurrentUserId() userId: number,
-    @Param('id') id: string,
-  ) {
-    return this.chatService.declineOffer(parseInt(id, 10), userId);
-  }
-
-  /**
-   * POST /chat/offers/:id/counter
-   * Изменить цену предложения (автор/продавец)
-   */
-  @Post('offers/:id/counter')
-  @HttpCode(HttpStatus.OK)
-  async counterOffer(
-    @CurrentUserId() userId: number,
-    @Param('id') id: string,
-    @Body() dto: CounterOfferDto,
-  ) {
-    return this.chatService.counterOffer(parseInt(id, 10), userId, dto.newPrice);
-  }
-
-  /**
-   * POST /chat/offers/:id/confirm-price
-   * Подтвердить цену (покупатель)
-   */
-  @Post('offers/:id/confirm-price')
-  @HttpCode(HttpStatus.OK)
-  async confirmPrice(
-    @CurrentUserId() userId: number,
-    @Param('id') id: string,
-  ) {
-    return this.chatService.confirmPrice(parseInt(id, 10), userId);
-  }
-
-  /**
-   * GET /chat/rooms/:id/offers
-   * Получить предложения чата
-   */
   @Get('rooms/:id/offers')
   async getChatOffers(@Param('id') id: string) {
     return this.chatService.getChatOffers(parseInt(id, 10));
   }
 
-  // ==================== Custom Orders ====================
+  // ==================== Orders ====================
 
   /**
-   * GET /custom-orders
-   * Получить заказы пользователя
+   * GET /chat/orders
+   * Получить активные заказы пользователя
    */
   @Get('orders')
-  async getUserOrders(
-    @CurrentUserId() userId: number,
-  ) {
+  async getUserOrders(@CurrentUserId() userId: number) {
     return this.chatService.getUserOrders(userId);
   }
 
   /**
-   * GET /custom-orders/:id
-   * Получить заказ с ревизиями
+   * GET /chat/orders/all
+   * Получить все заказы пользователя (включая завершённые)
+   * Используется для страницы заказов
    */
-  @Get('orders/:id')
-  async getOrder(@Param('id') id: string) {
-    return this.chatService.getOrderWithRevisions(parseInt(id, 10));
+  @Get('orders/all')
+  async getAllUserOrders(@CurrentUserId() userId: number) {
+    return this.chatService.getAllUserOrders(userId);
   }
 
-  /**
-   * POST /custom-orders/:id/revision
-   * Добавить ревизию с файлом
-  @Post('orders/:id/revision')
-  @HttpCode(HttpStatus.CREATED)
-  async addRevision(
-    @Param('id') id: string,
-    @Body() dto: CreateRevisionDto,
-  ) {
-    return this.chatService.addRevision(
-      parseInt(id, 10),
-      dto.fileUrl,
-      dto.comment,
-    );
-  }
-   */
 
-  /**
-   * POST /custom-orders/:id/approve
-   * Одобрить результат
-   */
-  @Post('orders/:id/approve')
-  @HttpCode(HttpStatus.OK)
-  async approveOrder(@Param('id') id: string) {
-    return this.chatService.approveOrder(parseInt(id, 10));
-  }
-
-  /**
-   * POST /custom-orders/:id/revision-request
-   * Запросить доработку
-   */
-  @Post('orders/:id/revision-request')
-  @HttpCode(HttpStatus.OK)
-  async requestRevision(@Param('id') id: string) {
-    return this.chatService.requestRevision(parseInt(id, 10));
-  }
 }
+
 

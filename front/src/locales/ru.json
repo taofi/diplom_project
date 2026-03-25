@@ -159,24 +159,15 @@
   },
   "admin": {
     "title": "Панель администратора",
-    "comingSoon": "Скоро",
     "dashboard": {
       "description": "Управление приложением",
       "statistics": "Статистика",
       "statisticsComingSoon": "Статистика будет доступна здесь",
       "sections": "Разделы"
     },
-    "products": {
-      "title": "Управление товарами",
-      "description": "Управление товарами, создание новых товаров, редактирование существующих"
-    },
     "categoriesLicenses": {
       "description": "Управление категориями и типами лицензий"
     },
-    "users": {
-      "description": "Управление пользователями и их ролями"
-    },
-    "comingSoon": "Раздел в разработке",
     "tabs": {
       "categoriesLicenses": "Категории и лицензии",
       "users": "Пользователи"
@@ -204,24 +195,6 @@
       "deleteConfirm": "Вы уверены, что хотите удалить тип лицензии?",
       "noLicenseTypes": "Типы лицензий не найдены",
       "cannotDelete": "Нельзя удалить тип лицензии, который используется товарами"
-    },
-    "users": {
-      "title": "Пользователи",
-      "description": "Управление пользователями и их ролями",
-      "searchPlaceholder": "Поиск по имени или email...",
-      "name": "Имя",
-      "email": "Email",
-      "rolesTitle": "Роли",
-      "locale": "Язык",
-      "createdAt": "Создан",
-      "changeRoles": "Изменить роли",
-      "noUsers": "Пользователи не найдены",
-      "roles": {
-        "admin": "Администратор",
-        "author": "Автор",
-        "user": "Пользователь",
-        "none": "Нет ролей"
-      }
     },
     "common": {
       "name": "Название",
@@ -451,7 +424,63 @@
     "chatWith": "Чат с",
     "createOrder": "Создать заказ",
     "deadlineRequired": "Срок выполнения обязателен",
-    "orderDeadline": "Срок выполнения"
+    "orderDeadline": "Срок выполнения",
+    "offerAwaitingPayment": "Ожидает оплаты",
+    "offerCompleted": "Завершён",
+    "payOrder": "Оплатить заказ",
+    "buyerPrice": "Цена покупателя",
+    "finalPrice": "Финальная цена",
+    "previewAvailable": "Доступно превью",
+    "downloadFiles": "Скачать файлы",
+    "uploadFiles": "Загрузить файлы",
+    "uploadPreview": "Загрузить превью",
+    "uploadSourceFiles": "Загрузить исходные файлы",
+    "selectPreview": "Выберите превью",
+    "selectFiles": "Выберите файлы",
+    "dragDropPreview": "Перетащите сюда превью или нажмите для выбора",
+    "dragDropFiles": "Перетащите файлы сюда или нажмите для выбора",
+    "filesSelected": "Выбрано файлов",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "uploading": "Загрузка...",
+    "uploadSuccess": "Файлы загружены",
+    "uploadError": "Ошибка загрузки",
+    "confirmPrice": "Подтвердить цену",
+    "counterOffer": "Предложить свою цену",
+    "inProgress": "В работе",
+    "orderCompleted": "Заказ выполнен",
+    "buyer": "Покупателя",
+    "filterAll": "Все",
+    "filterWaiting": "Ожидают",
+    "filterAwaitingPayment": "Оплата",
+    "filterCompleted": "Завершённые",
+    "noOffers": "Нет предложений",
+    "noOffersHint": "Предложения появятся здесь",
+    "offers": "Предложения",
+    "offersCount": "предложений",
+    "online": "Онлайн",
+    "loadingOlder": "Загрузка старых сообщений...",
+    "errors": {
+      "descriptionRequired": "Описание обязательно",
+      "priceRequired": "Цена обязательна",
+      "createFailed": "Не удалось создать предложение",
+      "pricePositive": "Цена должна быть положительной",
+      "priceSame": "Цена не может быть такой же",
+      "updateFailed": "Не удалось обновить предложение"
+    },
+    "orderDescription": "Описание заказа",
+    "orderDescriptionPlaceholder": "Опишите ваши требования...",
+    "orderPrice": "Цена",
+    "priceFormatted": "Форматированная цена",
+    "changePrice": "Изменить цену",
+    "currentPrice": "Текущая цена",
+    "newPrice": "Новая цена",
+    "priceIncrease": "Повышение цены",
+    "priceDecrease": "Понижение цены",
+    "submitPrice": "Подтвердить цену",
+    "orderDetails": "Детали заказа",
+    "paymentSuccess": "Оплата успешна!",
+    "paymentFailed": "Ошибка оплаты"
   },
   "orders": {
     "title": "Мои заказы",
@@ -473,6 +502,10 @@
     "orderInReview": "На проверке",
     "orderNeedsRevision": "Требует доработки",
     "orderCompleted": "Завершён",
-    "orderCancelled": "Отменён"
+    "orderCancelled": "Отменён",
+    "orderFiles": "Файлы заказа",
+    "viewPreview": "Просмотр превью",
+    "downloadFile": "Скачать файл",
+    "preview": "Превью"
   }
 }

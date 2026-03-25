@@ -11,9 +11,11 @@ interface ProductSidebarProps {
   licenses: LicenseInfo[];
   selectedLicense: LicenseInfo | null;
   onLicenseChange: (license: LicenseInfo) => void;
+  onQuantityChange?: (quantity: number) => void;
   onAddToCart: () => void;
   onBuyNow: () => void;
   isAddingToCart?: boolean;
+  quantity?: number;
 }
 
 export function ProductSidebar({
@@ -22,9 +24,11 @@ export function ProductSidebar({
   licenses,
   selectedLicense,
   onLicenseChange,
+  onQuantityChange,
   onAddToCart,
   onBuyNow,
   isAddingToCart = false,
+  quantity = 1,
 }: ProductSidebarProps) {
   const { t } = useI18n();
 
@@ -81,6 +85,37 @@ export function ProductSidebar({
           </div>
         </div>
       )}
+
+      {/* Выбор количества */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          {t('product.quantity') || 'Количество'}
+        </label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onQuantityChange?.(quantity - 1)}
+            className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-100"
+            disabled={quantity <= 1}
+          >
+            -
+          </button>
+          <input
+            type="number"
+            min="1"
+            max="99"
+            value={quantity}
+            onChange={(e) => onQuantityChange?.(parseInt(e.target.value) || 1)}
+            className="w-16 h-10 text-center border border-gray-300 rounded-lg"
+          />
+          <button
+            onClick={() => onQuantityChange?.(quantity + 1)}
+            className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-100"
+            disabled={quantity >= 99}
+          >
+            +
+          </button>
+        </div>
+      </div>
 
       {/* Кнопки действий */}
       <div className="flex gap-3 mb-4">

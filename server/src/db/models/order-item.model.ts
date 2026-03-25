@@ -29,6 +29,9 @@ export class OrderItem extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   declare price_at_purchase: number;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
+  declare quantity: number;
+
   @BelongsTo(() => Order)
   declare order: Order;
 

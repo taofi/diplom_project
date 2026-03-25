@@ -31,11 +31,14 @@ interface ChatContextType {
   
   // Offers
   offers: Offer[];
-  createOffer: (chatRoomId: number, sellerId: number, description: string, price: number, deadline: string) => Promise<void>;
-  acceptOffer: (offerId: number) => Promise<CustomOrder>;
+  createOffer: (chatRoomId: number, sellerId: number, description: string, price: number) => Promise<void>;
+  acceptOffer: (offerId: number) => Promise<Offer>;
   declineOffer: (offerId: number) => Promise<void>;
   counterOffer: (offerId: number, newPrice: number) => Promise<void>;
   confirmPrice: (offerId: number) => Promise<void>;
+  uploadOfferFiles: (offerId: number, preview: File | null, files: File[]) => Promise<void>;
+  payOrder: (offerId: number, simulateSuccess?: boolean) => Promise<void>;
+  getOfferFiles: (offerId: number) => Promise<{ preview_url: string | null; source_files_urls: string[] | null }>;
   
   // Custom orders
   orders: CustomOrder[];
@@ -158,43 +161,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     socketClient.on('offer:created', (data: unknown) => {
       const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:created received:', payload.offer.id);
-      setOffers(prev => [...prev, payload.offer]);
+      console.log('[ChatContext] offer:created received:', JSON.stringify(payload));
+      console.log('[ChatContext] offer:created - current offers count:', offers.length);
+      setOffers(prev => {
+        console.log('[ChatContext] offer:created - adding offer, new count:', prev.length + 1);
+        return [...prev, payload.offer];
+      });
     });
 
     socketClient.on('offer:statusChanged', (data: unknown) => {
       const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:statusChanged received:', payload.offer.id, payload.offer.status);
+      console.log('[ChatContext] offer:statusChanged received:', JSON.stringify(payload));
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
     socketClient.on('offer:priceChanged', (data: unknown) => {
       const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:priceChanged received:', payload.offer.id);
+      console.log('[ChatContext] offer:priceChanged received:', JSON.stringify(payload));
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
     socketClient.on('offer:filesUploaded', (data: unknown) => {
       const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:filesUploaded received:', payload.offer.id);
+      console.log('[ChatContext] offer:filesUploaded received:', JSON.stringify(payload));
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
     socketClient.on('offer:paid', (data: unknown) => {
       const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:paid received:', payload.offer.id);
-      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
-    });
-
-    socketClient.on('offer:filesUploaded', (data: unknown) => {
-      const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:filesUploaded received:', payload.offer.id);
-      setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
-    });
-
-    socketClient.on('offer:paid', (data: unknown) => {
-      const payload = data as { offer: Offer };
-      console.log('[ChatContext] offer:paid received:', payload.offer.id);
+      console.log('[ChatContext] offer:paid received:', JSON.stringify(payload));
       setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
     });
 
@@ -418,22 +413,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     chatRoomId: number,
     sellerId: number,
     description: string,
-    price: number,
-    deadline: string
+    price: number
   ) => {
     try {
-      const offer = await chatApi.createOffer(chatRoomId, sellerId, description, price, deadline);
+      const offer = await chatApi.createEditOffer({
+        chatRoomId,
+        authorId: sellerId,
+        description,
+        price,
+      });
       setOffers(prev => [...prev, offer]);
     } catch (error) {
       console.error('Error creating offer:', error);
     }
   }, []);
 
-  const acceptOffer = useCallback(async (offerId: number) => {
+  const acceptOffer = useCallback(async (offerId: number): Promise<Offer> => {
     try {
-      const order = await chatApi.acceptOffer(offerId);
-      setOrders(prev => [...prev, order]);
-      return order;
+      const offer = await chatApi.acceptEditOffer(offerId);
+      setOffers(prev => prev.map(o => o.id === offerId ? offer : o));
+      return offer;
     } catch (error) {
       console.error('Error accepting offer:', error);
       throw error;
@@ -472,6 +471,44 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ));
     } catch (error) {
       console.error('Error confirming price:', error);
+      throw error;
+    }
+  }, []);
+
+  const uploadOfferFiles = useCallback(async (
+    offerId: number,
+    preview: File | null,
+    files: File[]
+  ) => {
+    try {
+      const offer = await chatApi.uploadOfferFiles(offerId, preview, files);
+      setOffers(prev => prev.map(o => 
+        o.id === offerId ? offer : o
+      ));
+    } catch (error) {
+      console.error('Error uploading offer files:', error);
+      throw error;
+    }
+  }, []);
+
+  const payOrder = useCallback(async (offerId: number, simulateSuccess = false) => {
+    try {
+      const offer = await chatApi.payOrder(offerId, { simulateSuccess });
+      setOffers(prev => prev.map(o => 
+        o.id === offerId ? offer : o
+      ));
+    } catch (error) {
+      console.error('Error paying order:', error);
+      throw error;
+    }
+  }, []);
+
+  const getOfferFiles = useCallback(async (offerId: number) => {
+    try {
+      const files = await chatApi.getOfferFiles(offerId);
+      return files;
+    } catch (error) {
+      console.error('Error getting offer files:', error);
       throw error;
     }
   }, []);
@@ -562,6 +599,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         declineOffer,
         counterOffer,
         confirmPrice,
+        uploadOfferFiles,
+        payOrder,
+        getOfferFiles,
         orders,
         loadOrders,
         setTyping,

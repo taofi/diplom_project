@@ -141,10 +141,11 @@ export default function CheckoutPage() {
     await handleSendCode();
   };
 
-  // Вычисление общей суммы
+  // Вычисление общей суммы с учётом quantity
   const total = items.reduce((sum, item) => {
     const price = Number(item.product?.price) || 0;
-    return sum + price;
+    const quantity = item.quantity || 1;
+    return sum + price * quantity;
   }, 0);
 
   const handleCheckout = async () => {
@@ -362,22 +363,28 @@ export default function CheckoutPage() {
               {/* Информация о заказе */}
               <div className="border-t pt-4">
                 <h3 className="font-medium mb-3">
-                  {t('checkout.items') || 'Items'} ({items.length})
+                  {t('checkout.items') || 'Items'} ({items.reduce((sum, item) => sum + (item.quantity || 1), 0)})
                 </h3>
                 <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.product?.name || `Product #${item.productId}`}</p>
-                        <p className="text-sm text-gray-500">
-                          {item.licenseType?.name || `License #${item.licenseTypeId}`}
+                  {items.map((item) => {
+                    const price = Number(item.product?.price) || 0;
+                    const quantity = item.quantity || 1;
+                    const itemTotal = price * quantity;
+                    return (
+                      <div key={item.id} className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.product?.name || `Product #${item.productId}`}</p>
+                          <p className="text-sm text-gray-500">
+                            {item.licenseType?.name || `License #${item.licenseTypeId}`}
+                            {quantity > 1 && <span className="text-gray-400 ml-1">× {quantity}</span>}
+                          </p>
+                        </div>
+                        <p className="font-medium">
+                          ${itemTotal.toFixed(2)}
                         </p>
                       </div>
-                      <p className="font-medium">
-                        ${Number(item.product?.price || 0).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -401,7 +408,7 @@ export default function CheckoutPage() {
                   <span className="text-gray-600">
                     {t('checkout.itemsCount') || 'Items'}
                   </span>
-                  <span className="font-medium">{items.length}</span>
+                  <span className="font-medium">{items.reduce((sum, item) => sum + (item.quantity || 1), 0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-semibold">{t('checkout.total') || 'Total'}</span>

@@ -12,4 +12,5 @@ export class UserProductResponse {
   purchasedAt: Date;
   fileUrl: string;
   sellerId: number;
+  count: number;
 }

@@ -13,6 +13,7 @@ import { OffersPanel } from '@/components/chat/OffersPanel';
 import { Spinner } from '@/components/ui';
 import type { ChatRoom } from '@/types/chat';
 import type { Offer } from '@/types/chat/offer.types';
+import { chatApi } from '@/lib/api-chat';
 
 function ChatContent() {
   const { user } = useAuth();
@@ -115,6 +116,31 @@ function ChatContent() {
     }
   }, [declineOffer, loadChatRooms]);
 
+  // Handle download files
+  const handleDownloadFiles = useCallback(async (offer: Offer) => {
+    if (!offer.source_files_urls || offer.source_files_urls.length === 0) {
+      console.error('No source files available');
+      return;
+    }
+
+    try {
+      // Скачиваем первый файл
+      const blob = await chatApi.downloadSourceFile(offer.id, 0);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Используем имя файла из URL
+      const fileName = offer.source_files_urls[0].split('/').pop() || 'file';
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading files:', error);
+    }
+  }, []);
+
   // Обработчик успешного создания заказа
   const handleCreateOfferSuccess = useCallback(async () => {
     // Закрыть модальное окно
@@ -132,7 +158,7 @@ function ChatContent() {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mt-20 mx-auto py-12 px-6">
+      <div className="max-w-10xl mt-20 mx-auto py-12 px-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             {t('chat.title')}
@@ -202,6 +228,7 @@ function ChatContent() {
               currentUserId={user.id}
               onAccept={handleAcceptOffer}
               onDecline={handleDeclineOffer}
+              onDownloadFiles={handleDownloadFiles}
             />
           </div>
         </div>
@@ -213,7 +240,7 @@ function ChatContent() {
           isOpen={isCreateOfferModalOpen}
           onClose={() => setIsCreateOfferModalOpen(false)}
           chatRoomId={currentRoom.id}
-          sellerId={currentRoom.seller_id}
+          authorId={currentRoom.seller_id}
           onSuccess={handleCreateOfferSuccess}
         />
       )}

@@ -49,6 +49,11 @@ function clearLocalCart(): void {
   localStorage.removeItem(GUEST_CART_KEY);
 }
 
+// Проверка, содержит ли объект данные (не пустой)
+function hasValidData(obj: unknown): boolean {
+  return obj !== null && obj !== undefined && (typeof obj === 'object' ? Object.keys(obj).length > 0 : true);
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [count, setCount] = useState(0);
@@ -65,7 +70,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated && !localCartLoaded) {
       const localItems = getLocalCart();
       setItems(localItems);
-      setCount(localItems.length);
+      // Подсчитываем общее количество с учётом quantity
+      const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      setCount(totalCount);
       setLocalCartLoaded(true);
     }
   }, [isAuthenticated, localCartLoaded]);
@@ -94,12 +101,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Загружаем корзину пользователя с сервера
         const cartItems = await cartApi.getCart();
         setItems(cartItems);
-        setCount(cartItems.length);
+        // Подсчитываем общее количество с учётом quantity
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCount(totalCount);
       } else {
         // Для гостей - читаем из localStorage
         const localItems = getLocalCart();
         setItems(localItems);
-        setCount(localItems.length);
+        // Подсчитываем общее количество с учётом quantity
+        const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCount(totalCount);
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
@@ -121,7 +132,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Для гостей - просто читаем из localStorage
       const localItems = getLocalCart();
       setItems(localItems);
-      setCount(localItems.length);
+      // Подсчитываем общее количество с учётом quantity
+      const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      setCount(totalCount);
     }
   }, [isAuthenticated, localCartLoaded, refreshCart]);
 
@@ -163,7 +176,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Обновляем корзину с сервера
         const cartItems = await cartApi.getCart();
         setItems(cartItems);
-        setCount(cartItems.length);
+        // Подсчитываем общее количество с учётом quantity
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCount(totalCount);
       } else {
         // Для гостей - добавляем в localStorage
         const currentItems = getLocalCart();
@@ -178,11 +193,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             id: Date.now(), // Временный ID
             productId: payload.productId,
             licenseTypeId: payload.licenseTypeId,
+            quantity: payload.quantity || 1,
           } as CartItem;
           const newItems = [...currentItems, newItem];
           setLocalCart(newItems);
           setItems(newItems);
-          setCount(newItems.length);
+          // Подсчитываем общее количество с учётом quantity
+          const totalCount = newItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+          setCount(totalCount);
+        } else {
+          // Товар уже есть - увеличиваем quantity
+          const updatedItems = currentItems.map(item => {
+            if (item.productId === payload.productId && item.licenseTypeId === payload.licenseTypeId) {
+              return { ...item, quantity: (item.quantity || 1) + (payload.quantity || 1) };
+            }
+            return item;
+          });
+          setLocalCart(updatedItems);
+          setItems(updatedItems);
+          // Подсчитываем общее количество с учётом quantity
+          const totalCount = updatedItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+          setCount(totalCount);
         }
       }
     } finally {
@@ -191,19 +222,66 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = async (itemId: number, quantity: number) => {
-    // Больше не поддерживается - quantity всегда 1
-    // Оставляем для совместимости, но игнорируем
-    if (quantity <= 1) return;
+    if (quantity <= 0) return;
     
-    setIsLoading(true);
+    // Сохраняем предыдущее состояние для возможности отката
+    const previousItems = [...items];
+    const previousCount = count;
+    
+    // Оптимистичное обновление - сразу обновляем UI
+    const updatedItems = items.map(item => {
+      if (item.id === itemId) {
+        return { ...item, quantity };
+      }
+      return item;
+    });
+    const newCount = updatedItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    setItems(updatedItems);
+    setCount(newCount);
+    
+    // Для гостей также обновляем localStorage
+    if (!isAuthenticated) {
+      setLocalCart(updatedItems);
+    }
+    
     try {
       if (isAuthenticated) {
-        await cartApi.updateItemQuantity(itemId, quantity);
-        await refreshCart();
+        // Отправляем запрос на сервер
+        const serverItem = await cartApi.updateItemQuantity(itemId, quantity);
+        
+        // Обновляем элемент данными с сервера
+        // Мерджим данные: quantity с сервера, остальное - из локального состояния
+        // (сервер может возвращать пустые product/licenseType)
+        const finalItems = updatedItems.map(item => {
+          if (item.id === itemId) {
+            // Если сервер вернул валидные данные, используем их, иначе - локальные
+            const serverProductValid = hasValidData(serverItem.product);
+            const serverLicenseValid = hasValidData(serverItem.licenseType);
+            return {
+              ...item,
+              quantity: serverItem.quantity,
+              product: serverProductValid ? serverItem.product : item.product,
+              licenseType: serverLicenseValid ? serverItem.licenseType : item.licenseType,
+            };
+          }
+          return item;
+        });
+        
+        // Пересчитываем общее количество
+        const finalCount = finalItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setItems(finalItems);
+        setCount(finalCount);
       }
-      // Для гостей quantity не поддерживается
-    } finally {
-      setIsLoading(false);
+      // Для гостей уже обновили выше
+    } catch (error) {
+      // Откат состояния при ошибке
+      console.error('Failed to update quantity:', error);
+      setItems(previousItems);
+      setCount(previousCount);
+      if (!isAuthenticated) {
+        setLocalCart(previousItems);
+      }
+      throw error;
     }
   };
 
@@ -219,7 +297,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const newItems = currentItems.filter(item => item.id !== itemId);
         setLocalCart(newItems);
         setItems(newItems);
-        setCount(newItems.length);
+        // Подсчитываем общее количество с учётом quantity
+        const totalCount = newItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCount(totalCount);
       }
     } finally {
       setIsLoading(false);
