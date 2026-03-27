@@ -11,7 +11,7 @@ import { LicenseTypeTranslation } from '../../db/models/license-type-translation
 import { Language } from '../../common/enums/language.enum';
 import { FileService, MediaFolder } from '../../common/services/file.service';
 import type { FindOptions } from 'sequelize';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import {
   ProductWithRelations,
   ProductWithComputedFields,
@@ -682,8 +682,32 @@ export class ProductRepository {
   }
 
   async deleteAllLicenses(productId: number): Promise<void> {
-    await this.productLicenseModel.destroy({
-      where: { product_id: productId },
-    });
+    // Находим ID лицензий этого продукта, которые используются в заказах
+    const usedLicenseIds = await this.sequelize.query(
+      `SELECT pl.id FROM product_licenses pl
+       INNER JOIN order_items oi ON pl.id = oi.product_license_id
+       WHERE pl.product_id = :productId`,
+      {
+        replacements: { productId },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const usedIds = (usedLicenseIds as { id: number }[]).map((row) => row.id);
+
+    // Удаляем только те лицензии, которые НЕ используются в заказах
+    if (usedIds.length > 0) {
+      await this.productLicenseModel.destroy({
+        where: {
+          product_id: productId,
+          id: { [Op.notIn]: usedIds },
+        },
+      });
+    } else {
+      // Если нет используемых лицензий - удаляем все
+      await this.productLicenseModel.destroy({
+        where: { product_id: productId },
+      });
+    }
   }
 }

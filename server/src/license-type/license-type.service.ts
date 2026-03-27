@@ -61,41 +61,8 @@ export class LicenseTypeService {
     return this.formatLicenseType(licenseType, language);
   }
 
-  async findBySlug(slug: string, language?: string): Promise<LicenseTypeResponse> {
-    const licenseType = await this.licenseTypeModel.findOne({
-      where: { slug },
-      include: [
-        {
-          model: LicenseTypeTranslation,
-          where: language ? { locale: language } : undefined,
-          required: false,
-        },
-      ],
-    });
-
-    if (!licenseType) {
-      throw new NotFoundException(`LicenseType with slug ${slug} not found`);
-    }
-
-    return this.formatLicenseType(licenseType, language);
-  }
-
   async create(createDto: CreateLicenseTypeDto, language: string = 'ru'): Promise<LicenseTypeResponse> {
-    // Auto-generate slug from name if not provided
-    const slug = createDto.slug || (createDto.name ? createDto.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : `license-${Date.now()}`);
-
-    // Check if slug already exists
-    const existing = await this.licenseTypeModel.findOne({
-      where: { slug },
-    });
-
-    if (existing) {
-      throw new ForbiddenException('LicenseType with this slug already exists');
-    }
-
-    const licenseType = await this.licenseTypeModel.create({
-      slug,
-    });
+    const licenseType = await this.licenseTypeModel.create({});
 
     // Create translation
     await this.translationModel.create({
@@ -116,19 +83,6 @@ export class LicenseTypeService {
     const licenseType = await this.licenseTypeModel.findByPk(id);
     if (!licenseType) {
       throw new NotFoundException(`LicenseType with ID ${id} not found`);
-    }
-
-    // Update slug if provided
-    if (updateDto.slug && updateDto.slug !== licenseType.slug) {
-      const existing = await this.licenseTypeModel.findOne({
-        where: { slug: updateDto.slug },
-      });
-
-      if (existing && existing.id !== id) {
-        throw new ForbiddenException('LicenseType with this slug already exists');
-      }
-
-      await licenseType.update({ slug: updateDto.slug });
     }
 
     // Update or create translation
@@ -188,7 +142,6 @@ export class LicenseTypeService {
   private formatLicenseType(licenseType: LicenseType, language?: string): LicenseTypeResponse {
     const result: LicenseTypeResponse = {
       id: licenseType.id,
-      slug: licenseType.slug,
     };
 
     const translations = licenseType.translations as LicenseTypeTranslationRaw[] | undefined;

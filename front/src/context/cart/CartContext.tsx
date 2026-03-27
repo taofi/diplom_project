@@ -3,10 +3,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { cartApi } from '@/lib/api-cart';
 import { useAuth } from '@/context/auth/AuthContext';
+import { getGuestId, setGuestId } from '@/lib/cookies';
 import type { CartItem, AddToCartPayload } from '@/types/cart/cart.types';
 
 // Константы для localStorage
 const GUEST_CART_KEY = 'guest_cart';
+
+// Функция для генерации уникального guestId
+function generateGuestId(): string {
+  return `guest_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+}
+
+// Функция для получения или создания guestId
+function getOrCreateGuestId(): string {
+  let guestId = getGuestId();
+  if (!guestId) {
+    guestId = generateGuestId();
+    setGuestId(guestId);
+  }
+  return guestId;
+}
 
 interface CartContextType {
   items: CartItem[];
@@ -105,11 +121,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setCount(totalCount);
       } else {
-        // Для гостей - читаем из localStorage
+        // Для гостей - получаем guestId и загружаем с сервера
+        const guestId = getOrCreateGuestId();
+        
+        // Сначала проверим, есть ли локальные данные (могут быть не синхронизированы)
         const localItems = getLocalCart();
-        setItems(localItems);
+        
+        if (localItems.length > 0) {
+          // Есть локальные данные - синхронизируем с сервером
+          for (const item of localItems) {
+            await cartApi.addGuestItem(guestId, {
+              productId: item.productId,
+              licenseTypeId: item.licenseTypeId
+            });
+          }
+          // Очищаем localStorage после синхронизации
+          clearLocalCart();
+        }
+        
+        // Загружаем гостевую корзину с сервера
+        const cartItems = await cartApi.getGuestCart(guestId);
+        setItems(cartItems);
         // Подсчитываем общее количество с учётом quantity
-        const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setCount(totalCount);
       }
     } catch (error) {
@@ -129,12 +163,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (isAuthenticated) {
       refreshCart();
     } else if (localCartLoaded) {
-      // Для гостей - просто читаем из localStorage
-      const localItems = getLocalCart();
-      setItems(localItems);
-      // Подсчитываем общее количество с учётом quantity
-      const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      setCount(totalCount);
+      // Для гостей - используем guestId и загружаем с сервера
+      const guestId = getOrCreateGuestId();
+      cartApi.getGuestCart(guestId)
+        .then(cartItems => {
+          setItems(cartItems);
+          const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+          setCount(totalCount);
+        })
+        .catch(error => {
+          console.error('Failed to fetch guest cart:', error);
+          // Fallback - читаем из localStorage
+          const localItems = getLocalCart();
+          setItems(localItems);
+          const totalCount = localItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+          setCount(totalCount);
+        });
     }
   }, [isAuthenticated, localCartLoaded, refreshCart]);
 
@@ -180,41 +224,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setCount(totalCount);
       } else {
-        // Для гостей - добавляем в localStorage
-        const currentItems = getLocalCart();
-        // Проверяем, не добавлен ли уже этот товар
-        const exists = currentItems.some(
-          item => item.productId === payload.productId && item.licenseTypeId === payload.licenseTypeId
-        );
-        if (!exists) {
-          // Создаём минимальный объект товара для localStorage
-          // product и licenseType будут загружены с сервера при синхронизации
-          const newItem = {
-            id: Date.now(), // Временный ID
-            productId: payload.productId,
-            licenseTypeId: payload.licenseTypeId,
-            quantity: payload.quantity || 1,
-          } as CartItem;
-          const newItems = [...currentItems, newItem];
-          setLocalCart(newItems);
-          setItems(newItems);
-          // Подсчитываем общее количество с учётом quantity
-          const totalCount = newItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-          setCount(totalCount);
-        } else {
-          // Товар уже есть - увеличиваем quantity
-          const updatedItems = currentItems.map(item => {
-            if (item.productId === payload.productId && item.licenseTypeId === payload.licenseTypeId) {
-              return { ...item, quantity: (item.quantity || 1) + (payload.quantity || 1) };
-            }
-            return item;
-          });
-          setLocalCart(updatedItems);
-          setItems(updatedItems);
-          // Подсчитываем общее количество с учётом quantity
-          const totalCount = updatedItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-          setCount(totalCount);
-        }
+        // Для гостей - добавляем на сервер
+        const guestId = getOrCreateGuestId();
+        const newItem = await cartApi.addGuestItem(guestId, payload);
+        
+        // Обновляем корзину с сервера (чтобы получить полные данные с переводами)
+        const cartItems = await cartApi.getGuestCart(guestId);
+        setItems(cartItems);
+        // Подсчитываем общее количество с учётом quantity
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCount(totalCount);
       }
     } finally {
       setIsLoading(false);
@@ -271,6 +290,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const finalCount = finalItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setItems(finalItems);
         setCount(finalCount);
+      } else {
+        // Для гостей - отправляем запрос на сервер
+        const guestId = getOrCreateGuestId();
+        const serverItem = await cartApi.updateGuestItemQuantity(guestId, itemId, quantity);
+        
+        // Обновляем элемент данными с сервера
+        const finalItems = updatedItems.map(item => {
+          if (item.id === itemId) {
+            const serverProductValid = hasValidData(serverItem.product);
+            const serverLicenseValid = hasValidData(serverItem.licenseType);
+            return {
+              ...item,
+              quantity: serverItem.quantity,
+              product: serverProductValid ? serverItem.product : item.product,
+              licenseType: serverLicenseValid ? serverItem.licenseType : item.licenseType,
+            };
+          }
+          return item;
+        });
+        
+        // Пересчитываем общее количество
+        const finalCount = finalItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setItems(finalItems);
+        setCount(finalCount);
       }
       // Для гостей уже обновили выше
     } catch (error) {
@@ -292,13 +335,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         await cartApi.removeItem(itemId);
         await refreshCart();
       } else {
-        // Для гостей - удаляем из localStorage
-        const currentItems = getLocalCart();
-        const newItems = currentItems.filter(item => item.id !== itemId);
-        setLocalCart(newItems);
-        setItems(newItems);
+        // Для гостей - удаляем через API
+        const guestId = getOrCreateGuestId();
+        await cartApi.removeGuestItem(guestId, itemId);
+        
+        // Обновляем корзину с сервера
+        const cartItems = await cartApi.getGuestCart(guestId);
+        setItems(cartItems);
         // Подсчитываем общее количество с учётом quantity
-        const totalCount = newItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setCount(totalCount);
       }
     } finally {
@@ -314,8 +359,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setItems([]);
         setCount(0);
       } else {
-        // Для гостей - очищаем localStorage
-        clearLocalCart();
+        // Для гостей - очищаем через API
+        const guestId = getOrCreateGuestId();
+        await cartApi.clearGuestCart(guestId);
         setItems([]);
         setCount(0);
       }

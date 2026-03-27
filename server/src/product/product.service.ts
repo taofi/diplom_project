@@ -398,18 +398,23 @@ export class ProductService {
     }
 
     return (
-      product.licenses?.map((l) => ({
-        id: l.id,
-        licenseTypeId: l.license_type_id,
-        price: Number(l.price),
-        licenseType: l.license_type
-          ? {
-              id: l.license_type.id,
-              name: l.license_type.slug,
-              slug: l.license_type.slug,
-            }
-          : undefined,
-      })) || []
+      product.licenses?.map((l) => {
+        let licenseName = '';
+        if (l.license_type?.translations && l.license_type.translations.length > 0) {
+          licenseName = l.license_type.translations[0]?.name || '';
+        }
+        return {
+          id: l.id,
+          licenseTypeId: l.license_type_id,
+          price: Number(l.price),
+          licenseType: l.license_type
+            ? {
+                id: l.license_type.id,
+                name: licenseName,
+              }
+            : undefined,
+        };
+      }) || []
     );
   }
 

@@ -12,7 +12,6 @@ import type { EntityBase } from '../base/entity-base';
  * DTO для создания типа лицензии
  */
 export interface CreateLicenseTypeDto {
-  slug: string;
   name: string;
   description?: string;
 }
@@ -31,7 +30,6 @@ export type UpdateLicenseTypeDto = Partial<CreateLicenseTypeDto>;
  */
 export interface LicenseTypeFields extends EntityBase {
   id: number;
-  slug: string;
 }
 
 /**
@@ -61,7 +59,6 @@ export interface LicenseTypeTranslationInfo {
  */
 export interface LicenseTypeResponse {
   id: number;
-  slug: string;
   name?: string;
   description?: string | null;
   translations?: LicenseTypeTranslationInfo[];
@@ -105,7 +102,6 @@ export function createLicenseTypeResponse(
 ): LicenseTypeResponse {
   const response: LicenseTypeResponse = {
     id: licenseType.id,
-    slug: licenseType.slug,
   };
 
   // Add name and description from translation

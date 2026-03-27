@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { StreamableFile } from '@nestjs/common';
 import {
   FileUploadResult,
   FileDeleteResult,
@@ -499,15 +498,17 @@ export class FileService {
 
   /**
    * Сгенерировать уникальное имя файла
+   * - Использует UUID вместо транслитерации
+   * - Добавляет counter если файл уже существует
    */
   private generateUniqueFilename(dirPath: string, originalName: string): string {
     const ext = path.extname(originalName);
-    const baseName = path.basename(originalName, ext);
-    let filename = originalName;
+    const uuid = crypto.randomUUID();
+    let filename = `${uuid}${ext}`;
     let counter = 1;
 
     while (fs.existsSync(path.join(dirPath, filename))) {
-      filename = `${baseName}_${counter}${ext}`;
+      filename = `${uuid}_${counter}${ext}`;
       counter++;
     }
 

@@ -178,6 +178,8 @@ export class EmailService {
     const attachments: EmailAttachment[] = [];
 
     try {
+      this.logger.log(`[DEBUG] Getting attachments for order ${orderId}`);
+      
       // Находим заказ с элементами заказа
       const order = await this.orderModel.findByPk(orderId, {
         include: [
@@ -198,25 +200,46 @@ export class EmailService {
         return attachments;
       }
 
+      this.logger.log(`[DEBUG] Order found, checking order_items`);
+      
       const orderItems = order.order_items as (OrderItem & {
         product_license: ProductLicense & { product: Product };
       })[];
 
+      this.logger.log(`[DEBUG] Found ${orderItems?.length || 0} order items`);
+
       for (const item of orderItems) {
+        this.logger.log(`[DEBUG] Processing order item ${item.id}, product_license_id: ${item.product_license_id}`);
+        
         const productLicense = item.product_license;
-        if (!productLicense) continue;
+        if (!productLicense) {
+          this.logger.warn(`[DEBUG] No product_license for order item ${item.id}`);
+          continue;
+        }
 
         const product = productLicense.product;
-        if (!product || !product.file_url) continue;
+        this.logger.log(`[DEBUG] Product: ${product?.id}, file_url: "${product?.file_url}"`);
+        
+        if (!product || !product.file_url) {
+          this.logger.warn(`[DEBUG] Skipping - no product or no file_url`);
+          continue;
+        }
 
         // file_url хранится как 'files/product/{id}/filename.ext'
         // Путь относительно корня проекта
         const fileUrl = product.file_url;
+        
+        // В Docker volume монтируется в /app/files (не в public)
+        // fileUrl уже содержит 'files/product/...'
         const fullPath = path.join(process.cwd(), fileUrl);
+        
+        this.logger.log(`[DEBUG] Checking file at: ${fullPath}`);
+        this.logger.log(`[DEBUG] process.cwd(): ${process.cwd()}`);
 
         // Проверяем существование файла
         if (fs.existsSync(fullPath)) {
           const filename = fileUrl.split('/').pop() || 'file';
+          this.logger.log(`[DEBUG] File FOUND: ${filename}, size: ${fs.statSync(fullPath).size} bytes`);
           attachments.push({
             filename,
             path: fullPath,
@@ -224,9 +247,11 @@ export class EmailService {
           });
           this.logger.log(`Found attachment: ${filename} for order ${orderId}`);
         } else {
-          this.logger.warn(`File not found: ${fullPath} for order ${orderId}`);
+          this.logger.warn(`[DEBUG] File NOT FOUND: ${fullPath} for order ${orderId}`);
         }
       }
+      
+      this.logger.log(`[DEBUG] Total attachments collected: ${attachments.length}`);
     } catch (error) {
       this.logger.error(`Error getting order attachments: ${error}`);
     }
@@ -242,10 +267,27 @@ export class EmailService {
     orderId: number,
     locale: string = 'ru'
   ): Promise<void> {
+    // Проверяем email на валидность
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      this.logger.warn(`[DEBUG] Invalid or empty email provided for order ${orderId}. Skipping email sending.`);
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    
+    // Простая проверка формата email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      this.logger.warn(`[DEBUG] Email "${trimmedEmail}" has invalid format for order ${orderId}. Skipping email sending.`);
+      return;
+    }
+
     try {
       // Получаем вложения
       const attachments = await this.getOrderAttachments(orderId);
 
+      this.logger.log(`[DEBUG] Preparing to send email to ${trimmedEmail} with ${attachments.length} attachments`);
+      
       // Получаем HTML из шаблона
       const { subject, body } = this.templateService.render(
         'orderConfirmation',
@@ -257,8 +299,8 @@ export class EmailService {
       );
 
       // Отправляем email с вложениями
-      await this.mailerService.sendMail({
-        to: email,
+      const mailResult = await this.mailerService.sendMail({
+        to: trimmedEmail,
         subject,
         html: body,
         attachments: attachments.map((att) => ({
@@ -266,11 +308,12 @@ export class EmailService {
           path: att.path,
           contentType: att.contentType,
         })),
-      });
+      }) as unknown;
 
-      this.logger.log(`Order confirmation sent to ${email} with ${attachments.length} attachments`);
+      this.logger.log(`[DEBUG] Mail sent successfully, response: ${JSON.stringify(mailResult)}`);
+      this.logger.log(`Order confirmation sent to ${trimmedEmail} with ${attachments.length} attachments`);
     } catch (error) {
-      this.logger.error(`Failed to send order confirmation to ${email}:`, error);
+      this.logger.error(`[DEBUG] Failed to send order confirmation to ${trimmedEmail}:`, error);
       throw error;
     }
   }

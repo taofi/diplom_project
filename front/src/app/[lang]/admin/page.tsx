@@ -84,21 +84,6 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Statistics Section - Coming Soon */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {t('admin.dashboard.statistics') || 'Statistics'}
-          </h2>
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-            <p className="text-lg font-medium">
-              {t('admin.comingSoon') || 'Coming soon'}
-            </p>
-            <p className="text-blue-100 mt-1">
-              {t('admin.dashboard.statisticsComingSoon') || 'Statistics will be available here'}
-            </p>
-          </div>
-        </div>
-
         {/* Navigation Links */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">

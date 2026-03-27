@@ -219,6 +219,23 @@
       "language": "Язык",
       "actions": "Действия"
     },
+    "users": {
+      "name": "Имя",
+      "email": "Email",
+      "rolesTitle": "Роли",
+      "locale": "Язык",
+      "createdAt": "Создан",
+      "changeRoles": "Изменить роли",
+      "searchPlaceholder": "Поиск пользователей...",
+      "noUsers": "Пользователи не найдены",
+      "description": "Управление пользователями и их ролями",
+      "roles": {
+        "admin": "Администратор",
+        "author": "Автор",
+        "user": "Пользователь",
+        "none": "Нет ролей"
+      }
+    },
     "products": {
       "title": "Управление товарами",
       "createNew": "Создать товар",

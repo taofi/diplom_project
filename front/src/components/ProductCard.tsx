@@ -5,6 +5,7 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { ServerImage } from './Image';
 import type { ProductResponse } from '@/types/product';
 import { ProductType } from '@/types/product';
+import { formatPrice } from '@/utils/price';
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -16,16 +17,6 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
 
   // Используем mainImage или первое изображение из media
   const imageUrl = product.mainImage || product.media?.[0]?.url || null;
-const formatPrice = (price: number | string) => {
-  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  
-  return new Intl.NumberFormat('be-BY', {
-    style: 'currency',
-    currency: 'BYN',
-    // Если нужно гарантировать 2 знака после запятой, можно добавить:
-    minimumFractionDigits: 2,
-  }).format(numPrice);
-};
   const displayPrice = formatPrice(Number(product.discountPrice ?? product.price));
 
   return (

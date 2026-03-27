@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { formatPrice } from '@/utils/price';
 
 export default function CheckoutPage() {
   const { t, locale } = useI18n();
@@ -380,7 +381,7 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                         <p className="font-medium">
-                          ${itemTotal.toFixed(2)}
+                          {formatPrice(itemTotal)}
                         </p>
                       </div>
                     );
@@ -402,7 +403,7 @@ export default function CheckoutPage() {
                   <span className="text-gray-600">
                     {t('checkout.subtotal') || 'Subtotal'}
                   </span>
-                  <span className="font-medium">${total.toFixed(2)}</span>
+                  <span className="font-medium">{formatPrice(total)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">
@@ -412,7 +413,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-semibold">{t('checkout.total') || 'Total'}</span>
-                  <span className="font-bold text-xl">${total.toFixed(2)}</span>
+                  <span className="font-bold text-xl">{formatPrice(total)}</span>
                 </div>
               </div>
 

@@ -2,6 +2,7 @@
 
 import { useI18n } from '@/context/i18n/I18nContext';
 import { CartItemImage } from './CartItemImage';
+import { formatPrice } from '@/utils/price';
 
 interface CartItemProps {
   item: {
@@ -58,7 +59,7 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
           {item.licenseType?.name || t('cart.license') || 'License'}
         </p>
         <p className="text-lg font-semibold text-primary mt-1">
-          ${productPrice.toFixed(2)}
+          {formatPrice(productPrice)}
         </p>
       </div>
 
@@ -89,11 +90,11 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
       {/* Сумма */}
       <div className="w-24 text-right">
         <p className="font-semibold text-gray-900">
-          ${itemTotal.toFixed(2)}
+          {formatPrice(itemTotal)}
         </p>
         {quantity > 1 && (
           <p className="text-xs text-gray-500">
-            ${productPrice.toFixed(2)} × {quantity}
+            {formatPrice(productPrice)} × {quantity}
           </p>
         )}
       </div>

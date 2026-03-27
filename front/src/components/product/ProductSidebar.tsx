@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button } from '@/components/ui';
 import type { LicenseInfo } from '@/types/product';
+import { formatPrice, formatPriceShort } from '@/utils/price';
 
 interface ProductSidebarProps {
   price: number;
@@ -40,11 +41,11 @@ export function ProductSidebar({
       {/* Цена */}
       <div className="mb-6">
         <span className="text-4xl font-bold text-gray-900">
-          ${displayPrice.toFixed(2)}
+          {formatPrice(displayPrice)}
         </span>
         {discountPrice && discountPrice < price && (
           <span className="ml-2 text-xl text-gray-400 line-through">
-            ${price.toFixed(2)}
+            {formatPrice(price)}
           </span>
         )}
       </div>
@@ -78,7 +79,7 @@ export function ProductSidebar({
                   </span>
                 </div>
                 <span className="font-bold text-gray-900">
-                  ${license.price.toFixed(2)}
+                  {formatPrice(license.price)}
                 </span>
               </label>
             ))}

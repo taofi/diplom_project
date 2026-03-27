@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/context/i18n/I18nContext';
+import { formatPrice } from '@/utils/price';
 
 interface CartSummaryProps {
   total: number;
@@ -27,7 +28,7 @@ export function CartSummary({
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-gray-600">
             <span>{t('cart.subtotal') || 'Subtotal'}</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatPrice(total)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>{t('cart.items') || 'Items'}</span>
@@ -38,7 +39,7 @@ export function CartSummary({
         <div className="border-t pt-4 mb-6">
           <div className="flex justify-between text-lg font-semibold">
             <span>{t('cart.total') || 'Total'}</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatPrice(total)}</span>
           </div>
         </div>
 

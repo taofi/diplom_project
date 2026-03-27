@@ -206,7 +206,7 @@ export function createProductListItemResponse(
   if (product.licenses) {
     const normalizedLang = normalizeLanguage(language);
     response.licenses = product.licenses.map((l) => {
-      let licenseName = l.license_type?.slug || '';
+      let licenseName = '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
         const translationsArr = l.license_type.translations.map((t) => t.toJSON ? t.toJSON() : t);
         const translation = translationsArr.find(
@@ -225,7 +225,6 @@ export function createProductListItemResponse(
           ? {
               id: l.license_type.id,
               name: licenseName,
-              slug: l.license_type.slug,
             }
           : undefined,
       };
@@ -335,7 +334,7 @@ export function createProductDetailResponse(
   if (product.licenses) {
     const normalizedLang = normalizeLanguage(language);
     response.licenses = product.licenses.map((l) => {
-      let licenseName = l.license_type?.slug || '';
+      let licenseName = '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
         const translationsArr = l.license_type.translations.map((t) => t.toJSON ? t.toJSON() : t);
         const translation =
@@ -355,7 +354,6 @@ export function createProductDetailResponse(
           ? {
               id: l.license_type.id,
               name: licenseName,
-              slug: l.license_type.slug,
             }
           : undefined,
       };

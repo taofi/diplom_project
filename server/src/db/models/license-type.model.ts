@@ -5,7 +5,6 @@ import {
   DataType,
   PrimaryKey,
   AutoIncrement,
-  Unique,
   HasMany,
 } from 'sequelize-typescript';
 import { LicenseTypeTranslation } from './license-type-translation.model';
@@ -17,10 +16,6 @@ export class LicenseType extends Model {
   @AutoIncrement
   @Column(DataType.INTEGER)
   declare id: number;
-
-  @Unique
-  @Column({ type: DataType.STRING(50), allowNull: false })
-  declare slug: string; // individual | commercial | extended
 
   @Column({ type: DataType.TEXT, allowNull: true })
   declare description: string | null; // Описание лицензии

@@ -127,14 +127,20 @@ export class CheckoutService {
         // Для авторизованного пользователя получаем email из базы
         const user = await this.userModel.findByPk(userId);
         if (!user) {
-          console.warn(`User not found for order ${orderId}`);
+          console.warn(`[DEBUG] User not found for order ${orderId}, userId: ${userId}`);
+          return;
+        }
+        if (!user.email) {
+          console.warn(`[DEBUG] User email is empty for order ${orderId}, userId: ${userId}, user: ${JSON.stringify(user)}`);
           return;
         }
         email = user.email;
+        console.log(`[DEBUG] Got user email for order ${orderId}: ${email}`);
       } else if (guestEmail) {
         email = guestEmail;
+        console.log(`[DEBUG] Got guest email for order ${orderId}: ${email}`);
       } else {
-        console.warn(`No email provided for order ${orderId}`);
+        console.warn(`[DEBUG] No email provided for order ${orderId}, userId: ${userId}, guestEmail: ${guestEmail}`);
         return;
       }
 

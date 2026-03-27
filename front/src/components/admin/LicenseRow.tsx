@@ -46,10 +46,20 @@ export function LicenseRow({
           type="number"
           name={`price-${license.id}`}
           value={license.price}
-          onChange={(value) => onUpdate(license.id, 'price', value)}
+          onChange={(value) => {
+      // 1. Заменяем запятую на точку (удобно для разных раскладок)
+      const formattedValue = value.replace(',', '.');
+
+      // 2. Разрешаем: пустую строку, только цифры, 
+      // или цифры с одной точкой (включая точку в конце)
+      if (formattedValue === '' || /^\d*\.?\d*$/.test(formattedValue)) {
+        onUpdate(license.id, 'price', formattedValue);
+      }
+    }}
           placeholder={t('admin.products.price')}
           min={0}
           step={0.01}
+          decimals={2}
         />
       </div>
 

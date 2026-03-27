@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15-alpine # версия alpine легче и быстрее
+    image: postgres:15-alpine
     container_name: postgres_db
     restart: always
     environment:
@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -20,7 +25,69 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=p1ssw0rt
+      - DB_NAME=database
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=465
+      - MAIL_USER=nadzin031@gmail.com
+      - MAIL_PASS=zaqw dcje fjmu tfrw
+      - MAIL_FROM="No Reply" nadzin031@gmail.com
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - server_uploads:/app/public
+      - server_files:/app/
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: front_app
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - NEXT_PUBLIC_API_URL=http://server:3000
+      - NEXT_PUBLIC_SOCKET_URL=http://server:3000
+    depends_on:
+      - server
+    volumes:
+      - front_public:/app/public
 
 volumes:
   db_data:
   redis_data:
+  server_uploads:
+  server_files:
+  front_public:

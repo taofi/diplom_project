@@ -100,31 +100,36 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     // Format number value
     const formatNumber = useCallback(
-      (val: string): string => {
-        if (val === '' || val === '-') return val;
+  (val: string): string => {
+    // 1. Если строка пустая, минус или заканчивается на точку — НЕ ФОРМАТИРУЕМ
+    // Это позволит пользователю спокойно допечатать дробную часть
+    if (val === '' || val === '-' || val.endsWith('.')) {
+      return val;
+    }
 
-        let num = parseFloat(val);
+    let num = parseFloat(val);
+    if (isNaN(num)) return localValue;
 
-        if (isNaN(num)) return localValue;
+    // Handle negative
+    if (!allowNegative && num < 0) {
+      num = Math.abs(num);
+    }
 
-        // Handle negative
-        if (!allowNegative && num < 0) {
-          num = Math.abs(num);
-        }
+    // 2. Применяем decimals только если число не в процессе ввода точки
+    if (decimals !== undefined) {
+      // Используем экспоненциальную запись для точности или просто toFixed
+      const factor = Math.pow(10, decimals);
+      num = Math.round(num * factor) / factor;
+    }
 
-        // Apply decimals
-        if (decimals !== undefined) {
-          num = Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
-        }
+    // Apply min/max
+    if (min !== undefined && num < min) num = min;
+    if (max !== undefined && num > max) num = max;
 
-        // Apply min/max
-        if (min !== undefined && num < min) num = min;
-        if (max !== undefined && num > max) num = max;
-
-        return num.toString();
-      },
-      [decimals, min, max, allowNegative, localValue]
-    );
+    return num.toString();
+  },
+  [decimals, min, max, allowNegative, localValue]
+);
 
     // Handle input change
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -377,7 +377,7 @@ export function createProductResponse(
   if (product.licenses) {
     const normalizedLang = normalizeLanguage(language);
     response.licenses = product.licenses.map((l) => {
-      let licenseName = l.license_type?.slug || '';
+      let licenseName = '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
         const translationsArr: Array<{locale?: string; name?: string}> = l.license_type.translations.map((t) => t.toJSON ? t.toJSON() : t);
         const translation = translationsArr.find(
@@ -395,7 +395,6 @@ export function createProductResponse(
           ? {
               id: l.license_type.id,
               name: licenseName,
-              slug: l.license_type.slug,
             }
           : undefined,
       };

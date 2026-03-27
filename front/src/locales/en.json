@@ -219,6 +219,23 @@
       "language": "Language",
       "actions": "Actions"
     },
+    "users": {
+      "name": "Name",
+      "email": "Email",
+      "rolesTitle": "Roles",
+      "locale": "Language",
+      "createdAt": "Created",
+      "changeRoles": "Change roles",
+      "searchPlaceholder": "Search users...",
+      "noUsers": "No users found",
+      "description": "Manage users and their roles",
+      "roles": {
+        "admin": "Administrator",
+        "author": "Author",
+        "user": "User",
+        "none": "No roles"
+      }
+    },
     "products": {
       "title": "Manage Products",
       "createNew": "Create Product",
