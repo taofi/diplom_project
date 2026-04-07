@@ -5,6 +5,7 @@ import { FormField, Section } from '@/components/ui';
 import { FileUploader } from './FileUploader';
 import { MediaUploader, type MediaItem } from './MediaUploader';
 import type { UpdateMediaItem } from '@/types/product';
+import { MAX_MEDIA_UPLOAD_SIZE_MB } from '@/lib/api-upload';
 
 interface FileStockSectionProps {
   fileUrl: string;
@@ -32,7 +33,7 @@ export function FileStockSection({
           onChange={onMediaChange}
           onMediaChange={onMediaChangeWithTracking}
           maxItems={10}
-          maxSize={5}
+          maxSize={MAX_MEDIA_UPLOAD_SIZE_MB}
         />
       </Section>
 

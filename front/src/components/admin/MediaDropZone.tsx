@@ -38,7 +38,7 @@ export function MediaDropZone({
     >
       <input
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         onChange={onFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -55,10 +55,10 @@ export function MediaDropZone({
           <>
             <Upload className="w-10 h-10 text-gray-400" />
             <p className="text-sm text-gray-500">
-              Перетащите изображения или нажмите для выбора
+              Перетащите медиа или нажмите для выбора
             </p>
             <p className="text-xs text-gray-400">
-              Максимум {maxItems} изображений, до {maxSize}MB каждое
+              Максимум {maxItems} файлов, до {maxSize}MB каждый
             </p>
           </>
         )}

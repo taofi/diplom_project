@@ -3,6 +3,8 @@ import { FileService } from '../common/services/file.service';
 import { FileUploadResult } from '../types/base';
 import type { MulterFile } from '../common/services/file.service';
 
+const MAX_TEMP_MEDIA_SIZE = 400 * 1024 * 1024;
+
 @Injectable()
 export class UploadsService {
   constructor(private readonly fileService: FileService) {}
@@ -13,14 +15,15 @@ export class UploadsService {
    * @param file - Загруженный файл
    */
   uploadTempMedia(userId: number, file: MulterFile): FileUploadResult {
-    // Проверить тип файла (только изображения)
-    if (!file?.mimetype?.startsWith('image/')) {
-      throw new BadRequestException('Only image files are allowed for media');
+    const mimeType = file?.mimetype || '';
+    const isSupportedMedia =
+      mimeType.startsWith('image/') || mimeType.startsWith('video/');
+    if (!isSupportedMedia) {
+      throw new BadRequestException('Only image and video files are allowed for media');
     }
 
-    // Проверить размер (макс 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('Media file size must be less than 5MB');
+    if (file.size > MAX_TEMP_MEDIA_SIZE) {
+      throw new BadRequestException('Media file size must be less than 400MB');
     }
 
     return this.fileService.saveTempMedia(file, userId);

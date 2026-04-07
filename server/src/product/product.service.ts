@@ -13,6 +13,7 @@ import { AddLicenseDto } from './dto/add-license.dto';
 import { UploadsService } from '../uploads/uploads.service';
 import { ProductMediaService } from './product-media.service';
 import type { MediaInfo, LicenseInfo } from '../types/product';
+import { MediaType } from '../db/models/product-media.model';
 import {
   createProductListItemResponse,
   createProductDetailResponse,
@@ -23,7 +24,7 @@ import {
 // Тип для результата обработки временных файлов
 interface ProcessedFilesResult {
   fileUrl: string | null;
-  mediaData: { url: string; isCover: boolean }[];
+  mediaData: { url: string; isCover: boolean; mediaType: MediaType }[];
 }
 
 @Injectable()
@@ -75,15 +76,23 @@ export class ProductService {
     const hasCoverInfo = dto.tempMediaUrls && dto.tempMediaUrls.some((m) => m.isCover !== undefined);
 
     // 6. Создать массив mediaData с определением isCover
-    const mediaData: { url: string; isCover: boolean }[] = movedFiles.media.map((media, index) => {
+    const mediaData: { url: string; isCover: boolean; mediaType: MediaType }[] =
+      movedFiles.media.map((media, index) => {
+      const mediaType = media.mimeType.startsWith('video/')
+        ? MediaType.VIDEO
+        : MediaType.IMAGE;
       // Если есть явная информация об обложке - используем её
       if (hasCoverInfo) {
         const originalMedia = dto.tempMediaUrls?.[index];
-        return { url: media.url, isCover: originalMedia?.isCover ?? false };
+        return {
+          url: media.url,
+          isCover: (originalMedia?.isCover ?? false) && mediaType === MediaType.IMAGE,
+          mediaType,
+        };
       }
       
       // Если нет информации об isCover - первое медиа становится обложкой по умолчанию
-      return { url: media.url, isCover: index === 0 };
+      return { url: media.url, isCover: index === 0 && mediaType === MediaType.IMAGE, mediaType };
     });
 
     // Files processed
@@ -215,7 +224,7 @@ export class ProductService {
     for (const media of processedFiles.mediaData) {
       await this.productRepository.addMedia(product.id, {
         url: media.url,
-        mediaType: 'image',
+        mediaType: media.mediaType,
         isCover: media.isCover,
       });
     }
@@ -267,7 +276,7 @@ export class ProductService {
       for (const media of processedFiles.mediaData) {
         await this.productRepository.addMedia(id, {
           url: media.url,
-          mediaType: 'image',
+          mediaType: media.mediaType,
           isCover: media.isCover,
         });
       }
@@ -352,6 +361,14 @@ export class ProductService {
       throw new ForbiddenException(
         'You can only add media to your own products',
       );
+    }
+
+    if (
+      addMediaDto.isCover &&
+      addMediaDto.mediaType &&
+      addMediaDto.mediaType !== MediaType.IMAGE
+    ) {
+      throw new BadRequestException('Cover media must be an image');
     }
 
     return this.productRepository.addMedia(id, addMediaDto);
@@ -457,6 +474,14 @@ export class ProductService {
       throw new ForbiddenException(
         'You can only set cover for your own products media',
       );
+    }
+
+    const media = await this.productMediaService.findById(mediaId);
+    if (!media || media.product_id !== id) {
+      throw new NotFoundException(`Media with ID ${mediaId} not found for this product`);
+    }
+    if (media.media_type !== MediaType.IMAGE) {
+      throw new BadRequestException('Cover media must be an image');
     }
 
     // Сначала сбрасываем все is_cover для этого продукта

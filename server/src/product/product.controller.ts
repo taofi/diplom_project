@@ -32,6 +32,8 @@ import { extname } from 'path';
 import { Request } from 'express';
 import { MediaType } from '../db/models/product-media.model';
 
+const MAX_PRODUCT_MEDIA_SIZE = 50 * 1024 * 1024;
+
 @Controller('products')
 export class ProductController {
   constructor(
@@ -143,6 +145,9 @@ export class ProductController {
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
+      limits: {
+        fileSize: MAX_PRODUCT_MEDIA_SIZE,
+      },
     }),
   )
   async uploadMedia(

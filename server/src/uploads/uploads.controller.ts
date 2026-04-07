@@ -21,6 +21,8 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Request } from 'express';
 
+const MAX_TEMP_MEDIA_SIZE = 400 * 1024 * 1024;
+
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 export class UploadsController {
@@ -49,6 +51,9 @@ export class UploadsController {
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
+      limits: {
+        fileSize: MAX_TEMP_MEDIA_SIZE,
+      },
     }),
   )
   uploadTempMedia(

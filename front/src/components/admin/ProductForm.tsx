@@ -217,6 +217,7 @@ export function ProductForm({
           url: m.url,
           isCover: m.isCover,
           isNew: false,
+          mediaType: m.mediaType,
           id: m.id,
         }));
         setMedia(mediaItems);

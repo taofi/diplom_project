@@ -3,17 +3,24 @@
 import { useState, useCallback } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Image as ImageIcon } from 'lucide-react';
-import { uploadTempMedia, isValidMediaType, UploadResult } from '@/lib/api-upload';
+import {
+  uploadTempMedia,
+  isValidMediaType,
+  UploadResult,
+  MAX_MEDIA_UPLOAD_SIZE_MB,
+} from '@/lib/api-upload';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { MediaItemCard } from './MediaItemCard';
 import { MediaDropZone } from './MediaDropZone';
 import type { UpdateMediaItem } from '@/types/product';
+import { MediaType } from '@/types/product';
 
 export interface MediaItem {
   url: string;
   tempUrl?: string;
   isCover: boolean;
   isNew: boolean;
+  mediaType: MediaType;
   id?: number; // ID медиа для существующих элементов
 }
 
@@ -30,7 +37,7 @@ export function MediaUploader({
   onChange,
   onMediaChange,
   maxItems = 10,
-  maxSize = 5,
+  maxSize = MAX_MEDIA_UPLOAD_SIZE_MB,
 }: MediaUploaderProps) {
   const { t } = useI18n();
   const [isUploading, setIsUploading] = useState(false);
@@ -77,18 +84,24 @@ export function MediaUploader({
           newItems.push({
             url: uploadResult.url,
             tempUrl: uploadResult.url,
-            isCover: value.length === 0 && newItems.length === 0,
+            isCover:
+              file.type.startsWith('image/') &&
+              value.length === 0 &&
+              newItems.length === 0,
             isNew: true,
+            mediaType: file.type.startsWith('video/')
+              ? MediaType.VIDEO
+              : MediaType.IMAGE,
           });
         }
 
         if (newItems.length > 0) {
           onChange([...value, ...newItems]);
-          toastSuccess('Успешно', 'Изображения загружены');
+          toastSuccess('Успешно', 'Медиа загружены');
         }
       } catch (error) {
         console.error('Upload error:', error);
-        toastError('Ошибка', 'Не удалось загрузить изображения');
+        toastError('Ошибка', 'Не удалось загрузить медиа');
       } finally {
         setIsUploading(false);
       }
@@ -139,7 +152,12 @@ export function MediaUploader({
         newItems.length > 0 &&
         !newItems[0].isCover
       ) {
-        newItems[0].isCover = true;
+        const firstImageIndex = newItems.findIndex(
+          (item) => item.mediaType === MediaType.IMAGE,
+        );
+        if (firstImageIndex >= 0) {
+          newItems[firstImageIndex].isCover = true;
+        }
       }
       
       onChange(newItems);
@@ -157,6 +175,11 @@ export function MediaUploader({
 
   const handleSetCover = useCallback(
     (index: number) => {
+      if (value[index]?.mediaType !== MediaType.IMAGE) {
+        toastError('Ошибка', 'Обложкой может быть только изображение');
+        return;
+      }
+
       const newItems = value.map((item, i) => ({
         ...item,
         isCover: i === index,
@@ -215,7 +238,7 @@ export function MediaUploader({
       {value.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-          <p>{t('admin.products.noMedia') || 'Нет загруженных изображений'}</p>
+          <p>{t('admin.products.noMedia') || 'Нет загруженных медиа'}</p>
         </div>
       )}
     </div>

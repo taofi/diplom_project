@@ -28,106 +28,75 @@ export default function Home() {
         <LatestProducts />
       </section>
 
-      {/* Features */}
+      {/* How it works */}
       <section className="bg-secondary/20 py-12">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold text-text text-center mb-8">
-            {t('home.features.title')}
+            {t('catalog.info.title')}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Quality */}
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary/30">
+              <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold mb-4">
+                1
+              </span>
               <h3 className="font-semibold text-text mb-2">
-                {t('home.features.quality.title')}
+                {t('catalog.info.step1Title')}
               </h3>
               <p className="text-text/70 text-sm">
-                {t('home.features.quality.desc')}
+                {t('catalog.info.step1Desc')}
               </p>
             </div>
-
-            {/* Instant Delivery */}
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary/30">
+              <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold mb-4">
+                2
+              </span>
               <h3 className="font-semibold text-text mb-2">
-                {t('home.features.instant.title')}
+                {t('catalog.info.step2Title')}
               </h3>
               <p className="text-text/70 text-sm">
-                {t('home.features.instant.desc')}
+                {t('catalog.info.step2Desc')}
               </p>
             </div>
-
-            {/* Support */}
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary/30">
+              <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold mb-4">
+                3
+              </span>
               <h3 className="font-semibold text-text mb-2">
-                {t('home.features.support.title')}
+                {t('catalog.info.step3Title')}
               </h3>
               <p className="text-text/70 text-sm">
-                {t('home.features.support.desc')}
-              </p>
-            </div>
-
-            {/* License */}
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-text mb-2">
-                {t('home.features.license.title')}
-              </h3>
-              <p className="text-text/70 text-sm">
-                {t('home.features.license.desc')}
+                {t('catalog.info.step3Desc')}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Category CTA */}
+      {/* Final CTA */}
       <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link 
-            href={`/${locale}/catalog?type=BRUSH`}
-            className="relative h-[200px] bg-gradient-to-r from-primary to-secondary rounded-xl overflow-hidden group cursor-pointer"
-          >
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-              <h3 className="text-2xl font-bold mb-2">
-                {t('catalog.categoryBanners.brushes')}
-              </h3>
-              <p className="text-white/80">
-                {t('catalog.categoryBanners.brushesDesc')}
-              </p>
-            </div>
-          </Link>
-          
-          <Link 
-            href={`/${locale}/catalog?type=ILLUSTRATION`}
-            className="relative h-[200px] bg-gradient-to-r from-accent to-primary rounded-xl overflow-hidden group cursor-pointer"
-          >
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-              <h3 className="text-2xl font-bold mb-2">
-                {t('catalog.categoryBanners.illustrations')}
-              </h3>
-              <p className="text-white/80">
-                {t('catalog.categoryBanners.illustrationsDesc')}
-              </p>
-            </div>
-          </Link>
+        <div className="rounded-2xl bg-gradient-to-r from-primary to-accent p-8 md:p-10 text-white">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">
+              {t('home.finalCta.title')}
+            </h2>
+            <p className="text-white/90 mb-6">
+              {t('home.finalCta.description')}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href={`/${locale}/catalog`}
+              className="inline-flex items-center justify-center rounded-lg bg-white text-primary px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
+            >
+              {t('home.finalCta.catalogButton')}
+            </Link>
+            <Link
+              href={`/${locale}/contacts`}
+              className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-6 py-3 font-semibold hover:bg-white/10 transition-colors"
+            >
+              {t('home.finalCta.contactsButton')}
+            </Link>
+          </div>
         </div>
       </section>
     </div>

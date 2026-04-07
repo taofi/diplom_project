@@ -225,13 +225,8 @@ export class EmailService {
           continue;
         }
 
-        // file_url хранится как 'files/product/{id}/filename.ext'
-        // Путь относительно корня проекта
         const fileUrl = product.file_url;
-        
-        // В Docker volume монтируется в /app/files (не в public)
-        // fileUrl уже содержит 'files/product/...'
-        const fullPath = path.join(process.cwd(), fileUrl);
+        const fullPath = this.resolveAttachmentPath(fileUrl);
         
         this.logger.log(`[DEBUG] Checking file at: ${fullPath}`);
         this.logger.log(`[DEBUG] process.cwd(): ${process.cwd()}`);
@@ -248,6 +243,9 @@ export class EmailService {
           this.logger.log(`Found attachment: ${filename} for order ${orderId}`);
         } else {
           this.logger.warn(`[DEBUG] File NOT FOUND: ${fullPath} for order ${orderId}`);
+          this.logger.warn(
+            `[DEBUG] Attachment path resolution: file_url="${fileUrl}", normalized="${this.normalizeFileUrl(fileUrl)}", cwd="${process.cwd()}"`
+          );
         }
       }
       
@@ -362,5 +360,28 @@ export class EmailService {
       '.eps': 'application/eps',
     };
     return mimeTypes[ext] || 'application/octet-stream';
+  }
+
+  private normalizeFileUrl(fileUrl: string): string {
+    const trimmed = fileUrl.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return trimmed.replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+
+  private resolveAttachmentPath(fileUrl: string): string {
+    if (!fileUrl || typeof fileUrl !== 'string') {
+      return '';
+    }
+
+    const trimmed = fileUrl.trim();
+    if (path.isAbsolute(trimmed)) {
+      return trimmed;
+    }
+
+    const normalized = this.normalizeFileUrl(trimmed);
+    return path.join(process.cwd(), normalized);
   }
 }

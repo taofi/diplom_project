@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { ProductMedia } from '../db/models/product-media.model';
+import { ProductMedia, MediaType } from '../db/models/product-media.model';
 
 /**
  * Сервис для работы с медиа файлами продуктов
@@ -73,6 +73,9 @@ export class ProductMediaService {
     for (const update of updates) {
       const media = allMedia.find((m) => m.id === update.id);
       if (media) {
+        if (update.isCover === true && media.media_type !== MediaType.IMAGE) {
+          throw new BadRequestException('Cover media must be an image');
+        }
         await this.productMediaModel.update(
           { is_cover: update.isCover ?? media.is_cover },
           { where: { id: update.id } },

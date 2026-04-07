@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 import { ServerImage } from '@/components/Image';
 import { X, Star } from 'lucide-react';
 import { MediaItem } from './MediaUploader';
+import { MediaType } from '@/types/product';
 
 interface MediaItemCardProps {
   item: MediaItem;
@@ -20,6 +21,8 @@ export function MediaItemCard({
   onSetCover,
 }: MediaItemCardProps) {
   const { t } = useI18n();
+  const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const isVideo = item.mediaType === MediaType.VIDEO;
 
   // Extract just the filename from full URL if needed
   const imageSrc = item.url.includes('/public/') 
@@ -32,12 +35,27 @@ export function MediaItemCard({
         item.isCover ? 'ring-2 ring-primary' : ''
       }`}
     >
-      <ServerImage
-        src={imageSrc}
-        alt={`Media ${index + 1}`}
-        fill
-        className="object-cover"
-      />
+      {isVideo ? (
+        <div className="absolute inset-0 bg-black">
+          <video
+            src={`${serverUrl}/public/${imageSrc}`}
+            className="h-full w-full object-cover"
+            preload="metadata"
+            muted
+            playsInline
+          />
+          <div className="absolute inset-0 flex items-center justify-center text-white text-2xl">
+            ▶
+          </div>
+        </div>
+      ) : (
+        <ServerImage
+          src={imageSrc}
+          alt={`Media ${index + 1}`}
+          fill
+          className="object-cover"
+        />
+      )}
 
       {/* Cover badge */}
       {item.isCover && (
@@ -50,7 +68,7 @@ export function MediaItemCard({
       {/* Action buttons overlay */}
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
         {/* Set as cover button */}
-        {!item.isCover && (
+        {!item.isCover && !isVideo && (
           <Button
             variant="secondary"
             size="sm"

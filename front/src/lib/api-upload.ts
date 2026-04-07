@@ -5,6 +5,8 @@
 
 import api from './api';
 
+export const MAX_MEDIA_UPLOAD_SIZE_MB = 400;
+
 /**
  * Результат загрузки файла
  */
@@ -131,6 +133,10 @@ export function isValidMediaType(file: File): boolean {
     'image/gif',
     'image/webp',
     'image/svg+xml',
+    'video/mp4',
+    'video/webm',
+    'video/ogg',
+    'video/quicktime',
   ];
   return validTypes.includes(file.type);
 }
@@ -139,7 +145,7 @@ export function isValidMediaType(file: File): boolean {
  * Проверить допустимые типы файлов для продуктов
  */
 export function isValidFileType(file: File): boolean {
-  const validTypes = [
+  const validMimeTypes = [
     'image/jpeg',
     'image/png',
     'image/gif',
@@ -149,8 +155,28 @@ export function isValidFileType(file: File): boolean {
     'application/zip',
     'application/x-rar-compressed',
     'application/x-7z-compressed',
+    'application/x-photoshop',
+    'image/vnd.adobe.photoshop',
+    'application/octet-stream',
   ];
-  return validTypes.includes(file.type);
+  const validExtensions = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'svg',
+    'pdf',
+    'zip',
+    'rar',
+    '7z',
+    'psd',
+    'brush',
+    'abr',
+  ];
+
+  const extension = getFileExtension(file.name);
+  return validMimeTypes.includes(file.type) || validExtensions.includes(extension);
 }
 
 /**

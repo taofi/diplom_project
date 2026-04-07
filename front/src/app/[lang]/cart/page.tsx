@@ -64,8 +64,8 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen mt-20 py-8">
-      <div className="max-w-4xl mx-auto px-6">
+    <div className="min-h-screen mt-20 py-8 px-4 sm:px-6 lg:px-8 flex justify-center">
+      <div className="w-full max-w-4xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           {t('nav.cart')} ({count})
         </h1>
@@ -73,9 +73,9 @@ export default function CartPage() {
         {items.length === 0 ? (
           <CartEmpty onContinueShopping={handleContinueShopping} />
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row lg:justify-center lg:items-start gap-8">
             {/* Список товаров */}
-            <div className="flex-1">
+            <div className="w-full lg:max-w-2xl">
               <div className="bg-white rounded-lg shadow-sm border">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {items.map((item: any) => (

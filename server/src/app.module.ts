@@ -31,6 +31,9 @@ import emailConfig from './config/email.config';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       serveRoot: '/public',
+      serveStaticOptions: {
+        acceptRanges: true,
+      },
     }),
     // Serve static files from server/files for product downloads
     ServeStaticModule.forRoot({

@@ -29,7 +29,6 @@
     "products": "Products",
     "orders": "Orders",
     "licenses": "Licenses",
-    "chat": "Chat",
     "catalog": "Catalog",
     "chat": "Chats"
   },
@@ -291,6 +290,7 @@
     "buyNow": "Buy now",
     "addedToCart": "Product added to cart!",
     "description": "Description",
+    "quantity": "Quantity",
     "featured": "Featured",
     "instantDownload": "Instant download",
     "securePayment": "Secure payment"
@@ -331,6 +331,12 @@
   "home": {
     "latestProducts": "New Arrivals",
     "viewAll": "View All",
+    "finalCta": {
+      "title": "Build projects faster with ready-to-use digital assets",
+      "description": "Pick brushes and illustrations for personal or commercial tasks. Get instant access after purchase with clear licensing terms.",
+      "catalogButton": "Go to Catalog",
+      "contactsButton": "Contact Us"
+    },
     "features": {
       "title": "Why Choose Us",
       "quality": {
