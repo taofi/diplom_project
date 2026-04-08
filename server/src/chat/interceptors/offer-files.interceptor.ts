@@ -9,7 +9,7 @@ export class OfferFilesInterceptor implements NestInterceptor {
   private multerInstance: multer.Multer;
 
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+     
     this.multerInstance = multer({
       storage: diskStorage({
         destination: './tmp',
@@ -25,7 +25,7 @@ export class OfferFilesInterceptor implements NestInterceptor {
     const request = ctx.getRequest<Request>();
 
     // Используем fields() для обработки обоих полей в одном middleware
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+     
     const upload = this.multerInstance.fields([
       { name: 'preview', maxCount: 1 },
       { name: 'files', maxCount: 10 },
@@ -33,7 +33,7 @@ export class OfferFilesInterceptor implements NestInterceptor {
 
     // Вызываем multer как middleware и передаем управление дальше
     return new Observable((observer) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       upload(request, {} as any, (err: any) => {
         if (err) {
           console.error('[OfferFilesInterceptor] Multer error:', err);

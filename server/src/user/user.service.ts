@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 import { normalizeRoles } from '../auth/utils/normalize-roles';
+import { PublicUserProfileDto } from './dto/public-user-profile.dto';
 
 export interface FindAllUsersParams {
   page?: number;
@@ -122,5 +123,40 @@ export class UserService {
     // Возвращаем пользователя без пароля
     const updatedUser = await this.findById(id);
     return updatedUser;
+  }
+
+  async getPublicProfile(
+    targetUserId: number,
+    viewerRoles: string[],
+  ): Promise<PublicUserProfileDto> {
+    const targetUser = await this.userModel.findByPk(targetUserId, {
+      include: [{ model: this.userRoleModel, as: 'user_roles' }],
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException(`User with ID ${targetUserId} not found`);
+    }
+
+    const normalizedTargetRoles = this.normalizeUserRoles(
+      targetUser.user_roles?.map((ur) => ur.role),
+    );
+    const normalizedViewerRoles = this.normalizeUserRoles(viewerRoles);
+
+    const canViewAllProfiles =
+      normalizedViewerRoles.includes('admin') ||
+      normalizedViewerRoles.includes('author');
+
+    if (!canViewAllProfiles && !normalizedTargetRoles.includes('author')) {
+      throw new ForbiddenException('You can only view author profiles');
+    }
+
+    return {
+      id: targetUser.id,
+      name: targetUser.name,
+      avatar_url: targetUser.avatar_url,
+      description: targetUser.description,
+      roles: normalizedTargetRoles,
+      created_at: targetUser.created_at,
+    };
   }
 }

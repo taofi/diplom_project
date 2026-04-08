@@ -39,7 +39,7 @@ export class ChatGateway
     private readonly chatCacheService: ChatCacheService,
   ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
     
@@ -64,9 +64,9 @@ export class ChatGateway
         secret: this.configService.get<string>('jwt.secret'),
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+       
       (client.data as { userId: number; username: string }).userId = payload.sub;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+       
       (client.data as { userId: number; username: string }).username = payload.username;
 
       console.log(`Client connected: ${client.id}, userId: ${payload.sub}`);
@@ -89,7 +89,7 @@ export class ChatGateway
   @SubscribeMessage('initChat')
   async handleInitChat(client: Socket, payload: { sellerId: number; productId?: number; userProductId?: number }) {
     console.log(`[ChatGateway] initChat: sellerId=${payload.sellerId}, productId=${payload.productId}, userProductId=${payload.userProductId}, clientId=${client.id}`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+     
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
@@ -110,7 +110,7 @@ export class ChatGateway
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: Socket, payload: { roomId: number }) {
     console.log(`[ChatGateway] joinRoom: roomId=${payload.roomId}, clientId=${client.id}`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+     
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
@@ -133,7 +133,7 @@ export class ChatGateway
   @SubscribeMessage('leaveRoom')
   async handleLeaveRoom(client: Socket, payload: { roomId: number }) {
     console.log(`[ChatGateway] leaveRoom: roomId=${payload.roomId}, clientId=${client.id}`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+     
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
@@ -162,7 +162,7 @@ export class ChatGateway
     payload: { roomId: number; content: string; type?: string; attachmentUrl?: string },
   ) {
     console.log(`[ChatGateway] sendMessage: roomId=${payload.roomId}, type=${payload.type}, content="${payload.content?.substring(0, 50)}"`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+     
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return { error: 'Unauthorized' };
@@ -219,7 +219,7 @@ export class ChatGateway
 
   @SubscribeMessage('typing')
   handleTyping(client: Socket, payload: { roomId: number; isTyping: boolean }) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+     
     const userId = (client.data as { userId: number }).userId;
     if (!userId) {
       return;
@@ -323,7 +323,7 @@ export class ChatGateway
       original_price: o?.original_price,
       status: o?.status,
       preview_url: o?.preview_url,
-      source_files_urls: o?.source_files_urls ? JSON.parse(o.source_files_urls as string) : null,
+      source_files_urls: o?.source_files_urls ? JSON.parse(o.source_files_urls) : null,
       is_paid: o?.is_paid,
       paid_at: o?.paid_at,
       created_at: o?.created_at,

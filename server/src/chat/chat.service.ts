@@ -106,6 +106,40 @@ export class ChatService {
     if (!sellerId || sellerId <= 0) {
       throw new BadRequestException('Valid seller ID is required');
     }
+    if (buyerId === sellerId) {
+      throw new BadRequestException('You cannot create a chat with yourself');
+    }
+
+    if (productId) {
+      const product = await this.productModel.findByPk(productId);
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      if (product.seller_id !== sellerId) {
+        throw new BadRequestException('Seller does not match product owner');
+      }
+    }
+
+    if (userProductId) {
+      const userProduct = await this.userProductModel.findByPk(userProductId, {
+        include: [{ model: ProductLicense, required: true }],
+      });
+      if (!userProduct) {
+        throw new NotFoundException('Purchased product not found');
+      }
+      if (userProduct.user_id !== buyerId) {
+        throw new BadRequestException('Purchased product does not belong to user');
+      }
+
+      const productLicense = userProduct.product_license as ProductLicense | undefined;
+      if (!productLicense) {
+        throw new NotFoundException('Product license not found');
+      }
+
+      if (productId && productLicense.product_id !== productId) {
+        throw new BadRequestException('Purchased product does not match product');
+      }
+    }
 
     // Проверить, нет ли уже существующего чата
     const existingChat = await this.findExistingChat(buyerId, sellerId, productId);

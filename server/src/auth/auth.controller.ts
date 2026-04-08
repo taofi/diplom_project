@@ -74,6 +74,7 @@ export class AuthController {
       roles,
       locale: userData.locale,
       avatar_url: userData.avatar_url,
+      description: userData.description,
       created_at: userData.created_at,
     };
   }

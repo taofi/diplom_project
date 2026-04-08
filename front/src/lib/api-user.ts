@@ -22,6 +22,15 @@ export interface UserResponse {
   updated_at: string;
 }
 
+export interface PublicUserProfileResponse {
+  id: number;
+  name: string;
+  avatar_url: string | null;
+  description: string | null;
+  roles: UserRole[];
+  created_at: string;
+}
+
 export interface UsersResponse {
   data: UserResponse[];
   meta: {
@@ -61,6 +70,14 @@ export async function getUsers(params?: {
  */
 export async function getUserById(id: number): Promise<UserResponse> {
   const response = await api.get<UserResponse>(`/users/${id}`);
+  return response.data;
+}
+
+/**
+ * Получить публичный профиль пользователя с учетом ролевого доступа
+ */
+export async function getPublicUserProfile(id: number): Promise<PublicUserProfileResponse> {
+  const response = await api.get<PublicUserProfileResponse>(`/users/${id}/profile`);
   return response.data;
 }
 

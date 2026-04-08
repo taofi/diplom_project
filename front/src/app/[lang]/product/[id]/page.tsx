@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { useCart } from '@/context/cart/CartContext';
-import { getProductById } from '@/lib/api-product';
+import { getProductById, getProducts } from '@/lib/api-product';
 import { Gallery, ProductSidebar, ProductInfo } from '@/components/product';
+import { ProductCard } from '@/components/ProductCard';
 import { Spinner } from '@/components/ui';
 import { toastSuccess, toastError } from '@/lib/toast';
 import type { ProductResponse, LicenseInfo } from '@/types/product';
@@ -24,6 +25,7 @@ export default function ProductPage() {
   const [selectedLicense, setSelectedLicense] = useState<LicenseInfo | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductResponse[]>([]);
 
   // Загрузка товара
   useEffect(() => {
@@ -41,6 +43,26 @@ export default function ProductPage() {
         // Выбрать первую лицензию по умолчанию
         if (data.licenses && data.licenses.length > 0) {
           setSelectedLicense(data.licenses[0]);
+        }
+
+        const primaryCategoryId = data.categories?.[0]?.id;
+        if (primaryCategoryId) {
+          const recommendations = await getProducts({
+            categoryId: primaryCategoryId,
+            type: data.type,
+            isActive: true,
+            language: locale,
+            page: 1,
+            limit: 8,
+          });
+
+          setRecommendedProducts(
+            (recommendations.data || [])
+              .filter((item) => item.id !== data.id)
+              .slice(0, 4)
+          );
+        } else {
+          setRecommendedProducts([]);
         }
       } catch (err) {
         console.error('Failed to load product:', err);
@@ -170,6 +192,39 @@ export default function ProductPage() {
             )}
           </div>
         </div>
+
+        {product.categories && product.categories.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {t('product.categories') || 'Categories'}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {product.categories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => router.push(`/${locale}/catalog?category=${category.id}`)}
+                  className="rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm text-gray-700 transition-colors"
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {recommendedProducts.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              {t('product.recommendations') || 'Recommended products'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {recommendedProducts.map((recommendedProduct) => (
+                <ProductCard key={recommendedProduct.id} product={recommendedProduct} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

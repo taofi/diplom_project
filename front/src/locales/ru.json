@@ -61,6 +61,7 @@
   "profile": {
     "profileInformation": "Информация о профиле",
     "name": "Имя",
+    "description": "Описание профиля",
     "email": "Email",
     "role": "Роль",
     "locale": "Язык",
@@ -74,7 +75,12 @@
     "zoom": "Масштаб",
     "rotate": "Поворот",
     "clickToEdit": "Нажмите для редактирования",
+    "editProfile": "Редактировать профиль",
+    "editDescription": "Изменить описание",
+    "noDescriptionHint": "Расскажите о себе — нажмите, чтобы добавить описание",
     "contactAuthor": "Связаться с автором",
+    "openProfile": "Открыть профиль",
+    "logout": "Выйти",
     "errors": {
       "nameRequired": "Имя обязательно",
       "updateFailed": "Не удалось обновить профиль",
@@ -88,14 +94,14 @@
     "search": "Поиск",
     "searchPlaceholder": "Поиск товаров...",
     "filter": "Фильтр",
-    "category": "Категория",
+    "category": "Тег",
     "type": "Тип",
     "price": "Цена",
     "priceRange": "Диапазон цен",
     "from": "От",
     "to": "До",
     "all": "Все",
-    "allCategories": "Все категории",
+    "allCategories": "Все теги",
     "brushes": "Кисти",
     "illustrations": "Иллюстрации",
     "noProducts": "Товары не найдены",
@@ -167,23 +173,23 @@
       "sections": "Разделы"
     },
     "categoriesLicenses": {
-      "description": "Управление категориями и типами лицензий"
+      "description": "Управление тегами и типами лицензий"
     },
     "tabs": {
-      "categoriesLicenses": "Категории и лицензии",
+      "categoriesLicenses": "Теги и лицензии",
       "users": "Пользователи"
     },
     "categories": {
-      "title": "Категории",
-      "add": "Добавить категорию",
-      "edit": "Редактировать категорию",
+      "title": "Теги",
+      "add": "Добавить тег",
+      "edit": "Редактировать тег",
       "name": "Название",
       "slug": "Slug",
       "icon": "Иконка",
       "color": "Цвет",
       "productsCount": "Кол-во товаров",
-      "deleteConfirm": "Вы уверены, что хотите удалить категорию? Она будет удалена у всех товаров.",
-      "noCategories": "Категории не найдены"
+      "deleteConfirm": "Вы уверены, что хотите удалить тег? Он будет удалён у всех товаров.",
+      "noCategories": "Теги не найдены"
     },
     "licenseTypes": {
       "title": "Типы лицензий",
@@ -249,7 +255,7 @@
       "stock": "Количество",
       "price": "Цена",
       "discountPrice": "Цена со скидкой",
-      "categories": "Категории",
+      "categories": "Теги",
       "licenses": "Лицензии",
       "addLicense": "Добавить лицензию",
       "licenseRequired": "Необходимо добавить хотя бы одну лицензию",
@@ -290,6 +296,7 @@
     "buyNow": "Купить сейчас",
     "addedToCart": "Товар добавлен в корзину!",
     "description": "Описание",
+    "categories": "Теги",
     "quantity": "Количество",
     "featured": "Рекомендуемый",
     "instantDownload": "Мгновенная загрузка",

@@ -61,6 +61,7 @@
   "profile": {
     "profileInformation": "Profile Information",
     "name": "Name",
+    "description": "Profile description",
     "email": "Email",
     "role": "Role",
     "locale": "Language",
@@ -74,7 +75,12 @@
     "zoom": "Zoom",
     "rotate": "Rotate",
     "clickToEdit": "Click to edit",
+    "editProfile": "Edit profile",
+    "editDescription": "Edit description",
+    "noDescriptionHint": "Tell others about yourself — click to add a description",
     "contactAuthor": "Contact Author",
+    "openProfile": "Open profile",
+    "logout": "Logout",
     "errors": {
       "nameRequired": "Name is required",
       "updateFailed": "Failed to update profile",
@@ -88,14 +94,14 @@
     "search": "Search",
     "searchPlaceholder": "Search products...",
     "filter": "Filter",
-    "category": "Category",
+    "category": "Tag",
     "type": "Type",
     "price": "Price",
     "priceRange": "Price Range",
     "from": "From",
     "to": "To",
     "all": "All",
-    "allCategories": "All categories",
+    "allCategories": "All tags",
     "brushes": "Brushes",
     "illustrations": "Illustrations",
     "noProducts": "No products found",
@@ -167,23 +173,23 @@
       "sections": "Sections"
     },
     "categoriesLicenses": {
-      "description": "Manage categories and license types"
+      "description": "Manage tags and license types"
     },
     "tabs": {
-      "categoriesLicenses": "Categories & Licenses",
+      "categoriesLicenses": "Tags & Licenses",
       "users": "Users"
     },
     "categories": {
-      "title": "Categories",
-      "add": "Add Category",
-      "edit": "Edit Category",
+      "title": "Tags",
+      "add": "Add Tag",
+      "edit": "Edit Tag",
       "name": "Name",
       "slug": "Slug",
       "icon": "Icon",
       "color": "Color",
       "productsCount": "Products count",
-      "deleteConfirm": "Are you sure you want to delete this category? It will be removed from all products.",
-      "noCategories": "No categories found"
+      "deleteConfirm": "Are you sure you want to delete this tag? It will be removed from all products.",
+      "noCategories": "No tags found"
     },
     "licenseTypes": {
       "title": "License Types",
@@ -249,7 +255,7 @@
       "stock": "Stock",
       "price": "Price",
       "discountPrice": "Discount Price",
-      "categories": "Categories",
+      "categories": "Tags",
       "licenses": "Licenses",
       "addLicense": "Add License",
       "licenseRequired": "At least one license is required",
@@ -290,6 +296,7 @@
     "buyNow": "Buy now",
     "addedToCart": "Product added to cart!",
     "description": "Description",
+    "categories": "Tags",
     "quantity": "Quantity",
     "featured": "Featured",
     "instantDownload": "Instant download",

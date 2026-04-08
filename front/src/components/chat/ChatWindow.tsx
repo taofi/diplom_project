@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { MessageBubble } from './MessageBubble';
 import { Button, Spinner } from '@/components/ui';
@@ -50,7 +51,7 @@ export function ChatWindow({
   isLoadingOlderMessages = false,
   onLoadOlderMessages,
 }: ChatWindowProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -238,6 +239,13 @@ export function ChatWindow({
             </div>
             {otherUser && <p className="text-sm text-gray-500">{t('chat.chatWith')}: {otherUser.name}</p>}
           </div>
+          {otherUser?.id && (
+            <Link href={`/${locale}/users/${otherUser.id}`} className="ml-auto">
+              <Button variant="ghost" size="sm">
+                {t('profile.openProfile')}
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

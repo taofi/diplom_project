@@ -148,6 +148,7 @@ export function createProductListItemResponse(
   product: ProductWithFullRelations,
   language?: string,
 ): ProductListItemResponse {
+  const normalizedLang = normalizeLanguage(language);
   // Вычисляем price как минимальную цену из лицензий
   let price = 0;
   if (product.licenses && product.licenses.length > 0) {
@@ -171,7 +172,6 @@ export function createProductListItemResponse(
 
   if (translations && translations.length > 0) {
     const translationsData = translations.map((t) => t.toJSON());
-    const normalizedLang = normalizeLanguage(language);
     const translation = translationsData.find((t: { language?: string; name?: string; description?: string }) =>
       String(t.language).toLowerCase() === normalizedLang.toLowerCase()
     ) || translationsData[0];
@@ -204,7 +204,6 @@ export function createProductListItemResponse(
 
   // Добавляем licenses
   if (product.licenses) {
-    const normalizedLang = normalizeLanguage(language);
     response.licenses = product.licenses.map((l) => {
       let licenseName = '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
@@ -235,9 +234,7 @@ export function createProductListItemResponse(
   if (product.categories) {
     response.categories = product.categories.map((cat) => ({
       id: cat.id,
-      name:
-        (cat as Category & { translations?: Array<{ name: string }> })
-          .translations?.[0]?.name ?? '',
+      name: getCategoryName(cat, normalizedLang),
     }));
   }
 
@@ -257,6 +254,7 @@ export function createProductDetailResponse(
   product: ProductWithFullRelations,
   language?: string,
 ): ProductDetailResponse {
+  const normalizedLang = normalizeLanguage(language);
   // Вычисляем price как минимальную цену из лицензий
   let price = 0;
   if (product.licenses && product.licenses.length > 0) {
@@ -278,7 +276,6 @@ export function createProductDetailResponse(
   const translations = product.translations;
   if (translations && translations.length > 0) {
     const translationsData = translations.map((t) => t.toJSON());
-    const normalizedLang = normalizeLanguage(language);
     const translation = translationsData.find((t: { language?: string; name?: string; description?: string }) =>
       String(t.language).toLowerCase() === normalizedLang.toLowerCase()
     ) || translationsData[0];
@@ -312,7 +309,7 @@ export function createProductDetailResponse(
   // Добавляем translations
   if (product.translations) {
     response.translations = product.translations.map((t) => ({
-      language: t.language as Language,
+      language: t.language,
       name: t.name,
       description: t.description,
       shortDescription: t.shortDescription,
@@ -332,7 +329,6 @@ export function createProductDetailResponse(
 
   // Добавляем licenses
   if (product.licenses) {
-    const normalizedLang = normalizeLanguage(language);
     response.licenses = product.licenses.map((l) => {
       let licenseName = '';
       if (l.license_type?.translations && l.license_type.translations.length > 0) {
@@ -364,13 +360,36 @@ export function createProductDetailResponse(
   if (product.categories) {
     response.categories = product.categories.map((cat) => ({
       id: cat.id,
-      name:
-        (cat as Category & { translations?: Array<{ name: string }> })
-          .translations?.[0]?.name ?? '',
+      name: getCategoryName(cat, normalizedLang),
     }));
   }
 
   return response;
+}
+
+function getCategoryName(category: Category, normalizedLanguage: string): string {
+  const translations =
+    (category as Category & { translations?: Array<{ locale?: string; name?: string; toJSON?: () => unknown }> })
+      .translations || [];
+
+  if (!translations.length) {
+    return '';
+  }
+
+  const normalizedTranslations = translations.map((translation) =>
+    translation.toJSON ? (translation.toJSON()) : translation,
+  );
+
+  const localized = normalizedTranslations.find(
+    (translation) =>
+      translation.locale?.toLowerCase() === normalizedLanguage.toLowerCase() && !!translation.name,
+  );
+
+  if (localized?.name) {
+    return localized.name;
+  }
+
+  return normalizedTranslations.find((translation) => !!translation.name)?.name || '';
 }
 
 /**

@@ -45,11 +45,12 @@ export const logoutUser = async (): Promise<void> => {
 
 /**
  * Обновить профиль пользователя
- * @param data - данные для обновления (name, avatar_url)
+ * @param data - данные для обновления (name, avatar_url, description)
  */
 export const updateProfile = async (data: {
   name?: string;
   avatar_url?: string;
+  description?: string;
 }): Promise<User> => {
   const response = await api.patch<User>('/auth/profile', data);
   return response.data;

@@ -48,6 +48,9 @@ export class User extends Model {
   @Column({ type: DataType.STRING(500), allowNull: true })
   declare avatar_url: string | null;
 
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare description: string | null;
+
   @Default('ru')
   @Column({ type: DataType.STRING(5) })
   declare locale: string;
@@ -88,7 +91,7 @@ export class User extends Model {
     // Убираем user_roles из вывода, возвращаем роли в виде массива
     const roles = this.user_roles?.map((ur) => ur.role) || ['user'];
     values.role = roles;
-    delete (values as Record<string, unknown>).user_roles;
+    delete (values).user_roles;
     return values;
   }
 }

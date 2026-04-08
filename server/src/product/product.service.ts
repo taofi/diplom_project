@@ -111,7 +111,9 @@ export class ProductService {
     
     // Only return active products for public queries unless user is seller
     // Но если isActive явно передан в запросе - используем его значение
-    if (query.isActive === undefined && !query.sellerId) {
+    if (query.sellerId) {
+      query.isActive = true;
+    } else if (query.isActive === undefined) {
       query.isActive = true;
     }
 
@@ -134,7 +136,7 @@ export class ProductService {
 
   async findById(id: number, language?: string): Promise<ProductDetailResponse> {
     // Используем полный метод с отношениями для детального просмотра
-    const product = await this.productRepository.findByIdWithFullRelations(id);
+    const product = await this.productRepository.findByIdWithFullRelations(id, language);
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
@@ -195,7 +197,7 @@ export class ProductService {
 
     // Создаем продукт с временным URL файла
     // Убираем tempMediaUrls и tempFileUrl из объекта для репозитория
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { tempMediaUrls: _tempM, tempFileUrl: _tempF, ...createData } = createProductDto;
     void _tempM; void _tempF;
     const product = await this.productRepository.create(
@@ -302,7 +304,7 @@ export class ProductService {
     }
 
     // Убираем tempMediaUrls и tempFileUrl из DTO перед сохранением в репозиторий
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { tempMediaUrls: _dm, tempFileUrl: _df, updatedMedia: _um, deletedMediaIds: _dmi, licenses: _lic, ...cleanDto } = updateProductDto as UpdateProductDto & { tempMediaUrls?: { url: string; isCover?: boolean }[]; tempFileUrl?: string; updatedMedia?: { id: number; isCover?: boolean }[]; deletedMediaIds?: number[]; licenses?: { licenseTypeId: number; price: number }[] };
     void _dm; void _df; void _um; void _dmi; void _lic;
 

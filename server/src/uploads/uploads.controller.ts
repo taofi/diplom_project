@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+ 
 import {
   Controller,
   Post,
@@ -35,7 +35,7 @@ export class UploadsController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       storage: diskStorage({
         destination: './tmp',
         filename: (
@@ -47,7 +47,7 @@ export class UploadsController {
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+           
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
@@ -86,7 +86,7 @@ export class UploadsController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       storage: diskStorage({
         destination: './tmp',
         filename: (
@@ -98,7 +98,7 @@ export class UploadsController {
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+           
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),

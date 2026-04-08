@@ -5,6 +5,7 @@ export interface User {
   roles: ('admin' | 'author' | 'user')[];
   locale: string;
   avatar_url: string | null;
+  description?: string | null;
   created_at: string;
 }
 

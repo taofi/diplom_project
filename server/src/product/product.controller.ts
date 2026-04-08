@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+ 
 import {
   Controller,
   Get,
@@ -130,7 +130,7 @@ export class ProductController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       storage: diskStorage({
         destination: './tmp',
         filename: (

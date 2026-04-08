@@ -98,6 +98,7 @@ export class AuthService {
         roles: normalizedRoles,
         locale: user.locale,
         avatar_url: user.avatar_url,
+        description: user.description,
       },
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -146,6 +147,7 @@ export class AuthService {
         roles: normalizedRoles,
         locale: user.locale,
         avatar_url: user.avatar_url,
+        description: user.description,
       },
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -222,7 +224,7 @@ export class AuthService {
 
   async updateProfile(
     userId: number,
-    data: { name?: string; avatar_url?: string },
+    data: { name?: string; avatar_url?: string; description?: string },
   ): Promise<{
     id: number;
     email: string;
@@ -230,6 +232,7 @@ export class AuthService {
     roles: string[];
     locale: string;
     avatar_url: string | null;
+    description: string | null;
     created_at: Date;
   }> {
     const user = await this.userModel.findByPk(userId, {
@@ -248,6 +251,9 @@ export class AuthService {
     if (data.avatar_url !== undefined) {
       updateData.avatar_url = data.avatar_url;
     }
+    if (data.description !== undefined) {
+      updateData.description = data.description.trim();
+    }
 
     if (Object.keys(updateData).length > 0) {
       await user.update(updateData);
@@ -265,6 +271,7 @@ export class AuthService {
       roles: normalizedRoles,
       locale: user.locale,
       avatar_url: user.avatar_url,
+      description: user.description,
       created_at: user.created_at,
     };
   }

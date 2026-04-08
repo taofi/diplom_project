@@ -6,6 +6,7 @@ export class AuthResponseDto {
     roles: string[];
     locale: string;
     avatar_url: string | null;
+    description?: string | null;
   };
   accessToken: string;
   refreshToken: string;

@@ -10,7 +10,7 @@ import { ServerImage } from '@/components/Image';
 import { useRouter } from 'next/navigation';
 
 export function PurchasedProducts() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [products, setProducts] = useState<UserProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ export function PurchasedProducts() {
         product.id
       );
       // Переходим на страницу чатов
-      router.push(`/chat?roomId=${chat.id}`);
+      router.push(`/${locale}/chat?roomId=${chat.id}`);
     } catch (error) {
       console.error('Failed to start chat:', error);
     } finally {
@@ -94,7 +94,7 @@ export function PurchasedProducts() {
             >
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 {product.productImage && (
-                  <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                  <div className="w-20 h-20 shrink-0 bg-gray-100 rounded-md overflow-hidden">
                     <ServerImage
                       src={product.productImage}
                       alt={product.productName}
@@ -125,7 +125,7 @@ export function PurchasedProducts() {
                 onClick={() => handleDownload(product)}
                 disabled={downloadingId === product.id}
                 variant="primary"
-                className="ml-4 flex-shrink-0"
+                className="ml-4 shrink-0"
               >
                 {downloadingId === product.id ? (
                   <span className="flex items-center gap-2">
@@ -140,7 +140,7 @@ export function PurchasedProducts() {
                 onClick={() => handleContactAuthor(product)}
                 disabled={contactingId === product.id}
                 variant="secondary"
-                className="ml-2 flex-shrink-0"
+                className="ml-2 shrink-0"
               >
                 {contactingId === product.id ? (
                   <span className="flex items-center gap-2">

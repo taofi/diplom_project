@@ -8,9 +8,10 @@ interface NavButtonProps {
   text: string;
   icon?: React.ReactNode;
   badge?: number;
+  hideLabel?: boolean;
 }
 
-export function NavButton({ href, text, icon, badge }: NavButtonProps) {
+export function NavButton({ href, text, icon, badge, hideLabel = false }: NavButtonProps) {
   const { locale } = useI18n();
 
   // Automatically prefix href with current locale if it's not already prefixed
@@ -33,7 +34,11 @@ export function NavButton({ href, text, icon, badge }: NavButtonProps) {
           )}
         </div>
       )}
-      <span className="text-sm font-medium">{text}</span>
+      {!hideLabel && (
+        <span className="text-sm font-medium text-center leading-tight whitespace-normal max-w-[84px]">
+          {text}
+        </span>
+      )}
     </Link>
   );
 }
