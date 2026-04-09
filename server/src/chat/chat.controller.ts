@@ -9,7 +9,10 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
+  Req,
+  UseInterceptors,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { normalizeLanguage } from '../translation/utils/language.utils';
 import { ChatService } from './chat.service';
 import { OfferService } from './services/offer.service';
@@ -17,6 +20,7 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
+import { ChatAttachmentsInterceptor } from './interceptors/chat-attachments.interceptor';
 
 import { MessageType } from '../db/models/chat-message.model';
 
@@ -146,9 +150,24 @@ export class ChatController {
     return this.chatService.sendMessage(
       dto.chatRoomId,
       userId,
-      dto.content,
+      dto.content || '',
       dto.type || MessageType.TEXT,
-      dto.mediaUrl,
+      dto.attachments || [],
+    );
+  }
+
+  @Post('rooms/:id/attachments')
+  @UseInterceptors(ChatAttachmentsInterceptor)
+  @HttpCode(HttpStatus.CREATED)
+  async uploadAttachments(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
+    return this.chatService.uploadChatAttachments(
+      parseInt(id, 10),
+      userId,
+      req.chatFiles || [],
     );
   }
 

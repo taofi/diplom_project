@@ -10,7 +10,9 @@ export default function Home() {
 
   return (
     <div className="w-full mt-20">
-      <Hero />
+      <div className="-mx-20">
+        <Hero />
+      </div>
 
       {/* Latest Products */}
       <section className="max-w-7xl mx-auto px-6 py-12">

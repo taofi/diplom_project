@@ -29,7 +29,7 @@ type ProductWhereOptions = {
   is_active?: boolean;
   is_featured?: boolean;
   type?: ProductType;
-  seller_id?: number;
+  seller_id?: number | { [Op.in]: number[] };
   price?: { [Op.gte]?: number; [Op.lte]?: number };
   // Поиск по name/description перенесен в translations
 };
@@ -200,6 +200,7 @@ export class ProductRepository {
       search,
       type,
       sellerId,
+      sellerIds,
       isFeatured,
       minPrice,
       maxPrice,
@@ -228,7 +229,9 @@ export class ProductRepository {
       where.type = type;
     }
 
-    if (sellerId) {
+    if (Array.isArray(sellerIds) && sellerIds.length > 0) {
+      where.seller_id = { [Op.in]: sellerIds };
+    } else if (sellerId) {
       where.seller_id = sellerId;
     }
 
@@ -340,6 +343,7 @@ export class ProductRepository {
       search,
       type,
       sellerId,
+      sellerIds,
       isFeatured,
       minPrice,
       maxPrice,
@@ -368,7 +372,9 @@ export class ProductRepository {
       where.type = type;
     }
 
-    if (sellerId) {
+    if (Array.isArray(sellerIds) && sellerIds.length > 0) {
+      where.seller_id = { [Op.in]: sellerIds };
+    } else if (sellerId) {
       where.seller_id = sellerId;
     }
 

@@ -25,12 +25,19 @@ export class CounterOfferDto {
 }
 
 export class UploadFilesDto {
-  @IsString({ message: 'Preview URL must be a string' })
-  previewUrl: string;
+  @IsArray({ message: 'Author image URLs must be an array' })
+  @IsString({ each: true, message: 'Each author image URL must be a string' })
+  authorImagesUrls: string[];
 
-  @IsArray({ message: 'Source files URLs must be an array' })
-  @IsString({ each: true, message: 'Each source file URL must be a string' })
-  sourceFilesUrls: string[];
+  @IsString({ message: 'Author file URL must be a string' })
+  @IsOptional()
+  authorFileUrl?: string;
+}
+
+export class UploadCreatorFilesDto {
+  @IsArray({ message: 'Creator attachment URLs must be an array' })
+  @IsString({ each: true, message: 'Each creator attachment URL must be a string' })
+  creatorAttachmentsUrls: string[];
 }
 
 export class PayOrderDto {

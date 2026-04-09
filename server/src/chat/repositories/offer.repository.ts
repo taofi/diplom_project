@@ -96,16 +96,32 @@ export class OfferRepository {
 
   async setFiles(
     id: number,
-    previewUrl: string | null,
-    sourceFilesUrls: string[],
+    authorImageUrls: string[],
+    authorFileUrl: string | null,
   ): Promise<Offer> {
     const offer = await this.findById(id);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
-    offer.preview_url = previewUrl;
-    offer.source_files_urls = JSON.stringify(sourceFilesUrls);
+    offer.preview_url = authorImageUrls[0] ?? null;
+    offer.author_images_urls = JSON.stringify(authorImageUrls);
+    offer.author_file_url = authorFileUrl;
+    offer.source_files_urls = JSON.stringify(authorFileUrl ? [authorFileUrl] : []);
+    await offer.save();
+    return offer;
+  }
+
+  async setCreatorAttachments(
+    id: number,
+    attachmentUrls: string[],
+  ): Promise<Offer> {
+    const offer = await this.findById(id);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    offer.creator_attachments_urls = JSON.stringify(attachmentUrls);
     await offer.save();
     return offer;
   }

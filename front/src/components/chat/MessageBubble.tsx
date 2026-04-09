@@ -2,7 +2,8 @@
 
 import { useI18n } from '@/context/i18n/I18nContext';
 import { ServerImage } from '@/components/Image';
-import type { ChatMessage, ChatUser } from '@/types/chat';
+import type { ChatMessage } from '@/types/chat';
+import { MessageAttachments } from './MessageAttachments';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -25,6 +26,18 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
   };
 
   const renderContent = () => {
+    const hasAttachments = Boolean(message.attachments && message.attachments.length > 0);
+    if (hasAttachments) {
+      return (
+        <div className="space-y-2">
+          <MessageAttachments attachments={message.attachments || []} />
+          {message.message && (
+            <p className="whitespace-pre-wrap wrap-break-word">{message.message}</p>
+          )}
+        </div>
+      );
+    }
+
     switch (message.message_type) {
       case 'image':
         return message.attachment_url ? (
@@ -53,14 +66,14 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
           </a>
         ) : null;
       default:
-        return <p className="whitespace-pre-wrap break-words">{message.message}</p>;
+        return <p className="whitespace-pre-wrap wrap-break-word">{message.message}</p>;
     }
   };
 
   return (
     <div className={`flex gap-3 mb-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+      <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0 flex items-center justify-center overflow-hidden">
         {sender?.avatar ? (
           <ServerImage
             src={sender.avatar}

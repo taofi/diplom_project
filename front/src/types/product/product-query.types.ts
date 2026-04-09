@@ -18,6 +18,8 @@ export interface ProductQueryParams extends BaseQueryParams {
   type?: ProductType;
   /** ID продавца */
   sellerId?: number;
+  /** ID продавцов для пакетной выборки */
+  sellerIds?: number[];
   /** Избранный товар */
   isFeatured?: boolean;
   /** Минимальная цена */

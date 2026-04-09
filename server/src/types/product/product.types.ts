@@ -266,6 +266,7 @@ export interface ProductQueryParams {
   search?: string;
   type?: ProductType;
   sellerId?: number;
+  sellerIds?: number[];
   isFeatured?: boolean;
   minPrice?: number;
   maxPrice?: number;

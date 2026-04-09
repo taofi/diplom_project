@@ -21,7 +21,17 @@ interface ChatContextType {
   
   // Messages
   messages: ChatMessage[];
-  sendMessage: (content: string, type?: string) => Promise<void>;
+  sendMessage: (
+    content: string,
+    type?: string,
+    attachments?: Array<{
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }>,
+  ) => Promise<void>;
   loadOlderMessages: () => Promise<void>;
   hasMoreMessages: boolean;
   isLoadingOlderMessages: boolean;
@@ -36,7 +46,7 @@ interface ChatContextType {
   declineOffer: (offerId: number) => Promise<void>;
   counterOffer: (offerId: number, newPrice: number) => Promise<void>;
   confirmPrice: (offerId: number) => Promise<void>;
-  uploadOfferFiles: (offerId: number, preview: File | null, files: File[]) => Promise<void>;
+  uploadOfferFiles: (offerId: number, images: File[], file: File | null) => Promise<void>;
   payOrder: (offerId: number, simulateSuccess?: boolean) => Promise<void>;
   getOfferFiles: (offerId: number) => Promise<{ preview_url: string | null; source_files_urls: string[] | null }>;
   
@@ -348,16 +358,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [locale]);
 
-  const sendMessage = useCallback(async (content: string, type = 'text', attachmentUrl?: string) => {
+  const sendMessage = useCallback(
+    async (
+      content: string,
+      type = 'text',
+      attachments: Array<{
+        kind: 'image' | 'file';
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+      }> = [],
+    ) => {
     try {
       if (currentRoom) {
         // Send to existing room
-        socketClient.sendMessage(currentRoom.id, content, type, attachmentUrl);
+        socketClient.sendMessage(currentRoom.id, content, type, attachments);
       }
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  }, [currentRoom]);
+  },
+    [currentRoom],
+  );
 
   // Загрузка старых сообщений (пагинация)
   const loadOlderMessages = useCallback(async () => {
@@ -477,11 +500,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const uploadOfferFiles = useCallback(async (
     offerId: number,
-    preview: File | null,
-    files: File[]
+    images: File[],
+    file: File | null,
   ) => {
     try {
-      const offer = await chatApi.uploadOfferFiles(offerId, preview, files);
+      const offer = await chatApi.uploadOfferFiles(offerId, images, file);
       setOffers(prev => prev.map(o => 
         o.id === offerId ? offer : o
       ));

@@ -597,6 +597,15 @@ export class FileService {
   }
 
   /**
+   * Сохранить файл-вложение заказчика в media/offers
+   * @param file - Загруженный файл
+   * @param offerId - ID оффера
+   */
+  saveCreatorAttachmentFile(file: MulterFile, offerId: number): FileUploadResult {
+    return this.saveMediaFile(file, MediaFolder.OFFERS, offerId);
+  }
+
+  /**
    * Удалить все файлы оффера (media)
    * @param offerId - ID оффера
    */

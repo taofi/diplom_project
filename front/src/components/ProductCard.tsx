@@ -10,22 +10,63 @@ import { formatPrice } from '@/utils/price';
 interface ProductCardProps {
   product: ProductResponse;
   className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export function ProductCard({ product, className = '' }: ProductCardProps) {
+const cardSizeClasses = {
+  sm: {
+    wrapper: 'max-w-[190px]',
+    badge: 'top-1.5 right-1.5 gap-1 px-1.5 py-0.5',
+    icon: 10,
+    typeText: 'text-[9px]',
+    content: 'px-2 py-1.5',
+    title: 'text-xs pr-1.5',
+    priceWrap: 'gap-1 px-1.5 py-0.5',
+    priceText: 'text-sm',
+    oldPriceText: 'text-[9px]',
+  },
+  md: {
+    wrapper: 'max-w-[240px]',
+    badge: 'top-2 right-2 gap-1 px-1.5 py-0.5',
+    icon: 12,
+    typeText: 'text-[10px]',
+    content: 'px-3 py-2',
+    title: 'text-sm pr-2',
+    priceWrap: 'gap-1 px-2 py-1',
+    priceText: 'text-base',
+    oldPriceText: 'text-[10px]',
+  },
+  lg: {
+    wrapper: 'max-w-[300px]',
+    badge: 'top-3 right-3 gap-1.5 px-2 py-1',
+    icon: 14,
+    typeText: 'text-xs',
+    content: 'px-4 py-3',
+    title: 'text-base pr-3',
+    priceWrap: 'gap-1.5 px-2.5 py-1.5',
+    priceText: 'text-xl',
+    oldPriceText: 'text-xs',
+  },
+} as const;
+
+export function ProductCard({ product, className = '', size = 'md' }: ProductCardProps) {
   const { locale } = useI18n();
+  const sizeConfig = cardSizeClasses[size];
 
   // Используем mainImage или первое изображение из media
   const imageUrl = product.mainImage || product.media?.[0]?.url || null;
+  const hasDiscount =
+    product.discountPrice !== null && Number(product.discountPrice) < Number(product.price);
+  const oldPrice = formatPrice(Number(product.price));
   const displayPrice = formatPrice(Number(product.discountPrice ?? product.price));
 
   return (
     <Link
       href={`/${locale}/product/${product.id}`}
-      className={`block rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow bg-white ${className}`}
+      className={`block w-full ${sizeConfig.wrapper} mx-auto rounded-lg overflow-hidden cursor-pointer border border-gray-200 hover:border-primary/30 hover:shadow-md transition-all bg-white ${className}`}
     >
       {/* Контейнер изображения с относительным позиционированием для типа */}
-      <div className="relative aspect-square w-full">
+      <div className="relative aspect-4/3 w-full">
         <ServerImage
           src={imageUrl}
           alt={product.name}
@@ -34,11 +75,11 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
         />
 
         {/* Отображение типа в верхнем углу, как на фото */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 text-gray-600 bg-white bg-opacity-80 px-2 py-1 rounded-sm">
+        <div className={`absolute flex items-center text-gray-600 bg-white bg-opacity-80 rounded-sm ${sizeConfig.badge}`}>
           {/* Иконка для типа */}
           <svg
-            width="16"
-            height="16"
+            width={sizeConfig.icon}
+            height={sizeConfig.icon}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -51,20 +92,27 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             <polyline points="14 2 14 8 20 8" />
             <circle cx="10" cy="13" r="3" />
           </svg>
-          <span className="text-xs font-medium">
+          <span className={`${sizeConfig.typeText} font-medium`}>
             {product.type === ProductType.BRUSH ? 'Кисть' : 'Иллюстрация'}
           </span>
         </div>
       </div>
 
-      <div className="px-6 py-4 flex flex-row items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-950 truncate pr-4">
+      <div className={`flex flex-row items-center justify-between ${sizeConfig.content}`}>
+        <h3 className={`font-medium text-gray-950 truncate ${sizeConfig.title}`}>
           {product.name}
         </h3>
 
-        <div className="flex items-center gap-1.5 text-gray-600 bg-[#EBDAEB] px-3 py-1.5 rounded-sm flex-shrink-0">
-          <span className="text-xl font-bold text-[#E298E2]">
-            {displayPrice} 
+        <div
+          className={`flex flex-col items-end rounded-md shrink-0 border border-fuchsia-200/80 bg-linear-to-br from-fuchsia-50 to-purple-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ${sizeConfig.priceWrap}`}
+        >
+          {hasDiscount && (
+            <span className={`font-medium text-gray-400 line-through leading-none ${sizeConfig.oldPriceText}`}>
+              {oldPrice}
+            </span>
+          )}
+          <span className={`font-bold text-fuchsia-500 tabular-nums tracking-tight leading-none ${sizeConfig.priceText}`}>
+            {displayPrice}
           </span>
         </div>
       </div>

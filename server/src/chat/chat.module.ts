@@ -8,6 +8,7 @@ import { StringValue } from 'ms';
 import {
   ChatRoom,
   ChatMessage,
+  ChatMessageAttachment,
   UserProduct,
   Product,
   ProductLicense,
@@ -44,15 +45,18 @@ import { TranslationModule } from '../translation/translation.module';
 
 // Redis
 import { RedisModule } from '../redis/redis.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     AuthModule,
     TranslationModule,
     RedisModule,
+    CommonModule,
     SequelizeModule.forFeature([
       ChatRoom,
       ChatMessage,
+      ChatMessageAttachment,
       UserProduct,
       Product,
       ProductLicense,

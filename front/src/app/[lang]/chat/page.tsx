@@ -89,12 +89,25 @@ function ChatContent() {
   }, [selectRoom]);
 
   // Handle send message
-  const handleSendMessage = useCallback(async (content: string, type = 'text') => {
-    await sendMessage(content, type);
-    
-    // Reload rooms to update last message
-    await loadChatRooms();
-  }, [sendMessage, loadChatRooms]);
+  const handleSendMessage = useCallback(
+    async (
+      content: string,
+      type = 'text',
+      attachments: Array<{
+        kind: 'image' | 'file';
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+      }> = [],
+    ) => {
+      await sendMessage(content, type, attachments);
+
+      // Reload rooms to update last message
+      await loadChatRooms();
+    },
+    [sendMessage, loadChatRooms],
+  );
 
   // Handle accept offer
   const handleAcceptOffer = useCallback(async (offer: Offer) => {
@@ -139,21 +152,61 @@ function ChatContent() {
   }, [confirmPrice, loadChatRooms]);
 
   // Handle download files
-  const handleDownloadFiles = useCallback(async (offer: Offer) => {
-    if (!offer.source_files_urls || offer.source_files_urls.length === 0) {
-      console.error('No source files available');
-      return;
-    }
+  const handleDownloadFiles = useCallback(async (offer: Offer, fileUrl?: string) => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const normalizeUrl = (url: string) => {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      const clean = url.startsWith('/') ? url.slice(1) : url;
+      if (clean.startsWith('files/')) {
+        return `${API_URL}/${clean}`;
+      }
+      return `${API_URL}/public/${clean}`;
+    };
 
     try {
-      // Скачиваем первый файл
-      const blob = await chatApi.downloadSourceFile(offer.id, 0);
+      if (!fileUrl) {
+        if (!offer.source_files_urls || offer.source_files_urls.length === 0) {
+          console.error('No source files available');
+          return;
+        }
+        const firstUrl = offer.source_files_urls[0];
+        const blob = await chatApi.downloadSourceFile(offer.id, 0);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = firstUrl.split('/').pop() || 'file';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
+      }
+
+      if (offer.source_files_urls?.includes(fileUrl)) {
+        const fileIndex = offer.source_files_urls.indexOf(fileUrl);
+        const blob = await chatApi.downloadSourceFile(offer.id, fileIndex);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileUrl.split('/').pop() || 'file';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
+      }
+
+      const response = await fetch(normalizeUrl(fileUrl));
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // Используем имя файла из URL
-      const fileName = offer.source_files_urls[0].split('/').pop() || 'file';
-      a.download = fileName;
+      a.download = fileUrl.split('/').pop() || 'file';
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

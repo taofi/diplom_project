@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4000",
+    "dev": "node --max-old-space-size=8192 ./node_modules/next/dist/bin/next dev --webpack -p 4000",
+    "dev:turbo": "node --max-old-space-size=8192 ./node_modules/next/dist/bin/next dev -p 4000",
+    "dev:clean": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && npm run dev",
     "start": "next start -p 4000",
     "build": "next build",
     "lint": "eslint"

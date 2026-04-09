@@ -40,6 +40,9 @@ export interface Offer {
   status: OfferStatus;
   preview_url: string | null;
   source_files_urls: string[] | null;
+  creator_attachments_urls: string[] | null;
+  author_images_urls: string[] | null;
+  author_file_url: string | null;
   is_paid: boolean;
   paid_at: Date | null;
   created_at: string | Date;
@@ -64,6 +67,9 @@ export interface Offer {
 export interface OfferFiles {
   preview_url: string | null;
   source_files_urls: string[] | null;
+  creator_attachments_urls: string[] | null;
+  author_images_urls: string[] | null;
+  author_file_url: string | null;
 }
 
 // DTO для создания заказа

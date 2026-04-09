@@ -111,7 +111,7 @@ export class ProductService {
     
     // Only return active products for public queries unless user is seller
     // Но если isActive явно передан в запросе - используем его значение
-    if (query.sellerId) {
+    if (query.sellerId || (Array.isArray(query.sellerIds) && query.sellerIds.length > 0)) {
       query.isActive = true;
     } else if (query.isActive === undefined) {
       query.isActive = true;

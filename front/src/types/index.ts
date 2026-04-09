@@ -12,3 +12,4 @@ export * from './i18n';
 export * from './product';
 export * from './category';
 export * from './license-type';
+export * from './author';

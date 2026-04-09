@@ -43,14 +43,69 @@ export const chatApi = {
     return response.data;
   },
 
-  sendMessage: async (chatRoomId: number, content: string, type = 'text', mediaUrl?: string): Promise<ChatMessage> => {
+  sendMessage: async (
+    chatRoomId: number,
+    content: string,
+    type = 'text',
+    attachments: Array<{
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }> = [],
+  ): Promise<ChatMessage> => {
     const response = await api.post(`${CHAT_API}/messages`, {
       chatRoomId,
       content,
       type,
-      mediaUrl,
+      attachments,
     });
     return response.data;
+  },
+
+  uploadChatAttachments: async (
+    chatRoomId: number,
+    files: File[],
+  ): Promise<Array<{
+    kind: 'image' | 'file';
+    url: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }>> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post(`${CHAT_API}/rooms/${chatRoomId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const uploaded = response.data as Array<{
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }>;
+
+    return uploaded.map((item): {
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    } => ({
+      kind: item.kind,
+      url: item.url.replace(/^\/+/, ''),
+      originalName: item.originalName,
+      mimeType: item.mimeType,
+      size: item.size,
+    }));
   },
 
   // Custom orders
@@ -158,18 +213,40 @@ export const chatApi = {
   /**
    * Загрузить файлы (Автор)
    */
-  uploadOfferFiles: async (offerId: number, preview: File | null, files: File[]): Promise<Offer> => {
+  uploadOfferFiles: async (offerId: number, images: File[], file: File | null): Promise<Offer> => {
     const formData = new FormData();
-    
-    if (preview) {
-      formData.append('preview', preview);
+
+    images.forEach((image) => {
+      formData.append('images', image);
+    });
+
+    if (file) {
+      formData.append('file', file);
     }
-    
+
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/files`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Загрузить вложения заказчика после создания заказа
+   */
+  uploadCreatorOfferFiles: async (offerId: number, images: File[], files: File[]): Promise<Offer> => {
+    const formData = new FormData();
+
+    images.forEach((image) => {
+      formData.append('images', image);
+    });
+
     files.forEach((file) => {
       formData.append('files', file);
     });
 
-    const response = await api.post(`${CHAT_API}/offers/${offerId}/files`, formData, {
+    const response = await api.post(`${CHAT_API}/offers/${offerId}/creator-files`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

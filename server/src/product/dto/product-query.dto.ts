@@ -1,5 +1,13 @@
-import { IsOptional, IsNumber, IsBoolean, IsString, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsString,
+  Min,
+  Max,
+  IsArray,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ProductType } from '../../db/models/product.model';
 
 export class ProductQueryDto {
@@ -33,6 +41,26 @@ export class ProductQueryDto {
   @Type(() => Number)
   @IsNumber()
   sellerId?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+    }
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => Number(item.trim()))
+        .filter((item) => Number.isFinite(item));
+    }
+    if (typeof value === 'number') {
+      return [value];
+    }
+    return undefined;
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  sellerIds?: number[];
 
   @IsOptional()
   @IsBoolean()

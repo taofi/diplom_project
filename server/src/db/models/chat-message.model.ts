@@ -9,10 +9,12 @@ import {
   AllowNull,
   ForeignKey,
   BelongsTo,
+  HasMany,
   CreatedAt,
 } from 'sequelize-typescript';
 import { User } from './user.model';
 import { ChatRoom } from './chat-room.model';
+import { ChatMessageAttachment } from './chat-message-attachment.model';
 
 export enum MessageType {
   TEXT = 'text',
@@ -61,4 +63,7 @@ export class ChatMessage extends Model {
 
   @BelongsTo(() => User, 'sender_id')
   declare sender: User;
+
+  @HasMany(() => ChatMessageAttachment, 'chat_message_id')
+  declare attachments: ChatMessageAttachment[];
 }

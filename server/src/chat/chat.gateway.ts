@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
 import { MessageType } from '../db/models/chat-message.model';
+import { ChatAttachmentKind } from '../db/models/chat-message-attachment.model';
 import { ChatStateService } from './services/chat-state.service';
 import { ChatMessageService } from './services/chat-message.service';
 import { ChatNotificationService } from './services/chat-notification.service';
@@ -159,7 +160,18 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     client: Socket,
-    payload: { roomId: number; content: string; type?: string; attachmentUrl?: string },
+    payload: {
+      roomId: number;
+      content: string;
+      type?: string;
+      attachments?: Array<{
+        kind: ChatAttachmentKind;
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+      }>;
+    },
   ) {
     console.log(`[ChatGateway] sendMessage: roomId=${payload.roomId}, type=${payload.type}, content="${payload.content?.substring(0, 50)}"`);
      
@@ -174,7 +186,7 @@ export class ChatGateway
       senderId: userId,
       content: payload.content,
       type: (payload.type as MessageType) || MessageType.TEXT,
-      attachmentUrl: payload.attachmentUrl,
+      attachments: payload.attachments || [],
     });
 
     if (!result.success) {
@@ -307,12 +319,30 @@ export class ChatGateway
       original_price?: number | null;
       status?: string;
       preview_url?: string | null;
-      source_files_urls?: string | null;
+      source_files_urls?: string | string[] | null;
+      creator_attachments_urls?: string | string[] | null;
+      author_images_urls?: string | string[] | null;
+      author_file_url?: string | null;
       is_paid?: boolean;
       paid_at?: Date | null;
       created_at?: Date;
       updated_at?: Date;
     };
+
+    const parseArray = (value?: string | string[] | null): string[] | null => {
+      if (!value) {
+        return null;
+      }
+      if (Array.isArray(value)) {
+        return value;
+      }
+      try {
+        return JSON.parse(value) as string[];
+      } catch {
+        return null;
+      }
+    };
+    const isPaidCompleted = o?.status === 'completed' && !!o?.is_paid;
     return {
       id: o?.id,
       chat_room_id: o?.chat_room_id,
@@ -323,7 +353,10 @@ export class ChatGateway
       original_price: o?.original_price,
       status: o?.status,
       preview_url: o?.preview_url,
-      source_files_urls: o?.source_files_urls ? JSON.parse(o.source_files_urls) : null,
+      source_files_urls: isPaidCompleted ? parseArray(o?.source_files_urls) : null,
+      creator_attachments_urls: parseArray(o?.creator_attachments_urls),
+      author_images_urls: parseArray(o?.author_images_urls),
+      author_file_url: isPaidCompleted ? (o?.author_file_url ?? null) : null,
       is_paid: o?.is_paid,
       paid_at: o?.paid_at,
       created_at: o?.created_at,

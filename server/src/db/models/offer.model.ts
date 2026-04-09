@@ -82,6 +82,18 @@ export class Offer extends Model {
   @Column({ type: DataType.TEXT })
   declare source_files_urls: string | null;
 
+  @AllowNull(true)
+  @Column({ type: DataType.TEXT })
+  declare creator_attachments_urls: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.TEXT })
+  declare author_images_urls: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING(500) })
+  declare author_file_url: string | null;
+
   @Default(false)
   @Column({ type: DataType.BOOLEAN })
   declare is_paid: boolean;

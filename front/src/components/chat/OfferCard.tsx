@@ -21,7 +21,7 @@ interface OfferCardProps {
   onConfirmPrice?: (offer: Offer) => void;
   onPay?: (offer: Offer) => void;
   onUploadFiles?: (offer: Offer) => void;
-  onDownloadFiles?: (offer: Offer) => void;
+  onDownloadFiles?: (offer: Offer, fileUrl?: string) => void;
   isLoading?: boolean;
 }
 
@@ -43,6 +43,7 @@ export function OfferCard({
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isPriceChangeModalOpen, setIsPriceChangeModalOpen] = useState(false);
   const [isCreatorPriceChangeModalOpen, setIsCreatorPriceChangeModalOpen] = useState(false);
@@ -155,6 +156,42 @@ export function OfferCard({
     return t('chat.from') + ' ' + t('chat.seller');
   };
 
+  const parseUrlArray = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string');
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === 'string');
+        }
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const creatorAttachments = parseUrlArray(offer.creator_attachments_urls);
+  const authorImages = parseUrlArray(offer.author_images_urls);
+  const sourceFiles = parseUrlArray(offer.source_files_urls);
+  const isAuthorFileAvailable = offer.status === 'completed' && offer.is_paid;
+
+  const creatorImageUrls = creatorAttachments.filter((url) =>
+    /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url),
+  );
+  const creatorFileUrls = creatorAttachments.filter(
+    (url) => !/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url),
+  );
+  const authorFileUrls = Array.from(
+    new Set([
+      ...(isAuthorFileAvailable && offer.author_file_url ? [offer.author_file_url] : []),
+      ...(isAuthorFileAvailable ? sourceFiles : []),
+    ]),
+  );
+  const authorImageUrls = Array.from(new Set([...(offer.preview_url ? [offer.preview_url] : []), ...authorImages]));
+
   return (
     <Card className="p-4 bg-blue-50 border border-blue-200 cursor-pointer" onClick={onClick}>
       <div className="flex justify-between items-start mb-3">
@@ -199,19 +236,125 @@ export function OfferCard({
           )}
         </div>
         
-        {/* Превью работы */}
-        {offer.preview_url && (
-          <div className="mt-2 cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsImageModalOpen(true); }}>
-            <ServerImage 
-              src={offer.preview_url} 
-              alt="Preview" 
-              className="max-w-full h-auto rounded max-h-40 object-contain hover:opacity-90 transition-opacity"
-              width={400}
-              height={160}
-            />
-            <p className="text-xs text-gray-500 mt-1">{t('chat.previewAvailable')}</p>
+        {/* Изображения заказчика */}
+        {creatorImageUrls.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">{t('chat.creatorImages')}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {creatorImageUrls.map((url) => (
+                <div
+                  key={url}
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage(url);
+                    setIsImageModalOpen(true);
+                  }}
+                >
+                  <ServerImage 
+                    src={url} 
+                    alt="Preview" 
+                    className="max-w-full h-auto rounded max-h-32 object-contain hover:opacity-90 transition-opacity"
+                    width={400}
+                    height={120}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Изображения автора */}
+        {authorImageUrls.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">{t('chat.authorImages')}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {authorImageUrls.map((url) => (
+                <div
+                  key={url}
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage(url);
+                    setIsImageModalOpen(true);
+                  }}
+                >
+                  <ServerImage
+                    src={url}
+                    alt="Preview"
+                    className="max-w-full h-auto rounded max-h-32 object-contain hover:opacity-90 transition-opacity"
+                    width={400}
+                    height={120}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Файлы заказчика */}
+        {creatorFileUrls.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">{t('chat.creatorFiles')}</p>
+            <ul className="space-y-1">
+              {creatorFileUrls.map((fileUrl) => {
+                const filename = fileUrl.split('/').pop() || fileUrl;
+                return (
+                  <li key={fileUrl} className="flex items-center justify-between bg-white rounded border px-2 py-1">
+                    <span className="text-sm truncate max-w-[170px]" title={filename}>
+                      {filename}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownloadFiles?.(offer, fileUrl);
+                      }}
+                    >
+                      {t('chat.downloadFiles')}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Файл автора (доступ после оплаты) */}
+        <div className="mt-2">
+          <p className="text-xs text-gray-500 mb-1">{t('chat.authorFiles')}</p>
+          {authorFileUrls.length > 0 ? (
+            <ul className="space-y-1">
+              {authorFileUrls.map((fileUrl) => {
+                const filename = fileUrl.split('/').pop() || fileUrl;
+                return (
+                  <li key={fileUrl} className="flex items-center justify-between bg-white rounded border px-2 py-1">
+                    <span className="text-sm truncate max-w-[170px]" title={filename}>
+                      {filename}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownloadFiles?.(offer, fileUrl);
+                      }}
+                    >
+                      {t('chat.downloadFiles')}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            !isAuthorFileAvailable && (
+              <p className="text-xs text-gray-400">{t('chat.authorFileAfterPayment')}</p>
+            )
+          )}
+        </div>
       </div>
 
       {/* Кнопки действий */}
@@ -337,12 +480,12 @@ export function OfferCard({
       </div>
 
       {/* Модальное окно просмотра изображения */}
-      {offer.preview_url && (
+      {selectedImage && (
         <div onClick={(e) => e.stopPropagation()}>
           <ImageModal
             isOpen={isImageModalOpen}
             onClose={() => setIsImageModalOpen(false)}
-            src={offer.preview_url}
+            src={selectedImage}
             alt="Preview"
           />
         </div>

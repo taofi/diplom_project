@@ -1,6 +1,6 @@
 'use client';
 
-import Image, { StaticImageData } from 'next/image';
+import Image from 'next/image';
 import { useState } from 'react';
 import noimage from '../../public/noimage.png'; 
 
@@ -25,15 +25,18 @@ export function ServerImage({
   className = '',
   priority = false,
 }: ServerImageProps) {
-  // 1. Управляем только состоянием загрузки и фактом ошибки
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  // 2. Вычисляем путь "на лету" без useEffect
   const isInvalid = !src || src === '' || src === 'null' || src === 'undefined';
-  const displaySrc = (hasError || isInvalid) ? noimage : `${SERVER_URL}/public/${src}`;
-  // Флаг того, что мы показываем заглушку
-  const isFallback = hasError || isInvalid;
+  const cleanSrc = !src ? '' : src.replace(/^\/+/, '');
+  const normalizedSrc = cleanSrc.startsWith('public/')
+    ? cleanSrc.slice('public/'.length)
+    : cleanSrc;
+  const isExternal = normalizedSrc.startsWith('http://') || normalizedSrc.startsWith('https://') || normalizedSrc.startsWith('data:');
+  const resolvedSrc = isExternal ? normalizedSrc : `${SERVER_URL}/public/${normalizedSrc}`;
+  const isFallback = isInvalid || failedSrc === resolvedSrc;
+  const displaySrc = isFallback ? noimage : resolvedSrc;
 
   return (
     <div 
@@ -54,8 +57,8 @@ export function ServerImage({
         
         onLoad={() => setIsLoading(false)}
         onError={() => {
-          console.error("Next.js Image failed to load:", displaySrc);
-          setHasError(true);
+          console.error('Next.js Image failed to load:', displaySrc);
+          setFailedSrc(resolvedSrc);
           setIsLoading(false);
         }}
         priority={priority}

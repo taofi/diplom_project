@@ -4,13 +4,20 @@ import { ChatService } from '../chat.service';
 import { ChatStateService } from './chat-state.service';
 import { ChatCacheService } from './chat-cache.service';
 import { ChatMessage, MessageType } from '../../db/models/chat-message.model';
+import { ChatAttachmentKind } from '../../db/models/chat-message-attachment.model';
 
 export interface SendMessagePayload {
   roomId: number;
   senderId: number;
   content: string;
   type?: MessageType;
-  attachmentUrl?: string;
+  attachments?: Array<{
+    kind: ChatAttachmentKind;
+    url: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }>;
 }
 
 export interface MessageResult {
@@ -42,7 +49,7 @@ export class ChatMessageService {
    * Включает проверку roomId для исправления бага с отображением в неправильном чате
    */
   async sendMessage(payload: SendMessagePayload): Promise<MessageResult> {
-    const { roomId, senderId, content, type, attachmentUrl } = payload;
+    const { roomId, senderId, content, type, attachments } = payload;
 
     try {
       // Проверяем, что пользователь действительно в этой комнате
@@ -63,7 +70,7 @@ export class ChatMessageService {
         senderId,
         content,
         type || MessageType.TEXT,
-        attachmentUrl,
+        attachments || [],
       );
 
       // Рассылаем сообщение участникам комнаты через их сокеты

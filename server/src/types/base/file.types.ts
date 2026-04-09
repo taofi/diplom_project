@@ -56,6 +56,7 @@ export enum MediaFolder {
   PRODUCT = 'product',
   TEMP = 'temp',
   OFFERS = 'offers', // Для превью заказов
+  CHAT = 'chat',
 }
 
 /**

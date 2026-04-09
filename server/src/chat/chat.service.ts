@@ -1,7 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ChatRoom, ChatRoomStatus, ChatRoomVisibility } from '../db/models/chat-room.model';
 import { ChatMessage, MessageType } from '../db/models/chat-message.model';
+import {
+  ChatAttachmentKind,
+  ChatMessageAttachment,
+} from '../db/models/chat-message-attachment.model';
 import { Offer, OfferStatus } from '../db/models/offer.model';
 import { User } from '../db/models/user.model';
 import { Product } from '../db/models/product.model';
@@ -16,6 +25,15 @@ import { Op, WhereOptions } from 'sequelize';
 import { UserProduct } from '../db/models/user-product.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { LicenseType } from '../db/models/license-type.model';
+import { FileService, MediaFolder } from '../common/services/file.service';
+
+interface ChatAttachmentPayload {
+  kind: ChatAttachmentKind;
+  url: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+}
 
 interface ChatRoomWhereClause {
   [Op.or]: Array<{ buyer_id: number; seller_id: number }>;
@@ -35,12 +53,15 @@ export class ChatService {
     private readonly chatRoomModel: typeof ChatRoom,
     @InjectModel(ChatMessage)
     private readonly chatMessageModel: typeof ChatMessage,
+    @InjectModel(ChatMessageAttachment)
+    private readonly chatMessageAttachmentModel: typeof ChatMessageAttachment,
     @InjectModel(Offer)
     private readonly offerModel: typeof Offer,
     @InjectModel(UserProduct)
     private readonly userProductModel: typeof UserProduct,
     @InjectModel(Product)
     private readonly productModel: typeof Product,
+    private readonly fileService: FileService,
   ) { }
 
   // ==================== UserProduct Integration ====================
@@ -425,6 +446,7 @@ export class ChatService {
       chatRoomId,
       include: [
         { model: User, as: 'sender', attributes: ['id', 'name', 'avatar_url'] },
+        { model: ChatMessageAttachment, as: 'attachments' },
       ],
     });
 
@@ -498,7 +520,7 @@ export class ChatService {
     senderId: number,
     content: string,
     type: MessageType = MessageType.TEXT,
-    attachmentUrl?: string,
+    attachments: ChatAttachmentPayload[] = [],
   ): Promise<ChatMessage> {
     let roomId: number;
 
@@ -516,39 +538,153 @@ export class ChatService {
       throw new NotFoundException('Chat room not found');
     }
 
+    this.ensureChatParticipant(chatRoom, senderId);
+
+    const normalizedContent = (content || '').trim();
+    const normalizedAttachments = this.normalizeAttachmentsForRoom(roomId, attachments);
+    if (normalizedAttachments.length > 5) {
+      throw new BadRequestException('You can attach up to 5 files');
+    }
+    if (!normalizedContent && normalizedAttachments.length === 0) {
+      throw new BadRequestException('Message content or attachments are required');
+    }
+
     // Если чат PENDING, сделать его VISIBLE
     if (chatRoom.visibility === ChatRoomVisibility.PENDING) {
       await this.makeChatVisible(roomId);
     }
 
-    // Создать сообщение
-    // Маппим поля в snake_case для Sequelize
-    const messageData = {
-      chat_room_id: roomId,
-      sender_id: senderId,
-      message: content,
-      message_type: type,
-      attachment_url: attachmentUrl,
-    };
+    const sequelize = this.chatMessageModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Database connection is not available');
+    }
 
-    const message = await this.chatMessageRepository.create(messageData);
+    const messageType =
+      normalizedAttachments.length === 0
+        ? type || MessageType.TEXT
+        : normalizedAttachments.every((item) => item.kind === ChatAttachmentKind.IMAGE)
+          ? MessageType.IMAGE
+          : MessageType.FILE;
 
-    // Обновить last_message_at в чате
-    await this.chatRoomRepository.update(roomId, {
-      last_message_at: new Date(),
-    } as any);
+    const message = await sequelize.transaction(async (transaction) => {
+      const createdMessage = await this.chatMessageModel.create(
+        {
+          chat_room_id: roomId,
+          sender_id: senderId,
+          message: normalizedContent || null,
+          message_type: messageType,
+          attachment_url: normalizedAttachments[0]?.url || null,
+        },
+        { transaction },
+      );
+
+      if (normalizedAttachments.length > 0) {
+        await this.chatMessageAttachmentModel.bulkCreate(
+          normalizedAttachments.map((attachment) => ({
+            chat_message_id: createdMessage.id,
+            chat_room_id: roomId,
+            kind: attachment.kind,
+            url: attachment.url,
+            original_name: attachment.originalName,
+            mime_type: attachment.mimeType,
+            size: attachment.size,
+          })),
+          { transaction },
+        );
+      }
+
+      await this.chatRoomModel.update(
+        { last_message_at: new Date() },
+        {
+          where: { id: roomId },
+          transaction,
+        },
+      );
+
+      const completeMessage = await this.chatMessageModel.findByPk(createdMessage.id, {
+        include: [{ model: ChatMessageAttachment, as: 'attachments' }],
+        transaction,
+      });
+
+      if (!completeMessage) {
+        throw new NotFoundException('Message not found after creation');
+      }
+
+      return completeMessage;
+    });
 
     return message;
+  }
+
+  async uploadChatAttachments(chatRoomId: number, userId: number, files: Express.Multer.File[]) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('At least one file is required');
+    }
+    if (files.length > 5) {
+      throw new BadRequestException('You can upload up to 5 files');
+    }
+
+    const chatRoom = await this.chatRoomRepository.findById(chatRoomId);
+    if (!chatRoom) {
+      throw new NotFoundException('Chat room not found');
+    }
+    this.ensureChatParticipant(chatRoom, userId);
+
+    return files.map((file) => {
+      const uploaded = this.fileService.saveMediaFile(file, MediaFolder.CHAT, chatRoomId);
+      const kind = file.mimetype.startsWith('image/')
+        ? ChatAttachmentKind.IMAGE
+        : ChatAttachmentKind.FILE;
+
+      return {
+        kind,
+        url: uploaded.url.startsWith('/') ? uploaded.url.slice(1) : uploaded.url,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+      };
+    });
+  }
+
+  private ensureChatParticipant(chatRoom: ChatRoom, userId: number): void {
+    if (chatRoom.buyer_id !== userId && chatRoom.seller_id !== userId) {
+      throw new ForbiddenException('You are not a participant of this chat');
+    }
+  }
+
+  private normalizeAttachmentsForRoom(
+    roomId: number,
+    attachments: ChatAttachmentPayload[] = [],
+  ): ChatAttachmentPayload[] {
+    return attachments.map((attachment) => {
+      const normalizedUrl = (attachment.url || '').replace(/^\/+/, '');
+      const expectedPrefix = `media/chat/${roomId}/`;
+
+      if (!normalizedUrl.startsWith(expectedPrefix)) {
+        throw new BadRequestException('Attachment URL must belong to current chat room');
+      }
+
+      return {
+        ...attachment,
+        url: normalizedUrl,
+      };
+    });
   }
 
   /**
    * Получить сообщения чата
    */
   async getMessages(chatRoomId: number, page = 1, limit = 50) {
+    const chatRoom = await this.chatRoomRepository.findById(chatRoomId);
+    if (!chatRoom) {
+      throw new NotFoundException('Chat room not found');
+    }
+
     return this.chatMessageRepository.findAndCountAll({
       page,
       limit,
       chatRoomId,
+      include: [{ model: ChatMessageAttachment, as: 'attachments' }],
     });
   }
 
@@ -684,13 +820,29 @@ export class ChatService {
    * Преобразовать Offer в формат CustomOrder для фронтенда
    */
   private serializeOfferAsCustomOrder(offer: Offer): Record<string, unknown> {
-    // Parse source_files_urls from JSON string
+    const isPaidCompleted = offer.status === OfferStatus.COMPLETED && offer.is_paid;
     let sourceFilesUrls: string[] | null = null;
-    if (offer.source_files_urls && typeof offer.source_files_urls === 'string') {
+    if (isPaidCompleted && offer.source_files_urls && typeof offer.source_files_urls === 'string') {
       try {
         sourceFilesUrls = JSON.parse(offer.source_files_urls) as string[];
       } catch {
         sourceFilesUrls = null;
+      }
+    }
+    let creatorAttachmentsUrls: string[] | null = null;
+    if (offer.creator_attachments_urls && typeof offer.creator_attachments_urls === 'string') {
+      try {
+        creatorAttachmentsUrls = JSON.parse(offer.creator_attachments_urls) as string[];
+      } catch {
+        creatorAttachmentsUrls = null;
+      }
+    }
+    let authorImagesUrls: string[] | null = null;
+    if (offer.author_images_urls && typeof offer.author_images_urls === 'string') {
+      try {
+        authorImagesUrls = JSON.parse(offer.author_images_urls) as string[];
+      } catch {
+        authorImagesUrls = null;
       }
     }
 
@@ -723,6 +875,9 @@ export class ChatService {
       is_paid: offer.is_paid,
       preview_url: offer.preview_url,
       source_files_urls: sourceFilesUrls,
+      creator_attachments_urls: creatorAttachmentsUrls,
+      author_images_urls: authorImagesUrls,
+      author_file_url: isPaidCompleted ? offer.author_file_url : null,
       // Include offer for backward compatibility
       offer: {
         id: offer.id,
@@ -735,6 +890,9 @@ export class ChatService {
         status: offer.status,
         preview_url: offer.preview_url,
         source_files_urls: sourceFilesUrls,
+        creator_attachments_urls: creatorAttachmentsUrls,
+        author_images_urls: authorImagesUrls,
+        author_file_url: isPaidCompleted ? offer.author_file_url : null,
         is_paid: offer.is_paid,
         paid_at: offer.paid_at,
         created_at: offer.created_at,

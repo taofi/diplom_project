@@ -89,86 +89,116 @@ export function Header() {
                     : { open: true, path: pathname },
                 )
               }
-              className="text-primary hover:text-primary/80 transition-colors"
+              className="cursor-pointer text-primary hover:text-primary/80 transition-colors"
               aria-label="Open user menu"
             >
               <UserAvatarIcon avatarUrl={user?.avatar_url} size={36} />
             </button>
 
-            {isAvatarMenuOpen && isAuthenticated && (
+            {isAvatarMenuOpen && (
               <div className="absolute right-0 top-12 z-120 w-[270px] rounded-xl border border-primary/20 bg-white p-2 shadow-lg">
-                <div className="flex flex-col gap-1">
-                  <Link
-                    href={`/${locale}/profile`}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 21a8 8 0 0 0-16 0" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span className="text-left">{t('nav.profile')}</span>
-                  </Link>
-                  {isAdmin && (
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        href={`/${locale}/profile`}
+                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21a8 8 0 0 0-16 0" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span className="text-left">{t('nav.profile')}</span>
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          href={`/${locale}/admin`}
+                          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          </svg>
+                          <span className="text-left">{t('nav.adminPanel')}</span>
+                        </Link>
+                      )}
+                      {isAdminOrAuthor && (
+                        <Link
+                          href="/admin/products"
+                          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <line x1="3" y1="9" x2="21" y2="9" />
+                            <line x1="9" y1="21" x2="9" y2="9" />
+                          </svg>
+                          <span className="text-left">{t('nav.dashboard')}</span>
+                        </Link>
+                      )}
+                      <Link
+                        href={`/${locale}/chat`}
+                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span className="text-left">{t('nav.chat')}</span>
+                      </Link>
+                      <Link
+                        href={`/${locale}/orders`}
+                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 11l3 3L22 4" />
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                        <span className="text-left">{t('nav.orders')}</span>
+                      </Link>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-primary/20">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logout();
+                          setAvatarMenuState({ open: false, path: null });
+                        }}
+                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                          <polyline points="16 17 21 12 16 7" />
+                          <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        <span className="text-left">{t('profile.logout')}</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-1">
                     <Link
-                      href={`/${locale}/admin`}
+                      href={`/${locale}/login`}
+                      onClick={() => setAvatarMenuState({ open: false, path: null })}
                       className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10 17 15 12 10 7" />
+                        <line x1="15" y1="12" x2="3" y2="12" />
                       </svg>
-                      <span className="text-left">{t('nav.adminPanel')}</span>
+                      <span className="text-left">{t('nav.login')}</span>
                     </Link>
-                  )}
-                  {isAdminOrAuthor && (
                     <Link
-                      href="/admin/products"
+                      href={`/${locale}/register`}
+                      onClick={() => setAvatarMenuState({ open: false, path: null })}
                       className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <line x1="3" y1="9" x2="21" y2="9" />
-                        <line x1="9" y1="21" x2="9" y2="9" />
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
                       </svg>
-                      <span className="text-left">{t('nav.dashboard')}</span>
+                      <span className="text-left">{t('auth.register')}</span>
                     </Link>
-                  )}
-                  <Link
-                    href={`/${locale}/chat`}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    <span className="text-left">{t('nav.chat')}</span>
-                  </Link>
-                  <Link
-                    href={`/${locale}/orders`}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 11l3 3L22 4" />
-                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                    </svg>
-                    <span className="text-left">{t('nav.orders')}</span>
-                  </Link>
-                </div>
-                <div className="mt-2 pt-2 border-t border-primary/20">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logout();
-                      setAvatarMenuState({ open: false, path: null });
-                    }}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    <span className="text-left">{t('profile.logout')}</span>
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

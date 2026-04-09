@@ -20,6 +20,7 @@ export function Navigation() {
       <nav className="hidden lg:flex items-center gap-8 px-8">
         <NavButton href={`/${locale}`} text={t('nav.home')} />
         <NavButton href={`/${locale}/catalog`} text={t('nav.catalog')} />
+        <NavButton href={`/${locale}/authors`} text={t('nav.authors')} />
         <NavButton href={`/${locale}/licenses`} text={t('nav.licenses') || 'Licenses'} />
         <NavButton href={`/${locale}/contacts`} text={t('nav.contacts')} />
       </nav>
@@ -43,6 +44,7 @@ export function Navigation() {
             <div className="flex flex-wrap gap-4 pb-4 border-b border-primary/15">
               <NavButton href={`/${locale}`} text={t('nav.home')} />
               <NavButton href={`/${locale}/catalog`} text={t('nav.catalog')} />
+              <NavButton href={`/${locale}/authors`} text={t('nav.authors')} />
               <NavButton href={`/${locale}/licenses`} text={t('nav.licenses') || 'Licenses'} />
               <NavButton href={`/${locale}/contacts`} text={t('nav.contacts')} />
             </div>

@@ -6,6 +6,8 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { MessageBubble } from './MessageBubble';
 import { Button, Spinner } from '@/components/ui';
 import { ServerImage } from '@/components/Image';
+import { chatApi } from '@/lib/api-chat';
+import { ChatAttachmentsPreview } from './ChatAttachmentsPreview';
 import type { ChatRoom, ChatMessage } from '@/types/chat';
 import type { Offer } from '@/types/chat/offer.types';
 
@@ -14,9 +16,17 @@ interface ChatWindowProps {
   messages: ChatMessage[];
   offers?: Offer[];
   currentUserId: number;
-  onSendMessage: (content: string, type?: string) => void;
-  onAcceptOffer?: (offer: Offer) => Promise<void>;
-  onDeclineOffer?: (offer: Offer) => Promise<void>;
+  onSendMessage: (
+    content: string,
+    type?: string,
+    attachments?: Array<{
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }>,
+  ) => Promise<void>;
   typingUsers: Map<number, Set<number>>;
   onTyping: (isTyping: boolean) => void;
   isLoading?: boolean;
@@ -38,8 +48,6 @@ export function ChatWindow({
   offers = [],
   currentUserId,
   onSendMessage,
-  onAcceptOffer,
-  onDeclineOffer,
   typingUsers,
   onTyping,
   isLoading = false,
@@ -53,8 +61,12 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { t, locale } = useI18n();
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -69,6 +81,14 @@ export function ChatWindow({
       isInitialLoadRef.current = true;
     }
   }, [room]);
+
+  useEffect(() => {
+    setAttachments([]);
+    setAttachmentsError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [room?.id]);
 
   // 1. Функция скролла вниз (использует scrollTo для изоляции скролла внутри div)
   const scrollToBottom = useCallback((behaviorOrEvent?: ScrollBehavior | React.MouseEvent) => {
@@ -176,16 +196,69 @@ export function ChatWindow({
     }, 2000);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleAttachmentsSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    if (selected.length === 0) {
+      return;
+    }
+
+    const nextCount = attachments.length + selected.length;
+    if (nextCount > 5) {
+      setAttachmentsError(t('chat.errors.maxChatAttachments') || 'You can upload up to 5 attachments');
+      return;
+    }
+
+    const oversized = selected.find((file) => file.size > 20 * 1024 * 1024);
+    if (oversized) {
+      setAttachmentsError(t('chat.errors.chatFileTooLarge') || 'File is too large (max 20MB)');
+      return;
+    }
+
+    setAttachments((prev) => [...prev, ...selected]);
+    setAttachmentsError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    onSendMessage(message.trim());
-    setMessage('');
-    isTypingRef.current = false;
-    onTyping(false);
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    // Принудительный скролл вниз после отправки своего сообщения
-    setTimeout(() => scrollToBottom('smooth'), 100);
+    if ((!message.trim() && attachments.length === 0) || !room) {
+      return;
+    }
+
+    try {
+      setIsSending(true);
+      setAttachmentsError(null);
+
+      let uploadedAttachments: Array<{
+        kind: 'image' | 'file';
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+      }> = [];
+
+      if (attachments.length > 0) {
+        uploadedAttachments = await chatApi.uploadChatAttachments(room.id, attachments);
+      }
+
+      await onSendMessage(message.trim(), 'text', uploadedAttachments);
+      setMessage('');
+      setAttachments([]);
+      isTypingRef.current = false;
+      onTyping(false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      setTimeout(() => scrollToBottom('smooth'), 100);
+    } catch {
+      setAttachmentsError(t('chat.uploadError') || 'Upload error');
+    } finally {
+      setIsSending(false);
+    }
   };
   const otherUser = room?.seller?.id === currentUserId ? room?.buyer : room?.seller;
   const roomTypingUsers = room ? typingUsers.get(room.id) : undefined;
@@ -299,24 +372,61 @@ export function ChatWindow({
           <div className="px-6 py-2 text-sm text-gray-500 bg-gray-50/50">{t('chat.typing')}</div>
         )}
         <div className="px-6 py-4">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text" value={message} onChange={handleInputChange}
-              placeholder={t('chat.typeMessage')}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-            {/* Кнопка создания заказа - только для покупателя */}
-            {onCreateOffer && !isSeller && room && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onCreateOffer}
-                className="whitespace-nowrap"
-              >
-                {t('chat.createOrder')}
-              </Button>
+          <form onSubmit={handleSubmit}>
+            <ChatAttachmentsPreview files={attachments} onRemove={handleRemoveAttachment} />
+            {attachmentsError && (
+              <div className="mb-2 text-sm text-red-500">{attachmentsError}</div>
             )}
-            <Button type="submit" disabled={!message.trim()}>{t('common.send')}</Button>
+
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleAttachmentsSelect}
+                className="hidden"
+                id="chat-attachments-input"
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-label={t('chat.addAttachment') || 'Add attachment'}
+                title={t('chat.addAttachment') || 'Add attachment'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </button>
+
+              <input
+                type="text"
+                value={message}
+                onChange={handleInputChange}
+                placeholder={t('chat.typeMessage')}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+
+              {/* Кнопка создания заказа - только для покупателя */}
+              {onCreateOffer && !isSeller && room && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onCreateOffer}
+                  className="whitespace-nowrap"
+                >
+                  {t('chat.createOrder')}
+                </Button>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isSending || (!message.trim() && attachments.length === 0)}
+              >
+                {isSending ? (t('chat.uploading') || 'Uploading...') : t('common.send')}
+              </Button>
+            </div>
           </form>
         </div>
       </div>

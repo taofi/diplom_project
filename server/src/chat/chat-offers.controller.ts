@@ -13,9 +13,8 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { OfferFilesInterceptor } from './interceptors/offer-files.interceptor';
+import { OfferCreatorFilesInterceptor, OfferFilesInterceptor } from './interceptors/offer-files.interceptor';
 import { OfferService } from './services/offer.service';
-import { FileService } from '../common/services/file.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateOfferDto, CounterOfferDto, PayOrderDto } from './dto/offer.dto';
@@ -26,7 +25,6 @@ import { Offer } from '../db/models/offer.model';
 export class ChatOffersController {
   constructor(
     private readonly offerService: OfferService,
-    private readonly fileService: FileService,
   ) {}
 
   /**
@@ -149,18 +147,32 @@ export class ChatOffersController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<Offer> {
-    console.log(`[ChatOffersController] POST /chat/offers/:id/files called`);
-    console.log(`[ChatOffersController] offerId: ${id}, userId: ${userId}`);
-    console.log(`[ChatOffersController] req.offerFiles:`, req.offerFiles);
-    
-    const { preview, files } = req.offerFiles || {};
-    console.log(`[ChatOffersController] preview:`, preview);
-    console.log(`[ChatOffersController] files:`, files);
-    
+    const { images, file } = req.offerFiles || {};
     return this.offerService.uploadFiles(
       parseInt(id, 10),
       userId,
-      preview,
+      images || [],
+      file,
+    );
+  }
+
+  /**
+   * POST /chat/offers/:id/creator-files
+   * Загрузить вложения заказчика после создания заказа
+   */
+  @Post(':id/creator-files')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(OfferCreatorFilesInterceptor)
+  async uploadCreatorFiles(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<Offer> {
+    const { images, files } = req.offerFiles || {};
+    return this.offerService.uploadCreatorFiles(
+      parseInt(id, 10),
+      userId,
+      images || [],
       files || [],
     );
   }

@@ -41,9 +41,15 @@ export interface LeaveRoomPayload {
 
 export interface SendMessagePayload {
   roomId: number;
-  tempChatId?: string;
   content: string;
   type?: 'text' | 'image' | 'file';
+  attachments?: Array<{
+    kind: 'image' | 'file';
+    url: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }>;
 }
 
 export interface TypingPayload {
@@ -66,6 +72,14 @@ export interface NewMessageEvent {
     message: string | null;
     messageType: string;
     attachmentUrl: string | null;
+    attachments?: Array<{
+      id: number;
+      kind: string;
+      url: string;
+      original_name: string;
+      mime_type: string;
+      size: number;
+    }>;
     isRead: boolean;
     createdAt: string;
   };
@@ -79,6 +93,14 @@ export interface MessageUpdatedEvent {
     message: string | null;
     messageType: string;
     attachmentUrl: string | null;
+    attachments?: Array<{
+      id: number;
+      kind: string;
+      url: string;
+      original_name: string;
+      mime_type: string;
+      size: number;
+    }>;
     isRead: boolean;
     createdAt: string;
   };

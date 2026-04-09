@@ -8,8 +8,13 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
 
-  if (pathname.startsWith('/_next') || pathname.includes('/api/') || pathname.includes('.')) {
-    return;
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/.well-known') ||
+    pathname.includes('/api/') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
   }
 
   const cookieLocale = request.cookies.get('locale')?.value;
@@ -34,5 +39,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|\\.well-known).*)'],
 };

@@ -97,8 +97,19 @@ class SocketClient {
     this.emit('leaveRoom', { roomId });
   }
 
-  sendMessage(roomId: number, content: string, type = 'text', attachmentUrl?: string) {
-    this.emit('sendMessage', { roomId, content, type, attachmentUrl });
+  sendMessage(
+    roomId: number,
+    content: string,
+    type = 'text',
+    attachments: Array<{
+      kind: 'image' | 'file';
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+    }> = [],
+  ) {
+    this.emit('sendMessage', { roomId, content, type, attachments });
   }
 
   typing(roomId: number, isTyping: boolean) {

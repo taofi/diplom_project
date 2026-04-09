@@ -2,19 +2,15 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { OfferRepository } from '../repositories/offer.repository';
 import { Offer, OfferStatus } from '../../db/models/offer.model';
 import { CreateOfferDto, CounterOfferDto, PayOrderDto } from '../dto/offer.dto';
-import { ChatGateway } from '../chat.gateway';
 import { ChatNotificationService } from './chat-notification.service';
 import { FileService } from '../../common/services/file.service';
 import type { MulterFile } from '../../common/services/file.service';
-import type { Response } from 'express';
 import { createReadStream } from 'fs';
-import { join } from 'path';
 
 @Injectable()
 export class OfferService {
   constructor(
     private offerRepository: OfferRepository,
-    private chatGateway: ChatGateway,
     private chatNotificationService: ChatNotificationService,
     private fileService: FileService,
   ) {}
@@ -23,14 +19,12 @@ export class OfferService {
    * Сериализация данных заказа для отправки клиенту
    */
   private serializeOffer(offer: Offer): Record<string, unknown> {
-    let sourceFilesUrls: string[] | null = null;
-    if (offer.source_files_urls && typeof offer.source_files_urls === 'string') {
-      try {
-        sourceFilesUrls = JSON.parse(offer.source_files_urls) as string[];
-      } catch {
-        sourceFilesUrls = null;
-      }
-    }
+    const isPaidCompleted = offer.status === OfferStatus.COMPLETED && offer.is_paid;
+    const sourceFilesUrls = isPaidCompleted
+      ? this.parseJsonStringArray(offer.source_files_urls)
+      : null;
+    const creatorAttachmentsUrls = this.parseJsonStringArray(offer.creator_attachments_urls);
+    const authorImagesUrls = this.parseJsonStringArray(offer.author_images_urls);
     
     return {
       id: offer.id,
@@ -43,11 +37,26 @@ export class OfferService {
       status: offer.status,
       preview_url: offer.preview_url,
       source_files_urls: sourceFilesUrls,
+      creator_attachments_urls: creatorAttachmentsUrls,
+      author_images_urls: authorImagesUrls,
+      author_file_url: isPaidCompleted ? offer.author_file_url : null,
       is_paid: offer.is_paid,
       paid_at: offer.paid_at,
       created_at: offer.created_at,
       updated_at: offer.updated_at,
     };
+  }
+
+  private parseJsonStringArray(value: string | null): string[] | null {
+    if (!value || typeof value !== 'string') {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value) as string[];
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -292,8 +301,8 @@ export class OfferService {
   async uploadFiles(
     offerId: number,
     userId: number,
-    preview: MulterFile | undefined,
-    files: MulterFile[],
+    images: MulterFile[],
+    file: MulterFile | undefined,
   ): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -306,24 +315,32 @@ export class OfferService {
       throw new ForbiddenException('Cannot upload at this status');
     }
 
-    // Сохраняем превью
-    let previewUrl: string | null = null;
-    if (preview) {
-      const result = this.fileService.saveOfferPreview(preview, offerId);
-      previewUrl = result.url;
+    if (images.length > 10) {
+      throw new BadRequestException('Maximum 10 images are allowed');
+    }
+    if (file && file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('Field "file" must be a non-image document');
+    }
+    if (!images.length && !file) {
+      throw new BadRequestException('At least one image or one file must be uploaded');
     }
 
-    // Сохраняем исходные файлы
-    const sourceFilesUrls: string[] = [];
-    for (const file of files) {
+    const authorImageUrls: string[] = [];
+    for (const image of images) {
+      const result = this.fileService.saveOfferPreview(image, offerId);
+      authorImageUrls.push(result.url);
+    }
+
+    let authorFileUrl: string | null = null;
+    if (file) {
       const result = this.fileService.saveOfferSourceFile(file, offerId);
-      sourceFilesUrls.push(result.url);
+      authorFileUrl = result.url;
     }
 
     const updated = await this.offerRepository.setFiles(
       offerId,
-      previewUrl,
-      sourceFilesUrls,
+      authorImageUrls,
+      authorFileUrl,
     );
 
     // Меняем статус на awaiting_payment
@@ -337,6 +354,70 @@ export class OfferService {
     // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:filesUploaded', { offer: serialized });
     
+    return updated;
+  }
+
+  /**
+   * Загрузить вложения заказчика после создания заказа
+   */
+  async uploadCreatorFiles(
+    offerId: number,
+    userId: number,
+    images: MulterFile[],
+    files: MulterFile[],
+  ): Promise<Offer> {
+    const offer = await this.offerRepository.findById(offerId);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+    if (offer.creator_id !== userId) {
+      throw new ForbiddenException('Not your offer');
+    }
+    if (
+      offer.status !== OfferStatus.WAITING_AUTHOR &&
+      offer.status !== OfferStatus.WAITING_USER
+    ) {
+      throw new ForbiddenException('Cannot upload creator attachments at this status');
+    }
+
+    const totalFiles = images.length + files.length;
+    if (totalFiles === 0) {
+      throw new BadRequestException('At least one attachment is required');
+    }
+    if (totalFiles > 10) {
+      throw new BadRequestException('Maximum 10 attachments are allowed');
+    }
+    if (images.length > 10 || files.length > 10) {
+      throw new BadRequestException('Maximum 10 files per field are allowed');
+    }
+
+    for (const image of images) {
+      if (!image.mimetype.startsWith('image/')) {
+        throw new BadRequestException('Field "images" accepts image files only');
+      }
+    }
+    for (const file of files) {
+      if (file.mimetype.startsWith('image/')) {
+        throw new BadRequestException('Field "files" accepts non-image files only');
+      }
+    }
+
+    const attachmentUrls: string[] = [];
+    for (const image of images) {
+      const result = this.fileService.saveOfferPreview(image, offerId);
+      attachmentUrls.push(result.url);
+    }
+    for (const file of files) {
+      const result = this.fileService.saveCreatorAttachmentFile(file, offerId);
+      attachmentUrls.push(result.url);
+    }
+
+    const updated = await this.offerRepository.setCreatorAttachments(offerId, attachmentUrls);
+    const serialized = this.serializeOffer(updated);
+
+    await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:filesUploaded', { offer: serialized });
+    await this.chatNotificationService.notifyUser(offer.author_id, 'offer:filesUploaded', { offer: serialized });
+
     return updated;
   }
 
@@ -379,6 +460,9 @@ export class OfferService {
   async getOfferFiles(offerId: number, userId: number): Promise<{
     preview_url: string | null;
     source_files_urls: string[] | null;
+    creator_attachments_urls: string[] | null;
+    author_images_urls: string[] | null;
+    author_file_url: string | null;
   }> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -393,9 +477,15 @@ export class OfferService {
     const result: {
       preview_url: string | null;
       source_files_urls: string[] | null;
+      creator_attachments_urls: string[] | null;
+      author_images_urls: string[] | null;
+      author_file_url: string | null;
     } = {
       preview_url: null,
       source_files_urls: null,
+      creator_attachments_urls: this.parseJsonStringArray(offer.creator_attachments_urls),
+      author_images_urls: this.parseJsonStringArray(offer.author_images_urls),
+      author_file_url: null,
     };
 
     // Превью доступно если awaiting_payment или completed
@@ -405,6 +495,7 @@ export class OfferService {
 
     // Исходники доступны ТОЛЬКО если completed И is_paid
     if (offer.status === OfferStatus.COMPLETED && offer.is_paid) {
+      result.author_file_url = offer.author_file_url;
       const sourceUrls = offer.source_files_urls;
       if (typeof sourceUrls === 'string' && sourceUrls.length > 0) {
         try {

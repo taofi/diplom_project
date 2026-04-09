@@ -59,6 +59,18 @@ export interface ChatMessage {
   is_read: boolean;
   created_at: string;
   sender?: ChatUser;
+  attachments?: ChatAttachment[];
+}
+
+export interface ChatAttachment {
+  id?: number;
+  chat_message_id?: number;
+  chat_room_id?: number;
+  kind: 'image' | 'file';
+  url: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
 }
 
 import { Offer, OfferStatus } from './offer.types';
