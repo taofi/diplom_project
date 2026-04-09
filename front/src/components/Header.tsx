@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './Logo';
@@ -18,6 +18,7 @@ export function Header() {
     open: false,
     path: null,
   });
+  const avatarMenuRef = useRef<HTMLDivElement | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { count: cartCount } = useCart();
   const { t, locale } = useI18n();
@@ -34,6 +35,21 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!isAvatarMenuOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!avatarMenuRef.current?.contains(event.target as Node)) {
+        setAvatarMenuState({ open: false, path: null });
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAvatarMenuOpen]);
 
   return (
     <header 
@@ -79,7 +95,7 @@ export function Header() {
               </svg>
             }
           />
-          <div className="relative">
+          <div ref={avatarMenuRef} className="relative">
             <button
               type="button"
               onClick={() =>
@@ -92,7 +108,7 @@ export function Header() {
               className="cursor-pointer text-primary hover:text-primary/80 transition-colors"
               aria-label="Open user menu"
             >
-              <UserAvatarIcon avatarUrl={user?.avatar_url} size={36} />
+              <UserAvatarIcon avatarUrl={user?.avatar_url} name={user?.name} size={36} />
             </button>
 
             {isAvatarMenuOpen && (

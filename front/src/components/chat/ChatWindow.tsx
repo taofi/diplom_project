@@ -261,6 +261,7 @@ export function ChatWindow({
     }
   };
   const otherUser = room?.seller?.id === currentUserId ? room?.buyer : room?.seller;
+  const hasProductTitle = Boolean(room?.translatedProductName || room?.product?.translatedName || room?.product?.name);
   const roomTypingUsers = room ? typingUsers.get(room.id) : undefined;
   const isTyping = roomTypingUsers ? roomTypingUsers.size > 0 : false;
 
@@ -310,7 +311,9 @@ export function ChatWindow({
                 </span>
               )}
             </div>
-            {otherUser && <p className="text-sm text-gray-500">{t('chat.chatWith')}: {otherUser.name}</p>}
+            {otherUser && hasProductTitle && (
+              <p className="text-sm text-gray-500">{otherUser.name}</p>
+            )}
           </div>
           {otherUser?.id && (
             <Link href={`/${locale}/users/${otherUser.id}`} className="ml-auto">

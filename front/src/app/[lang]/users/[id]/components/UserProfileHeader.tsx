@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Card } from '@/components/ui';
-import { ServerImage } from '@/components/Image';
+import { UserAvatarIcon } from '@/components/UserAvatarIcon';
 import type { PublicUserProfileResponse } from '@/lib/api-user';
 
 type UserProfileHeaderProps = {
@@ -20,12 +20,8 @@ export function UserProfileHeader({
   return (
     <Card padding="lg">
       <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-        <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 shrink-0 mx-auto sm:mx-0">
-          {profile.avatar_url ? (
-            <ServerImage src={profile.avatar_url} alt={profile.name} width={112} height={112} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No avatar</div>
-          )}
+        <div className="shrink-0 mx-auto sm:mx-0">
+          <UserAvatarIcon avatarUrl={profile.avatar_url} name={profile.name} size={112} />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{profile.name}</h1>

@@ -11,9 +11,18 @@ interface ChatListProps {
   currentUserId: number;
   isSellerView?: boolean;
   isHovered?: boolean;
+  isCollapsed?: boolean;
 }
 
-export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, isSellerView = false, isHovered = false }: ChatListProps) {
+export function ChatList({
+  rooms,
+  selectedRoomId,
+  onSelectRoom,
+  currentUserId,
+  isSellerView = false,
+  isHovered = false,
+  isCollapsed = false,
+}: ChatListProps) {
   const { t } = useI18n();
 
   const formatTime = (dateString: string | null) => {
@@ -34,6 +43,15 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
   };
 
   const getOtherUser = (room: ChatRoom) => {
+    // Определяем собеседника по текущему пользователю для каждой комнаты,
+    // чтобы имя корректно отображалось уже при первом открытии страницы.
+    if (room.seller_id === currentUserId) {
+      return room.buyer;
+    }
+    if (room.buyer_id === currentUserId) {
+      return room.seller;
+    }
+    // Fallback для редких случаев неполных данных
     return isSellerView ? room.buyer : room.seller;
   };
 
@@ -70,6 +88,9 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
         const otherUser = getOtherUser(room);
         const isSelected = selectedRoomId === room.id;
         const hasUnread = (room.unreadCount || 0) > 0;
+        const chatTitle = getChatTitle(room);
+        const displayName = otherUser?.name || t('chat.unknownUser');
+        const hasProductTitle = Boolean(room.translatedProductName || room.product?.translatedName || room.product?.name);
 
         return (
           <button
@@ -78,70 +99,86 @@ export function ChatList({ rooms, selectedRoomId, onSelectRoom, currentUserId, i
             className={`
               w-full p-4 text-left transition-colors hover:bg-gray-50
               ${isSelected ? 'bg-primary/5 border-l-4 border-primary' : ''}
+              ${isCollapsed ? 'flex flex-col items-center text-center border-l-0 border-b-2' : ''}
             `}
+            title={chatTitle}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'flex-col' : ''}`}>
               {/* Avatar */}
-              <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {/* Показываем обложку товара если есть, иначе аватар пользователя */}
-                {/* Используем mainImage (приоритет) или room.product?.media */}
-                {(room.mainImage || room.product?.mainImage || room.product?.media?.[0]) ? (
-                  <ServerImage
-                    src={room.mainImage || room.product?.mainImage || room.product?.media?.[0]?.url || ''}
-                    alt={room.translatedProductName || room.product?.name || 'Product'}
-                    width={40}
-                    height={40}
-                    className="w-full h-full object-cover"
-                  />
-                ) : otherUser?.avatar ? (
-                  <ServerImage
-                    src={otherUser.avatar}
-                    alt={otherUser.name}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-medium text-gray-600">
-                    {otherUser?.name?.charAt(0).toUpperCase() || '?'}
+              <div className="relative w-12 h-12 shrink-0">
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                  {/* Показываем обложку товара если есть, иначе аватар пользователя */}
+                  {/* Используем mainImage (приоритет) или room.product?.media */}
+                  {(room.mainImage || room.product?.mainImage || room.product?.media?.[0]) ? (
+                    <ServerImage
+                      src={room.mainImage || room.product?.mainImage || room.product?.media?.[0]?.url || ''}
+                      alt={room.translatedProductName || room.product?.name || 'Product'}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : otherUser?.avatar ? (
+                    <ServerImage
+                      src={otherUser.avatar}
+                      alt={otherUser.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-medium text-gray-600">
+                      {otherUser?.name?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Unread badge on avatar corner */}
+                {hasUnread && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-medium min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white flex items-center justify-center leading-none">
+                    {room.unreadCount}
                   </span>
                 )}
               </div>
 
+              {isCollapsed && (
+                <div className="w-full">
+                  <p className="text-xs text-gray-700 leading-tight wrap-break-word line-clamp-2">
+                    {displayName}
+                  </p>
+                </div>
+              )}
+
               {/* Chat info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className={`font-medium truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>
-                    {getChatTitle(room)}
-                  </h4>
-                  <span className="text-xs text-gray-400 flex-shrink-0">
-                    {formatTime(room.last_message_at)}
-                  </span>
-                </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className={`font-medium truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                      {chatTitle}
+                    </h4>
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {formatTime(room.last_message_at)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center">
-                  {/* Product info if exists - используем media для обложки */}
-                  {room.product && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                  <div className="flex justify-between items-center">
+                    {hasProductTitle ? (
+                      <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0">
+                        <span className="truncate max-w-[90px]">
+                          {room.translatedProductName || room.product?.translatedName || room.product?.name}
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="truncate max-w-[120px]">{displayName}</span>
+                      </div>
+                    ) : (
+                      <div />
+                    )}
 
-                      <span className="truncate max-w-[100px]">{room.product.name}</span>
-                    </div>
-                  )}
-
-                  {room.lastMessage && (
-                    <p className={`text-sm truncate ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
-                      {room.lastMessage.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Unread badge */}
-              {hasUnread && (
-                <div className="flex-shrink-0">
-                  <span className="bg-primary text-white text-xs font-medium px-2 py-1 rounded-full">
-                    {room.unreadCount}
-                  </span>
+                    {room.lastMessage && (
+                      <p className={`text-sm truncate ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
+                        {room.lastMessage.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

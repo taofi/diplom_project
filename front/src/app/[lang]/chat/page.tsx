@@ -45,6 +45,7 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [isChatHovered, setIsChatHovered] = useState(false);
+  const [isChatsCollapsed, setIsChatsCollapsed] = useState(false);
   const isMountedRef = useRef(false);
 
   // Состояние для модального окна создания заказа
@@ -248,17 +249,51 @@ function ChatContent() {
           )}
         </div>
 
-        <div 
-          className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-250px)]"
+        <div
+          className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-250px)]"
           onMouseEnter={() => setIsChatHovered(true)}
           onMouseLeave={() => setIsChatHovered(false)}
         >
           {/* Chat list */}
-          <div className="lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {t('chat.myChats')}
-              </h2>
+          <div
+            className={`bg-white rounded-lg shadow overflow-hidden transition-all duration-200 ${isChatsCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'}`}
+          >
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <svg
+                  className="w-5 h-5 text-gray-500 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M21 10c0 3.866-3.582 7-8 7a8.84 8.84 0 01-3.7-.8L3 18l1.2-3.2A6.75 6.75 0 013 10c0-3.866 3.582-7 8-7s8 3.134 8 7z"
+                  />
+                </svg>
+                {!isChatsCollapsed && (
+                  <h2 className="text-lg font-semibold text-gray-900 truncate">
+                    {t('chat.myChats')}
+                  </h2>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChatsCollapsed((prev) => !prev)}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 transition-colors"
+                aria-label={isChatsCollapsed ? 'Expand chats panel' : 'Collapse chats panel'}
+              >
+                <svg
+                  className={`w-5 h-5 transition-transform ${isChatsCollapsed ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
             </div>
             <div className="overflow-y-auto h-[calc(100%-60px)]">
               {isLoading ? (
@@ -272,13 +307,15 @@ function ChatContent() {
                   onSelectRoom={handleSelectRoom}
                   currentUserId={user.id}
                   isSellerView={isSellerView}
+                  isHovered={isChatHovered}
+                  isCollapsed={isChatsCollapsed}
                 />
               )}
             </div>
           </div>
 
           {/* Chat window */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+          <div className={`bg-white rounded-lg shadow overflow-hidden ${isChatsCollapsed ? 'lg:col-span-7' : 'lg:col-span-6'}`}>
             <ChatWindow
               room={currentRoom}
               messages={messages}
@@ -297,7 +334,7 @@ function ChatContent() {
           </div>
 
           {/* Offers panel */}
-          <div className="hidden lg:block lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
+          <div className="hidden lg:block lg:col-span-4 bg-white rounded-lg shadow overflow-hidden">
             <OffersPanel
               offers={offers}
               currentUserId={user.id}

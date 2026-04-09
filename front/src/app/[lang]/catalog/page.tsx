@@ -148,11 +148,13 @@ export default function CatalogPage() {
   return (
     <div className="w-full">
       {/* Hero Banner */}
-      <div className="relative h-[200px] mt-20 w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden">
-        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-          <h1 className="text-4xl font-bold text-primary">
-            {t('catalog.title')}
-          </h1>
+      <div className="-mx-20 mt-19">
+        <div className="relative h-[200px] w-full overflow-hidden">
+          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+            <h1 className="text-4xl font-bold text-primary">
+              {t('catalog.title')}
+            </h1>
+          </div>
         </div>
       </div>
 

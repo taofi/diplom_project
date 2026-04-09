@@ -63,9 +63,9 @@ export function OffersPanel({
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden h-full flex flex-col">
       {/* Заголовок панели с фильтрами */}
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 border-b border-gray-200 shrink-0">
         <h2 className="text-lg font-semibold text-gray-900">
-          {t('chat.offers') || 'Предложения'}
+          {t('chat.offers') || 'Заказы'}
         </h2>
         
         {/* Фильтры */}

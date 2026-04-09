@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { useCart } from '@/context/cart/CartContext';
 import { getProductById, getProducts } from '@/lib/api-product';
+import { chatApi } from '@/lib/api-chat';
 import { Gallery, ProductSidebar, ProductInfo } from '@/components/product';
 import { ProductCard } from '@/components/ProductCard';
 import { Spinner } from '@/components/ui';
@@ -25,6 +26,7 @@ export default function ProductPage() {
   const [selectedLicense, setSelectedLicense] = useState<LicenseInfo | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [recommendedProducts, setRecommendedProducts] = useState<ProductResponse[]>([]);
 
   // Загрузка товара
@@ -111,6 +113,21 @@ export default function ProductPage() {
     router.push(`/${locale}/cart`);
   };
 
+  const handleWriteToAuthor = async () => {
+    if (!product?.seller?.id || isCreatingChat) return;
+
+    try {
+      setIsCreatingChat(true);
+      const chat = await chatApi.createChat(product.seller.id, product.id);
+      router.push(`/${locale}/chat?roomId=${chat.id}`);
+    } catch (err) {
+      console.error('Failed to create chat with author:', err);
+      toastError(t('errors.generic') || 'Не удалось открыть чат с автором');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -152,6 +169,21 @@ export default function ProductPage() {
           categories={product.categories}
           productType={product.type}
         />
+
+        {product.seller?.id && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={handleWriteToAuthor}
+              disabled={isCreatingChat}
+              className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreatingChat
+                ? t('profile.downloading') || 'Открываем чат...'
+                : t('product.writeToAuthor') || 'Написать автору'}
+            </button>
+          </div>
+        )}
 
         {/* Основной контент */}
         <div className="flex flex-col lg:flex-row gap-8 mt-8">

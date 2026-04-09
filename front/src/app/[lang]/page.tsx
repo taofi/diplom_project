@@ -9,7 +9,7 @@ export default function Home() {
   const { t, locale } = useI18n();
 
   return (
-    <div className="w-full mt-20">
+    <div className="w-full mt-19">
       <div className="-mx-20">
         <Hero />
       </div>
@@ -71,6 +71,55 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Order instruction */}
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="rounded-2xl border border-secondary/30 bg-white p-6 md:p-8 shadow-sm">
+          <h2 className="text-2xl font-bold text-text mb-3">
+            Как создать заказ
+          </h2>
+          <p className="text-text/70 mb-6">
+            На платформе можно быстро оформить заказ: выберите подходящего
+            автора, обсудите задачу и создайте заказ в несколько шагов.
+          </p>
+
+          <ol className="space-y-3 text-text/80">
+            <li className="flex gap-3">
+              <span className="inline-flex w-7 h-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold shrink-0">
+                1
+              </span>
+              <span>
+                Перейдите в раздел{' '}
+                <Link
+                  href={`/${locale}/authors`}
+                  className="text-primary hover:text-accent transition-colors font-medium"
+                >
+                  Авторы
+                </Link>
+                .
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="inline-flex w-7 h-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold shrink-0">
+                2
+              </span>
+              <span>Выберите автора по специализации и опыту.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="inline-flex w-7 h-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold shrink-0">
+                3
+              </span>
+              <span>Напишите автору, чтобы обсудить детали и сроки.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="inline-flex w-7 h-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold shrink-0">
+                4
+              </span>
+              <span>После согласования условий создайте заказ.</span>
+            </li>
+          </ol>
         </div>
       </section>
 
