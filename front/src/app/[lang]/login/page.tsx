@@ -65,6 +65,15 @@ export default function LoginPage({ params }: LoginPageProps) {
               />
             </FormField>
 
+            <div className="text-right mb-4">
+              <a
+                href={`/${locale}/forgot-password`}
+                className="text-primary hover:underline text-sm font-medium"
+              >
+                {t('auth.forgotPassword')}
+              </a>
+            </div>
+
             <Button
               type="submit"
               disabled={isLoading}

@@ -2,7 +2,8 @@
 
 import { useI18n } from '@/context/i18n/I18nContext';
 import { ProductType } from '@/types/product';
-import { Input, Textarea, Select, FormField, Section } from '@/components/ui';
+import { Input, Select, FormField, Section } from '@/components/ui';
+import { MarkdownEditorField } from './MarkdownEditorField';
 
 interface BasicInfoSectionProps {
   name: string;
@@ -42,11 +43,9 @@ export function BasicInfoSection({
         </FormField>
 
         <FormField label={t('admin.products.description')}>
-          <Textarea
-            name="description"
+          <MarkdownEditorField
             value={description}
             onChange={onDescriptionChange}
-            rows={4}
           />
         </FormField>
 

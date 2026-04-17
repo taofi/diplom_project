@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import MDEditor from '@uiw/react-md-editor';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button, Card } from '@/components/ui';
 import { ServerImage } from '@/components/Image';
@@ -205,8 +206,14 @@ export function OfferCard({
       </div>
 
       <div className="space-y-2 mb-4">
-        <p className="text-gray-700">{offer.description}</p>
-        
+        <div data-color-mode="light">
+          <MDEditor.Markdown
+            source={offer.description}
+            className="md-content text-gray-700 prose prose-sm max-w-none bg-transparent!"
+            style={{ backgroundColor: 'transparent', padding: 0 }}
+          />
+        </div>
+в
         {/* Отображение цен */}
         <div className="flex items-center gap-4 text-sm">
           {showBothPrices ? (

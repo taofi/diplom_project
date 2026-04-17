@@ -1,10 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { chatApi } from '@/lib/api-chat';
-import { Button, Modal, Textarea, Input } from '@/components/ui';
+import { Button, Modal, Input } from '@/components/ui';
 import type { CreateOfferDto } from '@/types/chat/offer.types';
+
+const MDEditor = dynamic(
+  () => import('@uiw/react-md-editor').then((mod) => mod.default),
+  { ssr: false },
+);
 
 interface CreateOfferModalProps {
   isOpen: boolean;
@@ -159,20 +165,30 @@ export function CreateOfferModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('chat.createOrder')}>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('chat.createOrder')}
+      size="full"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t('chat.orderDescription')}
           </label>
-          <Textarea
-            name="description"
-            value={description}
-            onChange={setDescription}
-            placeholder={t('chat.orderDescriptionPlaceholder')}
-            rows={4}
-            disabled={loading}
-          />
+          <div data-color-mode="light">
+            <MDEditor
+              value={description}
+              onChange={(next) => setDescription(next ?? '')}
+              preview="edit"
+              height={260}
+              visibleDragbar={false}
+              textareaProps={{
+                placeholder: t('chat.orderDescriptionPlaceholder'),
+                disabled: loading,
+              }}
+            />
+          </div>
         </div>
 
         <div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-markdown-preview/markdown.css';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { useCart } from '@/context/cart/CartContext';
 import { getProductById, getProducts } from '@/lib/api-product';
@@ -216,10 +218,13 @@ export default function ProductPage() {
                 <h2 className="text-lg font-semibold mb-3">
                   {t('product.description') || 'Description'}
                 </h2>
-                <div
-                  className="text-gray-600 prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: product.description }}
-                />
+                <div data-color-mode="light">
+                  <MDEditor.Markdown
+                    source={product.description}
+                    className="md-content text-gray-600 prose prose-sm max-w-none bg-transparent!"
+                    style={{ backgroundColor: 'transparent', padding: 0 }}
+                  />
+                </div>
               </div>
             )}
           </div>

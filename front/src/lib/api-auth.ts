@@ -57,6 +57,30 @@ export const updateProfile = async (data: {
 };
 
 /**
+ * Запросить восстановление пароля
+ */
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/auth/forgot-password', { email });
+  return response.data;
+};
+
+/**
+ * Сбросить пароль по токену из письма
+ */
+export const resetPassword = async (
+  email: string,
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/auth/reset-password', {
+    email,
+    token,
+    newPassword,
+  });
+  return response.data;
+};
+
+/**
  * Загрузить аватар пользователя
  * @param file - файл изображения
  */

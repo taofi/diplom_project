@@ -68,6 +68,8 @@ const PUBLIC_ENDPOINTS = [
   '/auth/login',
   '/auth/register', 
   '/auth/refresh',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth/checkout/send-code',
   '/auth/checkout/verify-code',
 ];

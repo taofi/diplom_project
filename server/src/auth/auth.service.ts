@@ -2,9 +2,11 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 import { TokenService } from '../token/token.service';
@@ -13,6 +15,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { normalizeRoles } from './utils/normalize-roles';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 // Генерация случайного кода
 function generateVerificationCode(length: number = 6): string {
@@ -220,6 +224,65 @@ export class AuthService {
   async logoutAll(userId: number): Promise<void> {
     // Revoke refresh token
     await this.tokenService.revokeRefreshToken(userId.toString());
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.userModel.findOne({ where: { email } });
+
+    // Возвращаем одинаковый ответ, чтобы не раскрывать наличие пользователя.
+    if (!user) {
+      return {
+        message: 'If this email exists, password reset instructions have been sent.',
+      };
+    }
+
+    const resetToken = randomBytes(32).toString('hex');
+    const expiresInMinutes = 60;
+    await this.tokenService.setPasswordResetToken(email, resetToken, expiresInMinutes * 60);
+
+    const frontendUrl = 'http://localhost:4000';
+    const resetLink =
+      `${frontendUrl}/${user.locale || 'ru'}/reset-password` +
+      `?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}`;
+
+    try {
+      await this.emailService.sendPasswordReset(
+        user.email,
+        user.name || 'User',
+        resetLink,
+        expiresInMinutes,
+        user.locale || 'ru',
+      );
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+    }
+
+    return {
+      message: 'If this email exists, password reset instructions have been sent.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const email = dto.email.trim().toLowerCase();
+    const isValidToken = await this.tokenService.verifyPasswordResetToken(email, dto.token);
+
+    if (!isValidToken) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await user.update({ password_hash: passwordHash });
+
+    await this.tokenService.deletePasswordResetToken(email);
+    await this.tokenService.revokeRefreshToken(user.id.toString());
+
+    return { message: 'Password has been reset successfully' };
   }
 
   async updateProfile(

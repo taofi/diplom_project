@@ -11,10 +11,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@uiw/react-md-editor": "^4.1.0",
     "axios": "^1.7.9",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.6",
