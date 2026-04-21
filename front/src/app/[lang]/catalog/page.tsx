@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { getProducts, type ProductQueryParams } from '@/lib/api-product';
@@ -9,7 +9,7 @@ import { ProductType } from '@/types/product';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/types/product';
 import type { CategoryResponse } from '@/types/category';
-import { Button, Input, Spinner, Pagination } from '@/components/ui';
+import { Button, Spinner, Pagination } from '@/components/ui';
 import { ProductSearch, type SearchFilters } from '@/components/product/ProductSearch';
 import { ProductSort, type SortOption } from '@/components/product/ProductSort';
 
@@ -26,6 +26,7 @@ export default function CatalogPage() {
     search: '',
     type: '',
     categoryId: '',
+    sellerId: '',
   });
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -73,6 +74,9 @@ export default function CatalogPage() {
     if (searchFilters.categoryId) {
       params.categoryId = Number(searchFilters.categoryId);
     }
+    if (searchFilters.sellerId) {
+      params.sellerId = Number(searchFilters.sellerId);
+    }
 
     // Price range
     if (minPrice) {
@@ -118,6 +122,18 @@ export default function CatalogPage() {
     }
   }, [searchFilters, minPrice, maxPrice, sortBy, locale]);
 
+  const authorOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    products.forEach((product) => {
+      const authorId = product.author?.id ?? product.seller?.id;
+      const authorName = product.author?.name ?? product.seller?.name ?? product.seller?.username;
+      if (authorId && authorName) {
+        map.set(authorId, authorName);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [products]);
+
   // Сброс на страницу 1 при изменении фильтров
   useEffect(() => {
     doFetchProducts(1);
@@ -139,6 +155,7 @@ export default function CatalogPage() {
       search: '',
       type: '',
       categoryId: '',
+      sellerId: '',
     });
     setMinPrice('');
     setMaxPrice('');
@@ -166,45 +183,22 @@ export default function CatalogPage() {
               {/* ProductSearch - единый компонент поиска и фильтрации */}
               <ProductSearch
                 categories={categories}
+                authors={authorOptions}
+                foundCount={pagination.total}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onMinPriceChange={setMinPrice}
+                onMaxPriceChange={setMaxPrice}
                 onSearch={handleSearchChange}
                 showReset={true}
               />
-
-              {/* Price Range - оставляем отдельно */}
-              <div className="mt-4">
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <label className="block text-sm font-medium mb-2">
-                    {t('catalog.priceRange')}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      name="minPrice"
-                      value={minPrice}
-                      onChange={setMinPrice}
-                      placeholder={t('catalog.from')}
-                    />
-                    <span className="text-gray-400">-</span>
-                    <Input
-                      type="number"
-                      name="maxPrice"
-                      value={maxPrice}
-                      onChange={setMaxPrice}
-                      placeholder={t('catalog.to')}
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </aside>
 
           {/* Main Content */}
           <main className="flex-1">
             {/* Sort */}
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-gray-600">
-                {products.length} {t('nav.products')}
-              </span>
+            <div className="flex justify-end items-center mb-6">
               <ProductSort
                 value={sortBy}
                 onChange={setSortBy}

@@ -12,6 +12,7 @@ import type { ProductMedia } from '../../db/models/product-media.model';
 import type { ProductTranslation } from '../../db/models/product-translation.model';
 import type { ProductLicense } from '../../db/models/product-license.model';
 import type { LicenseType } from '../../db/models/license-type.model';
+import type { User } from '../../db/models/user.model';
 import { normalizeLanguage } from '../../translation/utils/language.utils';
 
 // Re-export типов из product.types.ts
@@ -82,6 +83,11 @@ export interface ProductListItemResponse {
   mainImage: string | null;
   createdAt: Date;
   updatedAt: Date;
+  author?: {
+    id: number;
+    name: string;
+    avatarUrl?: string | null;
+  };
 
   // Relations - только то, что нужно для списка
   licenses?: import('./product.types').LicenseInfo[];
@@ -92,6 +98,7 @@ export interface ProductListItemResponse {
  * Product с загруженными отношениями (для детального просмотра)
  */
 export type ProductWithFullRelations = ProductFieldsResponse & {
+  seller?: User;
   translations?: ProductTranslation[];
   media?: ProductMedia[];
   licenses?: (ProductLicense & {
@@ -125,6 +132,11 @@ export interface ProductDetailResponse {
   mainImage: string | null;
   createdAt: Date;
   updatedAt: Date;
+  author?: {
+    id: number;
+    name: string;
+    avatarUrl?: string | null;
+  };
 
   // Relations - полный набор для детального просмотра
   translations?: import('./product.types').TranslationInfo[];
@@ -201,6 +213,14 @@ export function createProductListItemResponse(
     createdAt: product.created_at,
     updatedAt: product.updated_at,
   };
+
+  if (product.seller) {
+    response.author = {
+      id: product.seller.id,
+      name: product.seller.name,
+      avatarUrl: product.seller.avatar_url ?? null,
+    };
+  }
 
   // Добавляем licenses
   if (product.licenses) {
@@ -305,6 +325,14 @@ export function createProductDetailResponse(
     createdAt: product.created_at,
     updatedAt: product.updated_at,
   };
+
+  if (product.seller) {
+    response.author = {
+      id: product.seller.id,
+      name: product.seller.name,
+      avatarUrl: product.seller.avatar_url ?? null,
+    };
+  }
 
   // Добавляем translations
   if (product.translations) {

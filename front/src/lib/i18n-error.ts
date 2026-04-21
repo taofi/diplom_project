@@ -25,6 +25,7 @@ const errorMessageMapping: Record<Locale, Array<{ pattern: RegExp; key: string }
     { pattern: /only delete your own products|можете удалить только свои/i, key: 'errors.canOnlyDeleteOwnProducts' },
     { pattern: /only update your own products|можете обновить только свои/i, key: 'errors.canOnlyUpdateOwnProducts' },
     { pattern: /product not found|товар не найден/i, key: 'errors.productNotFound' },
+    { pattern: /you cannot create a chat with yourself|cannot create a chat with yourself/i, key: 'errors.cannotCreateChatWithYourself' },
     // Network ошибки
     { pattern: /network|network error|сеть|ошибка сети/i, key: 'errors.networkError' },
     // Validation ошибки
@@ -42,6 +43,7 @@ const errorMessageMapping: Record<Locale, Array<{ pattern: RegExp; key: string }
     { pattern: /only delete your own products/i, key: 'errors.canOnlyDeleteOwnProducts' },
     { pattern: /only update your own products/i, key: 'errors.canOnlyUpdateOwnProducts' },
     { pattern: /product not found/i, key: 'errors.productNotFound' },
+    { pattern: /you cannot create a chat with yourself|cannot create a chat with yourself/i, key: 'errors.cannotCreateChatWithYourself' },
     // Network ошибки
     { pattern: /network|network error/i, key: 'errors.networkError' },
     // Validation ошибки

@@ -43,6 +43,7 @@ export default function AdminProductsPage() {
     search: '',
     type: '',
     categoryId: '',
+    sellerId: 0,
   });
 
   // Сортировка
@@ -71,6 +72,8 @@ export default function AdminProductsPage() {
 
   // Основная функция загрузки данных
   const doFetchProducts = useCallback(async (pageNum: number = 1) => {
+    if (!user) return;
+
     setLoading(true);
     setError(null);
     
@@ -88,6 +91,7 @@ export default function AdminProductsPage() {
       if (searchFilters.search) params.search = searchFilters.search;
       if (searchFilters.type) params.type = searchFilters.type;
       if (searchFilters.categoryId) params.categoryId = Number(searchFilters.categoryId);
+      params.sellerId = user.id;
 
       // Sorting
       switch (sortBy) {
@@ -120,7 +124,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [locale, searchFilters, statusFilter, sortBy, t]);
+  }, [locale, searchFilters, statusFilter, sortBy, t, user]);
 
   // Загрузка при изменении фильтров или инициализации
   useEffect(() => {
@@ -151,7 +155,7 @@ export default function AdminProductsPage() {
         ? pagination.page - 1 
         : pagination.page;
       doFetchProducts(targetPage);
-    } catch (err) {
+    } catch {
       setError('Failed to delete product');
     } finally {
       setIsDeleting(false);
@@ -168,7 +172,7 @@ export default function AdminProductsPage() {
       }
       // Обновляем текущую страницу
       doFetchProducts(pagination.page);
-    } catch (err) {
+    } catch {
       setError('Failed to update product status');
     }
   };
@@ -206,6 +210,8 @@ export default function AdminProductsPage() {
             <div className="sticky top-24 space-y-4">
               <ProductSearch
                 categories={categories}
+                foundCount={pagination.total}
+                showAuthorFilter={false}
                 onSearch={handleSearchChange}
                 showReset={true}
               />

@@ -6,6 +6,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { Card, Button } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import type { ProductResponse } from '@/lib/api-product';
+import { useI18n } from '@/context/i18n/I18nContext';
 
 type UserProductsSectionProps = {
   isAuthor: boolean;
@@ -20,20 +21,22 @@ export function UserProductsSection({
   isProductsExpanded,
   onToggleExpanded,
 }: UserProductsSectionProps) {
+  const { t } = useI18n();
+
   return (
     <Card padding="lg">
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-bold">
-          {isAuthor ? 'Товары автора' : 'Пользователь не является автором'}
+          {isAuthor ? t('profile.authorProductsTitle') : t('profile.userIsNotAuthor')}
         </h2>
         {isAuthor && products.length > 0 && (
           <Button variant="secondary" size="sm" onClick={onToggleExpanded}>
-            {isProductsExpanded ? 'Свернуть' : 'Развернуть'}
+            {isProductsExpanded ? t('common.collapse') : t('common.expand')}
           </Button>
         )}
       </div>
       {isAuthor && products.length === 0 && (
-        <p className="text-gray-500">У этого автора пока нет опубликованных товаров.</p>
+        <p className="text-gray-500">{t('profile.authorNoProducts')}</p>
       )}
       {isAuthor && products.length > 0 && (
         <>
@@ -43,7 +46,7 @@ export function UserProductsSection({
                 <button
                   type="button"
                   className="author-products-swiper-prev inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 shrink-0"
-                  aria-label="Previous slide"
+                  aria-label={t('common.previous')}
                 >
                   <span aria-hidden="true">‹</span>
                 </button>
@@ -79,7 +82,7 @@ export function UserProductsSection({
                 <button
                   type="button"
                   className="author-products-swiper-next inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 shrink-0"
-                  aria-label="Next slide"
+                  aria-label={t('common.next')}
                 >
                   <span aria-hidden="true">›</span>
                 </button>

@@ -30,7 +30,6 @@ export class LicenseTypeService {
   }
 
   async findAll(language?: string): Promise<LicenseTypeResponse[]> {
-    // Always load ALL translations for admin panel, but filter by language for the main name field
     const licenseTypes = await this.licenseTypeModel.findAll({
       include: [
         {

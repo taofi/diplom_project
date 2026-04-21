@@ -10,9 +10,16 @@ import { MediaType } from './enums';
  */
 export interface SellerInfo {
   id: number;
-  username: string;
+  name?: string;
+  username?: string;
   email?: string;
   avatarUrl?: string;
+}
+
+export interface AuthorInfo {
+  id: number;
+  name: string;
+  avatarUrl?: string | null;
 }
 
 /**
@@ -99,6 +106,7 @@ export type MediaInfo = ProductImageInfo | ProductVideoInfo | ProductYouTubeInfo
  */
 export interface ProductResponse extends ProductBase {
   seller?: SellerInfo;
+  author?: AuthorInfo;
   categories?: CategoryInfo[];
   translations?: TranslationInfo[];
   media?: MediaInfo[];

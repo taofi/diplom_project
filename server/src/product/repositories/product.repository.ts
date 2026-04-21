@@ -6,6 +6,7 @@ import { ProductTranslation } from '../../db/models/product-translation.model';
 import { ProductLicense } from '../../db/models/product-license.model';
 import { ProductCategory } from '../../db/models/product-category.model';
 import { Category } from '../../db/models/category.model';
+import { User } from '../../db/models/user.model';
 import { CategoryTranslation } from '../../db/models/category-translation.model';
 import { LicenseType } from '../../db/models/license-type.model';
 import { LicenseTypeTranslation } from '../../db/models/license-type-translation.model';
@@ -143,6 +144,7 @@ export class ProductRepository {
     const normalizedLanguage = language ? normalizeLanguage(language) : undefined;
     const product = await this.productModel.findByPk(id, {
       include: [
+        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
         { model: ProductMedia },
         { model: ProductTranslation, as: 'translations' },
         { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
@@ -282,6 +284,7 @@ export class ProductRepository {
       distinct: true, // Важно для правильного подсчета count при использовании include
       order,
       include: [
+        { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
         categoryInclude,
         { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
         // Загружаем только media с is_cover = true для main_image

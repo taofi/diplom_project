@@ -20,6 +20,20 @@ export interface ProductSearchProps {
   showReset?: boolean;
   /** Дополнительные классы для контейнера */
   className?: string;
+  /** Доступные авторы для фильтрации */
+  authors?: AuthorFilterOption[];
+  /** Количество найденных товаров */
+  foundCount?: number;
+  /** Показывать фильтр автора */
+  showAuthorFilter?: boolean;
+  /** Минимальная цена */
+  minPrice?: string;
+  /** Максимальная цена */
+  maxPrice?: string;
+  /** Изменение минимальной цены */
+  onMinPriceChange?: (value: string) => void;
+  /** Изменение максимальной цены */
+  onMaxPriceChange?: (value: string) => void;
 }
 
 /**
@@ -32,6 +46,13 @@ export interface SearchFilters {
   type: ProductType | '';
   /** ID категории */
   categoryId: number | '';
+  /** ID автора */
+  sellerId: number | '';
+}
+
+export interface AuthorFilterOption {
+  id: number;
+  name: string;
 }
 
 /** Опции для типа товара */
@@ -70,6 +91,13 @@ export function ProductSearch({
   initialValues,
   showReset = true,
   className = '',
+  authors = [],
+  foundCount,
+  showAuthorFilter = true,
+  minPrice = '',
+  maxPrice = '',
+  onMinPriceChange,
+  onMaxPriceChange,
 }: ProductSearchProps) {
   const { t } = useI18n();
 
@@ -77,6 +105,7 @@ export function ProductSearch({
   const [search, setSearch] = useState(initialValues?.search || '');
   const [selectedType, setSelectedType] = useState<ProductType | ''>(initialValues?.type || '');
   const [selectedCategory, setSelectedCategory] = useState<number | ''>(initialValues?.categoryId || '');
+  const [selectedAuthor, setSelectedAuthor] = useState<number | ''>(initialValues?.sellerId || '');
 
   // Debounce для поиска (задержка 500ms)
   const debouncedSearch = useDebounce(search, 500);
@@ -86,7 +115,8 @@ export function ProductSearch({
     search: debouncedSearch,
     type: selectedType,
     categoryId: selectedCategory,
-  }), [debouncedSearch, selectedType, selectedCategory]);
+    sellerId: selectedAuthor,
+  }), [debouncedSearch, selectedType, selectedCategory, selectedAuthor]);
 
   // Вызываем callback при изменении фильтров
   useEffect(() => {
@@ -106,15 +136,22 @@ export function ProductSearch({
     setSelectedCategory(value ? Number(value) : '');
   }, []);
 
+  const handleAuthorChange = useCallback((value: string) => {
+    setSelectedAuthor(value ? Number(value) : '');
+  }, []);
+
   // Сброс фильтров
   const handleReset = useCallback(() => {
     setSearch('');
     setSelectedType('');
     setSelectedCategory('');
-  }, []);
+    setSelectedAuthor('');
+    onMinPriceChange?.('');
+    onMaxPriceChange?.('');
+  }, [onMaxPriceChange, onMinPriceChange]);
 
   // Проверка, есть ли активные фильтры
-  const hasActiveFilters = search || selectedType || selectedCategory;
+  const hasActiveFilters = search || selectedType || selectedCategory || selectedAuthor || minPrice || maxPrice;
 
   return (
     <Card className={`p-4 ${className}`}>
@@ -167,6 +204,51 @@ export function ProductSearch({
           />
         </div>
 
+        {/* Фильтр по автору */}
+        {showAuthorFilter && (
+          <div>
+            <Select
+              name="author"
+              label={t('catalog.author') || 'Автор'}
+              value={selectedAuthor}
+              onChange={handleAuthorChange}
+              options={[
+                { value: '', label: t('catalog.allAuthors') || 'Все авторы' },
+                ...authors.map((author) => ({
+                  value: author.id.toString(),
+                  label: author.name,
+                })),
+              ]}
+            />
+          </div>
+        )}
+
+        {/* Диапазон цен */}
+        {(onMinPriceChange || onMaxPriceChange) && (
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {t('catalog.priceRange')}
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                name="minPrice"
+                value={minPrice}
+                onChange={(value) => onMinPriceChange?.(value)}
+                placeholder={t('catalog.from')}
+              />
+              <span className="text-gray-400">-</span>
+              <Input
+                type="number"
+                name="maxPrice"
+                value={maxPrice}
+                onChange={(value) => onMaxPriceChange?.(value)}
+                placeholder={t('catalog.to')}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Кнопка сброса */}
         {showReset && hasActiveFilters && (
           <Button
@@ -176,6 +258,12 @@ export function ProductSearch({
           >
             {t('common.cancel')}
           </Button>
+        )}
+
+        {typeof foundCount === 'number' && (
+          <p className="text-sm text-gray-600">
+            Колличество: {foundCount}
+          </p>
         )}
       </div>
     </Card>

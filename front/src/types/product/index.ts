@@ -42,6 +42,7 @@ export type {
 // Relation types
 export type {
   SellerInfo,
+  AuthorInfo,
   CategoryInfo,
   TranslationInfo,
   LicenseTypeInfo,

@@ -55,7 +55,6 @@ const models = [
   OfferFile,
 ];
 
-// Токен для внедрения Sequelize
 export const SEQUELIZE_TOKEN = 'SEQUELIZE';
 
 @Global()
@@ -74,7 +73,6 @@ export const SEQUELIZE_TOKEN = 'SEQUELIZE';
         autoLoadModels: true,
         synchronize: true,
         alter: true,
-        //logging: process.env.NODE_ENV === 'development' ? console.log : false,
         logging: false,
       }),
     }),
@@ -82,7 +80,7 @@ export const SEQUELIZE_TOKEN = 'SEQUELIZE';
   providers: [
     {
       provide: SEQUELIZE_TOKEN,
-      useValue: {}, // Заглушка - реальный инстанс Sequelize нельзя получить напрямую
+      useValue: {},
     },
   ],
   exports: [NestSequelizeModule, SEQUELIZE_TOKEN],

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-markdown-preview/markdown.css';
 import { useI18n } from '@/context/i18n/I18nContext';
@@ -10,8 +11,9 @@ import { getProductById, getProducts } from '@/lib/api-product';
 import { chatApi } from '@/lib/api-chat';
 import { Gallery, ProductSidebar, ProductInfo } from '@/components/product';
 import { ProductCard } from '@/components/ProductCard';
+import { UserAvatarIcon } from '@/components/UserAvatarIcon';
 import { Spinner } from '@/components/ui';
-import { toastSuccess, toastError } from '@/lib/toast';
+import { toastSuccess, toastError, getErrorMessage } from '@/lib/toast';
 import type { ProductResponse, LicenseInfo } from '@/types/product';
 
 export default function ProductPage() {
@@ -30,6 +32,7 @@ export default function ProductPage() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [recommendedProducts, setRecommendedProducts] = useState<ProductResponse[]>([]);
+  const [authorProducts, setAuthorProducts] = useState<ProductResponse[]>([]);
 
   // Загрузка товара
   useEffect(() => {
@@ -50,24 +53,41 @@ export default function ProductPage() {
         }
 
         const primaryCategoryId = data.categories?.[0]?.id;
-        if (primaryCategoryId) {
-          const recommendations = await getProducts({
-            categoryId: primaryCategoryId,
-            type: data.type,
-            isActive: true,
-            language: locale,
-            page: 1,
-            limit: 8,
-          });
+        const authorId = data.author?.id ?? data.seller?.id;
 
-          setRecommendedProducts(
-            (recommendations.data || [])
-              .filter((item) => item.id !== data.id)
-              .slice(0, 4)
-          );
-        } else {
-          setRecommendedProducts([]);
-        }
+        const [recommendations, otherWorks] = await Promise.all([
+          primaryCategoryId
+            ? getProducts({
+                categoryId: primaryCategoryId,
+                type: data.type,
+                isActive: true,
+                language: locale,
+                page: 1,
+                limit: 8,
+              })
+            : Promise.resolve(null),
+          authorId
+            ? getProducts({
+                sellerId: authorId,
+                isActive: true,
+                language: locale,
+                page: 1,
+                limit: 8,
+              })
+            : Promise.resolve(null),
+        ]);
+
+        setRecommendedProducts(
+          (recommendations?.data || [])
+            .filter((item) => item.id !== data.id)
+            .slice(0, 4)
+        );
+
+        setAuthorProducts(
+          (otherWorks?.data || [])
+            .filter((item) => item.id !== data.id)
+            .slice(0, 4)
+        );
       } catch (err) {
         console.error('Failed to load product:', err);
         setError(t('errors.productNotFound') || 'Product not found');
@@ -116,15 +136,21 @@ export default function ProductPage() {
   };
 
   const handleWriteToAuthor = async () => {
-    if (!product?.seller?.id || isCreatingChat) return;
+    if (!product) return;
+
+    const authorId = product?.author?.id ?? product?.seller?.id;
+    if (!authorId || isCreatingChat) return;
 
     try {
       setIsCreatingChat(true);
-      const chat = await chatApi.createChat(product.seller.id, product.id);
+      const chat = await chatApi.createChat(authorId, product.id);
       router.push(`/${locale}/chat?roomId=${chat.id}`);
     } catch (err) {
       console.error('Failed to create chat with author:', err);
-      toastError(t('errors.generic') || 'Не удалось открыть чат с автором');
+      const errorMessage = getErrorMessage(err);
+      if (/you cannot create a chat with yourself/i.test(errorMessage)) {
+        toastError(t('errors.cannotCreateChatWithYourself') || 'Нельзя создать чат с самим собой');
+      }
     } finally {
       setIsCreatingChat(false);
     }
@@ -166,26 +192,10 @@ export default function ProductPage() {
         <ProductInfo
           name={product.name}
           description={product.description}
-          seller={product.seller}
           isFeatured={product.isFeatured}
           categories={product.categories}
           productType={product.type}
         />
-
-        {product.seller?.id && (
-          <div className="mb-4">
-            <button
-              type="button"
-              onClick={handleWriteToAuthor}
-              disabled={isCreatingChat}
-              className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isCreatingChat
-                ? t('profile.downloading') || 'Открываем чат...'
-                : t('product.writeToAuthor') || 'Написать автору'}
-            </button>
-          </div>
-        )}
 
         {/* Основной контент */}
         <div className="flex flex-col lg:flex-row gap-8 mt-8">
@@ -260,6 +270,52 @@ export default function ProductPage() {
                 <ProductCard key={recommendedProduct.id} product={recommendedProduct} />
               ))}
             </div>
+          </section>
+        )}
+
+        {(product.author?.id || product.seller?.id) && (
+          <section className="mt-12 border-t pt-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {t('catalog.author') || 'Автор'}
+            </h2>
+
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <Link
+                href={`/${locale}/users/${product.author?.id ?? product.seller?.id}`}
+                className="flex items-center gap-3 text-lg font-medium text-gray-900 hover:text-primary transition-colors"
+              >
+                <UserAvatarIcon
+                  avatarUrl={product.author?.avatarUrl ?? product.seller?.avatarUrl}
+                  name={product.author?.name ?? product.seller?.name ?? product.seller?.username}
+                  size={40}
+                />
+                <span>{product.author?.name ?? product.seller?.name ?? product.seller?.username ?? 'Автор'}</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleWriteToAuthor}
+                disabled={isCreatingChat}
+                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCreatingChat
+                  ? t('profile.downloading') || 'Открываем чат...'
+                  : t('product.writeToAuthor') || 'Написать автору'}
+              </button>
+            </div>
+
+            {authorProducts.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {t('product.authorOtherWorks') || 'Другие работы автора'}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {authorProducts.map((authorProduct) => (
+                    <ProductCard key={authorProduct.id} product={authorProduct} />
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
       </div>

@@ -10,8 +10,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Default: external Docker volume "project_db_data" (safe for `docker compose down -v`)
-      # Optional bind mount fallback: set DB_DATA_PATH=./.docker-data/postgres in .env
       - ${DB_DATA_PATH:-project_db_data}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d database"]
@@ -97,8 +95,6 @@ services:
       - front_public:/app/public
 
 volumes:
-  # Create once: docker volume create project_db_data
-  # `docker compose down -v` will not remove this external volume.
   project_db_data:
     external: true
     name: project_db_data

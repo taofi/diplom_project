@@ -106,7 +106,7 @@ function UserProfileContent() {
           profile={profile}
           isCreatingChat={isCreatingChat}
           onStartChat={handleStartChat}
-          chatButtonLabel={isCreatingChat ? t('profile.downloading') : 'Написать пользователю'}
+          chatButtonLabel={isCreatingChat ? t('profile.downloading') : t('profile.write')}
         />
 
         <UserProductsSection

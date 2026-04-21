@@ -42,14 +42,10 @@ export class AuthService {
     const existingUser = await this.userModel.findOne({
       where: { email: dto.email },
     });
-
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
-
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    
-    // Нормализуем роли перед сохранением
     const normalizedRoles = normalizeRoles(dto.roles);
 
     const user = await this.userModel.create({
@@ -59,7 +55,6 @@ export class AuthService {
       locale: dto.locale || 'ru',
     });
 
-    // Создаем записи ролей в отдельной таблице
     for (const role of normalizedRoles) {
       await this.userRoleModel.create({
         user_id: user.id,
@@ -67,11 +62,9 @@ export class AuthService {
       });
     }
 
-    // Генерируем и сохраняем код верификации
     const verificationCode = generateVerificationCode();
     await this.tokenService.setVerificationCode(user.email, verificationCode);
 
-    // Отправляем письмо с кодом верификации
     try {
       await this.emailService.sendVerificationCode(
         user.email,
@@ -83,7 +76,6 @@ export class AuthService {
         }
       );
     } catch (error) {
-      // Логируем ошибку, но не блокируем регистрацию
       console.error('Failed to send verification email:', error);
     }
 
@@ -93,7 +85,6 @@ export class AuthService {
       roles: normalizedRoles,
     });
 
-    // Возвращаем информацию о необходимости верификации
     return {
       user: {
         id: user.id,
