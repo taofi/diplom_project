@@ -53,10 +53,6 @@ export function UploadFilesModal({
     if (!selectedFile) {
       return;
     }
-    if (selectedFile.type.startsWith('image/')) {
-      setError(t('chat.errors.documentOnly'));
-      return;
-    }
     setFile(selectedFile);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

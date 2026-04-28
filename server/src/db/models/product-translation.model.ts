@@ -38,6 +38,7 @@ export class ProductTranslation extends Model<ProductTranslation> {
     type: DataType.INTEGER,
     allowNull: false,
     field: 'product_id',
+    onDelete: 'CASCADE',
   })
   declare productId: number;
 

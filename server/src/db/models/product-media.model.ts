@@ -24,7 +24,7 @@ export class ProductMedia extends Model {
   declare id: number;
 
   @ForeignKey(() => Product)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare product_id: number;
 
   @Column(DataType.ENUM(...Object.values(MediaType)))

@@ -211,6 +211,7 @@
     },
     "categories": {
       "title": "Tags",
+      "description": "Manage product categories",
       "add": "Add Tag",
       "edit": "Edit Tag",
       "name": "Name",
@@ -272,9 +273,9 @@
       }
     },
     "products": {
-      "title": "Manage Assets",
-      "createNew": "Create Asset",
-      "edit": "Edit Asset",
+      "title": "Manage",
+      "createNew": "Create",
+      "edit": "Edit",
       "basicInfo": "Basic Information",
       "name": "Name",
       "description": "Description",
@@ -292,8 +293,8 @@
       "status": "Status",
       "active": "Active",
       "featured": "Featured",
-      "create": "Create Asset",
-      "update": "Update Asset",
+      "create": "Create",
+      "update": "Update",
       "search": "Search assets",
       "allStatuses": "All statuses",
       "inactive": "Inactive",

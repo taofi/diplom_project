@@ -11,7 +11,7 @@ import { Category } from './category.model';
 @Table({ tableName: 'product_categories', timestamps: false })
 export class ProductCategory extends Model {
   @ForeignKey(() => Product)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare product_id: number;
 
   @ForeignKey(() => Category)

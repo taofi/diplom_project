@@ -45,11 +45,12 @@ export class ChatRoom extends Model {
 
   @AllowNull(true)
   @ForeignKey(() => Product)
-  @Column(DataType.INTEGER)
+  @Column({ type: DataType.INTEGER, onDelete: 'CASCADE' })
   declare product_id: number | null; // NULL = общий чат без товара
 
   @AllowNull(true)
-  @Column(DataType.INTEGER)
+  @ForeignKey(() => UserProduct)
+  @Column({ type: DataType.INTEGER, onDelete: 'CASCADE' })
   declare user_product_id: number | null; // Связь с купленным товаром
 
   @Default(ChatRoomStatus.OPEN)

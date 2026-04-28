@@ -38,38 +38,58 @@ export default function AdminPage() {
     return null;
   }
 
-  const adminLinks = [
-    {
-      href: `/${locale}/admin/products`,
-      title: t('admin.products.title') || 'Products Management',
-      description: t('admin.products.description') || 'Manage products, create new products, edit existing ones',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
-    },
-    {
-      href: `/${locale}/admin/categories-licenses`,
-      title: t('admin.tabs.categoriesLicenses') || 'Categories & Licenses',
-      description: t('admin.categoriesLicenses.description') || 'Manage categories and license types',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-        </svg>
-      ),
-    },
-    {
-      href: `/${locale}/admin/users`,
-      title: t('admin.tabs.users') || 'Users',
-      description: t('admin.users.description') || 'Manage users and their roles',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ),
-    },
-  ];
+    const adminLinks = [
+        {
+          href: `/${locale}/admin/products`,
+          title: t('admin.products.title') || 'Products Management',
+          description: t('admin.products.description') || 'Manage products, create new products, edit existing ones',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          ),
+        },
+        {
+          href: `/${locale}/admin/categories`,
+          title: t('admin.categories.title') || 'Categories',
+          description: t('admin.categories.description') || 'Manage product categories',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16" />
+            </svg>
+          ),
+        },
+        {
+          href: `/${locale}/admin/licenses`,
+          title: t('admin.licenseTypes.title') || 'License Types',
+          description: t('admin.licenseTypes.description') || 'Manage license types',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+            </svg>
+          ),
+        },
+        {
+          href: `/${locale}/admin/licenses`,
+          title: t('admin.licenseTypes.title') || 'License Types',
+          description: t('admin.licenseTypes.description') || 'Manage license types',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+            </svg>
+          ),
+        },
+        {
+          href: `/${locale}/admin/users`,
+          title: t('admin.tabs.users') || 'Users',
+          description: t('admin.users.description') || 'Manage users and their roles',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ),
+        },
+      ];
 
   return (
     <div className="min-h-screen mt-20 py-8">

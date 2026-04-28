@@ -1,7 +1,6 @@
 import {
   Injectable,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
@@ -51,26 +50,17 @@ export class CheckoutVerificationService {
   /**
    * Отправить код верификации на email
    */
-  async sendVerificationCode(email: string, locale: string = 'ru'): Promise<{
-    success: boolean;
-    message: string;
-    expiresIn: number;
-  }> {
-    // Проверить, не существует ли уже пользователь
-    const existingUser = await this.userModel.findOne({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
-
-    // Проверить, не отправлен ли уже код (можно добавить rate limiting)
-    const existingCode = await this.tokenService.getVerificationCode(email);
-    if (existingCode) {
-      // Код уже отправлен - не отправляем новый сразу
-      throw new BadRequestException('Code already sent. Please request a new one or wait for the current code to expire.');
-    }
+   async sendVerificationCode(email: string, locale: string = 'ru'): Promise<{
+     success: boolean;
+     message: string;
+     expiresIn: number;
+   }> {
+     // Проверить, не отправлен ли уже код (можно добавить rate limiting)
+     const existingCode = await this.tokenService.getVerificationCode(email);
+     if (existingCode) {
+       // Код уже отправлен - не отправляем новый сразу
+       throw new BadRequestException('Code already sent. Please request a new one or wait for the current code to expire.');
+     }
 
     // Генерировать код
     const verificationCode = generateVerificationCode();
@@ -154,16 +144,97 @@ export class CheckoutVerificationService {
     // Удалить код из Redis (он больше не нужен)
     await this.tokenService.deleteVerificationCode(email);
 
-    // Проверить еще раз, что пользователь не существует
+    // Проверить, существует ли пользователь
     const existingUser = await this.userModel.findOne({
       where: { email },
+      include: [{ model: this.userRoleModel }],
     });
 
+    // Если пользователь уже существует - добавляем товары на его аккаунт и логиним
     if (existingUser) {
+      // Получаем роли пользователя
+      const roles = existingUser.user_roles?.map(ur => ur.role) || ['user'];
+
+      // Переносим заказы гостя на пользователя (по email)
+      try {
+        const transferredOrdersCount = await this.orderService.transferGuestOrdersToUser(
+          existingUser.id,
+          email,
+        );
+
+        if (transferredOrdersCount > 0) {
+          console.log(`[CheckoutVerification] Orders transferred: ${transferredOrdersCount} orders to user ${existingUser.id}`);
+        }
+      } catch (error) {
+        console.error('[CheckoutVerification] Failed to transfer orders:', error);
+        // Продолжаем, даже если не удалось перенести заказы
+      }
+
+      // Синхронизируем корзину (переданную с фронта)
+      if (cartItems && cartItems.length > 0) {
+        try {
+          const syncedItems: Array<{ productLicenseId: number; productId: number }> = [];
+
+          for (const item of cartItems) {
+            const productLicenseId = await this.cartService.findProductLicenseId(
+              item.productId,
+              item.licenseTypeId,
+            );
+
+            if (productLicenseId) {
+              syncedItems.push({ productLicenseId, productId: item.productId });
+            } else {
+              console.warn(
+                `[CheckoutVerification] ProductLicense not found for productId=${item.productId}, licenseTypeId=${item.licenseTypeId}`,
+              );
+            }
+          }
+
+          if (syncedItems.length > 0) {
+            await this.cartService.syncCart(existingUser.id, syncedItems, locale);
+            console.log(`[CheckoutVerification] Cart synced: ${syncedItems.length} items to user ${existingUser.id}`);
+          }
+        } catch (error) {
+          console.error('[CheckoutVerification] Failed to sync cart:', error);
+        }
+      }
+      // TODO: Удалить загрузку гостевой корзины по guestId когда frontend перейдёт на новый подход
+      else if (guestId) {
+        try {
+          const guestCartItems = await this.cartService.getGuestCart(guestId);
+          if (guestCartItems.length > 0) {
+            await this.cartService.syncCart(
+              existingUser.id,
+              guestCartItems.map(item => ({ productLicenseId: item.productLicenseId })),
+              locale,
+            );
+            await this.cartService.clearGuestCart(guestId);
+            console.log(`[CheckoutVerification] Cart transferred (legacy): ${guestCartItems.length} items to user ${existingUser.id}`);
+          }
+        } catch (error) {
+          console.error('[CheckoutVerification] Failed to transfer cart (legacy):', error);
+        }
+      }
+
+      // Генерируем токены для существующего пользователя
+      const tokens = await this.tokenService.generateTokens({
+        sub: existingUser.id,
+        email: existingUser.email,
+        roles,
+      });
+
       return {
-        success: false,
-        message: 'User already exists',
-        error: 'USER_EXISTS',
+        success: true,
+        user: {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          roles,
+          locale: existingUser.locale,
+          avatar_url: existingUser.avatar_url,
+        },
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       };
     }
 

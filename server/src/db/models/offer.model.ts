@@ -49,7 +49,7 @@ export class Offer extends Model {
   declare id: number;
 
   @ForeignKey(() => ChatRoom)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare chat_room_id: number;
 
   @ForeignKey(() => User)
@@ -126,7 +126,7 @@ export class OfferFile extends Model {
   declare id: number;
 
   @ForeignKey(() => Offer)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare offer_id: number;
 
   @Column({

@@ -23,7 +23,7 @@ export class ProductLicense extends Model {
   declare id: number;
 
   @ForeignKey(() => Product)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare product_id: number;
 
   @ForeignKey(() => LicenseType)

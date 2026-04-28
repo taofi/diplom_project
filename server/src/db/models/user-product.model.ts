@@ -24,7 +24,7 @@ export class UserProduct extends Model {
   declare user_id: number;
 
   @ForeignKey(() => ProductLicense)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare product_license_id: number;
 
   @ForeignKey(() => Order)

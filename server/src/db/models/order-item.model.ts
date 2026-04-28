@@ -23,7 +23,7 @@ export class OrderItem extends Model {
   declare order_id: number;
 
   @ForeignKey(() => ProductLicense)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare product_license_id: number;
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })

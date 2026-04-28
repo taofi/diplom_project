@@ -22,10 +22,10 @@ import { Button, Spinner, ConfirmModal, Input } from '@/components/ui';
 
 type SubTabType = 'categories' | 'licenses';
 
-export function CategoriesLicensesTab() {
+export function CategoriesLicensesTab({ hideSubTabs = false, activeSubTab: initialActiveSubTab }: { hideSubTabs?: boolean; activeSubTab?: SubTabType }) {
   const { t, locale } = useI18n();
-  
-  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('categories');
+   
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>(initialActiveSubTab || 'categories');
   
   // Categories state
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
@@ -247,37 +247,39 @@ export function CategoriesLicensesTab() {
 
   return (
     <div>
-      {/* Sub-tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveSubTab('categories')}
-            className={`
-              py-3 px-1 border-b-2 font-medium text-sm transition-colors
-              ${
-                activeSubTab === 'categories'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            {t('admin.categories.title')}
-          </button>
-          <button
-            onClick={() => setActiveSubTab('licenses')}
-            className={`
-              py-3 px-1 border-b-2 font-medium text-sm transition-colors
-              ${
-                activeSubTab === 'licenses'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            {t('admin.licenseTypes.title')}
-          </button>
-        </nav>
-      </div>
+       {/* Sub-tabs */}
+       {!hideSubTabs && (
+         <div className="border-b border-gray-200 mb-6">
+           <nav className="-mb-px flex space-x-8">
+             <button
+               onClick={() => setActiveSubTab('categories')}
+               className={`
+                 py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                 ${
+                   activeSubTab === 'categories'
+                     ? 'border-blue-500 text-blue-600'
+                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                 }
+               `}
+             >
+               {t('admin.categories.title')}
+             </button>
+             <button
+               onClick={() => setActiveSubTab('licenses')}
+               className={`
+                 py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                 ${
+                   activeSubTab === 'licenses'
+                     ? 'border-blue-500 text-blue-600'
+                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                 }
+               `}
+             >
+               {t('admin.licenseTypes.title')}
+             </button>
+           </nav>
+         </div>
+       )}
 
       {/* Categories Tab */}
       {activeSubTab === 'categories' && (

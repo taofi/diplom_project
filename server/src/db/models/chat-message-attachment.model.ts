@@ -25,11 +25,11 @@ export class ChatMessageAttachment extends Model {
   declare id: number;
 
   @ForeignKey(() => ChatMessage)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare chat_message_id: number;
 
   @ForeignKey(() => ChatRoom)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false, onDelete: 'CASCADE' })
   declare chat_room_id: number;
 
   @Default(ChatAttachmentKind.FILE)
