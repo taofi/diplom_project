@@ -70,16 +70,6 @@ export default function AdminPage() {
           ),
         },
         {
-          href: `/${locale}/admin/licenses`,
-          title: t('admin.licenseTypes.title') || 'License Types',
-          description: t('admin.licenseTypes.description') || 'Manage license types',
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-            </svg>
-          ),
-        },
-        {
           href: `/${locale}/admin/users`,
           title: t('admin.tabs.users') || 'Users',
           description: t('admin.users.description') || 'Manage users and their roles',
