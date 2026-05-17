@@ -4,6 +4,21 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { Request, Response, NextFunction } from 'express';
+
+// Middleware для захвата raw body для Stripe webhook
+function rawBodyMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (req.originalUrl === '/checkout/webhook' || req.originalUrl === '/payments/webhook') {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    req.on('end', () => {
+      (req as any).rawBody = Buffer.concat(chunks);
+      next();
+    });
+  } else {
+    next();
+  }
+}
 
 async function bootstrap() {
   const loggerInstance = WinstonModule.createLogger({
@@ -37,23 +52,24 @@ async function bootstrap() {
 
   try {
     const app = await NestFactory.create(AppModule, {
-      logger: loggerInstance, // Используем Winston сразу
+      logger: loggerInstance,
+      rawBody: true,
     });
+
+    app.use(rawBodyMiddleware);
 
     app.enableCors({
       origin: ['http://localhost:4000', 'http://localhost:3000', 'http://localhost:3001'],
       credentials: true,
     });
 
-    // Применяем глобальный фильтр исключений
     app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.listen(process.env.PORT ?? 3000);
   } catch (err) {
-    // Если сервер упал при старте, пишем ошибку ПРЯМО ТУТ
     loggerInstance.error('Остановка сервера из-за критической ошибки', err);
     process.exit(1);
   }
 }
 
-bootstrap();
+void bootstrap();

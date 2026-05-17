@@ -6,11 +6,7 @@ import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button, Input, FormField, Alert, Card } from '@/components/ui';
 
-interface LoginPageProps {
-  params: { lang: string };
-}
-
-export default function LoginPage({ params }: LoginPageProps) {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

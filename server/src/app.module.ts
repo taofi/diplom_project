@@ -16,6 +16,7 @@ import { UserModule } from './user/user.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { PaymentModule } from './payment/payment.module';
 import { EmailModule } from './email/email.module';
 import { TranslationModule } from './translation/translation.module';
 import { UserProductModule } from './user-product/user-product.module';
@@ -57,6 +58,7 @@ import emailConfig from './config/email.config';
     CartModule,
     OrderModule,
     CheckoutModule,
+    PaymentModule,
     ProductModule,
     CategoryModule,
     LicenseTypeModule,

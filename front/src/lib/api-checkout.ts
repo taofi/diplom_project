@@ -6,47 +6,24 @@ interface CheckoutPayload {
   promoCodeId?: number;
 }
 
-interface OrderItem {
-  id: number;
-  productId: number;
-  productName: string;
-  licenseTypeId: number;
-  licenseTypeName: string;
-  price: number;
-  quantity: number;
+export interface CheckoutSessionResponse {
+  url: string;
+  orderId: number;
 }
 
-export interface OrderResponse {
-  id: number;
-  userId: number | null;
-  guestEmail: string | null;
-  totalAmount: number;
-  discountAmount: number;
-  status: string;
-  items: OrderItem[];
-  createdAt: string;
-}
-
-export interface CheckoutResponse {
-  order: OrderResponse;
-  success: boolean;
-}
-
-// Получаем текущий язык из куки
 function getLocale(): string {
   return Cookies.get('locale') || 'ru';
 }
 
-// Получаем guestId из куки
 function getGuestId(): string | undefined {
   return Cookies.get('guest_cart_id');
 }
 
 export const checkoutApi = {
   /**
-   * Оформить заказ
+   * Create Stripe Checkout Session
    */
-  async checkout(payload: CheckoutPayload): Promise<CheckoutResponse> {
+  async createCheckoutSession(payload: CheckoutPayload): Promise<CheckoutSessionResponse> {
     const locale = getLocale();
     const guestId = getGuestId();
 
@@ -58,7 +35,7 @@ export const checkoutApi = {
       headers['x-guest-id'] = guestId;
     }
 
-    const response = await api.post<CheckoutResponse>('/checkout', payload, {
+    const response = await api.post<CheckoutSessionResponse>('/checkout/session', payload, {
       headers,
     });
 

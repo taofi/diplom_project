@@ -41,13 +41,7 @@ export default function AdminLicensesPage() {
   return (
     <div className="min-h-screen mt-20 py-8">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t('admin.licenseTypes.title')}
-          </h1>
-        </div>
-
+       
         {/* Content */}
         <div className="mt-6">
           <CategoriesLicensesTab hideSubTabs={true} activeSubTab="licenses" />

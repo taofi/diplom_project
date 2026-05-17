@@ -213,7 +213,6 @@ export function OfferCard({
             style={{ backgroundColor: 'transparent', padding: 0 }}
           />
         </div>
-в
         {/* Отображение цен */}
         <div className="flex items-center gap-4 text-sm">
           {showBothPrices ? (

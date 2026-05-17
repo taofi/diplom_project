@@ -63,7 +63,6 @@ export class LicenseTypeService {
   async create(createDto: CreateLicenseTypeDto, language: string = 'ru'): Promise<LicenseTypeResponse> {
     const licenseType = await this.licenseTypeModel.create({});
 
-    // Create translation
     await this.translationModel.create({
       license_type_id: licenseType.id,
       locale: language,
@@ -84,7 +83,6 @@ export class LicenseTypeService {
       throw new NotFoundException(`LicenseType with ID ${id} not found`);
     }
 
-    // Update or create translation
     const existingTranslation = await this.translationModel.findOne({
       where: { license_type_id: id, locale: language },
     });
@@ -113,7 +111,6 @@ export class LicenseTypeService {
       throw new NotFoundException(`LicenseType with ID ${id} not found`);
     }
 
-    // Check if any products use this license type
     const usageCount = await this.productLicenseModel.count({
       where: { license_type_id: id },
     });
@@ -124,10 +121,8 @@ export class LicenseTypeService {
       );
     }
 
-    // Delete all translations
     await this.translationModel.destroy({ where: { license_type_id: id } });
 
-    // Delete license type
     await licenseType.destroy();
   }
 

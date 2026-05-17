@@ -236,12 +236,6 @@ function ChatContent() {
     <div className="w-full">
       <div className="max-w-10xl mt-20 mx-auto py-12 px-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t('chat.title')}
-          </h1>
-          <p className="text-gray-500 mt-2">
-            {t('chat.subtitle')}
-          </p>
           {!isConnected && (
             <div className="mt-2 text-sm text-yellow-600">
               {t('chat.connecting')}

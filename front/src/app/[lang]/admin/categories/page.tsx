@@ -41,14 +41,7 @@ export default function AdminCategoriesPage() {
   return (
     <div className="min-h-screen mt-20 py-8">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t('admin.categories.title')}
-          </h1>
-        </div>
-
-        {/* Content */}
+          {/* Content */}
         <div className="mt-6">
           <CategoriesLicensesTab hideSubTabs={true} activeSubTab="categories" />
         </div>

@@ -6,11 +6,7 @@ import { useAuth } from '@/context/auth/AuthContext';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { Button, Input, FormField, Alert, Card } from '@/components/ui';
 
-interface RegisterPageProps {
-  params: { lang: string };
-}
-
-export default function RegisterPage({ params }: RegisterPageProps) {
+export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -60,6 +60,10 @@ export class Order extends Model {
   @Column(DataType.INTEGER)
   declare promo_code_id: number | null;
 
+  @AllowNull(true)
+  @Column(DataType.STRING(255))
+  declare stripe_session_id: string | null;
+
   @CreatedAt
   declare created_at: Date;
 

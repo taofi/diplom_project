@@ -6,6 +6,7 @@ import { useI18n } from '@/context/i18n/I18nContext';
 import { chatApi } from '@/lib/api-chat';
 import { Button, Modal, Input } from '@/components/ui';
 import type { CreateOfferDto } from '@/types/chat/offer.types';
+import { formatPrice } from '@/utils/price';
 
 const MDEditor = dynamic(
   () => import('@uiw/react-md-editor').then((mod) => mod.default),
@@ -157,13 +158,6 @@ export function CreateOfferModal({
     onClose();
   };
 
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-    }).format(value);
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -207,7 +201,7 @@ export function CreateOfferModal({
               disabled={loading}
               className="flex-1"
             />
-            <span className="text-gray-500 font-medium">RUB</span>
+            <span className="text-gray-500 font-medium">BYN</span>
           </div>
           {price > 0 && (
             <p className="text-sm text-gray-500 mt-1">

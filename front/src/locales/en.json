@@ -448,6 +448,7 @@
     "section4Text": "We may use third-party analytics services such as Google Analytics, which may also set cookies."
   },
   "checkout": {
+    "pay": "Pay",
     "title": "Checkout",
     "cartEmpty": "Your cart is empty",
     "emailRequired": "Email is required to place an order",
@@ -488,7 +489,10 @@
       "invalidEmail": "Please enter a valid email",
       "note": "Verify email to place order",
       "placeOrderDisabled": "Verify email to place order"
-    }
+    },
+    "cancelledTitle": "Payment Cancelled",
+    "cancelledMessage": "Your payment was cancelled. You can try again.",
+    "tryAgain": "Try Again"
   },
   "chat": {
     "title": "Chats",

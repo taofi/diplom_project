@@ -112,12 +112,7 @@ export default function AuthorsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 pt-26">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('authors.title')}</h1>
-        <p className="text-sm text-gray-600 mt-2">{t('authors.subtitle')}</p>
-      </div>
-
-      <div className="mb-8">
+         <div className="mb-8">
         <Input
           type="text"
           name="authorsSearch"

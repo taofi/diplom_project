@@ -74,46 +74,32 @@ export function Header() {
           <div className="lg:hidden">
             <Navigation />
           </div>
-          <NavButton
-            href="/cart"
-            text={t('nav.cart')}
-            hideLabel
-            badge={cartCount}
-            icon={
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="w-6 h-6"
-              >
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-            }
-          />
-          <div ref={avatarMenuRef} className="relative">
-            <button
-              type="button"
-              onClick={() =>
-                setAvatarMenuState((prev) =>
-                  prev.open && prev.path === pathname
-                    ? { open: false, path: null }
-                    : { open: true, path: pathname },
-                )
-              }
-              className="cursor-pointer text-primary hover:text-primary/80 transition-colors"
-              aria-label="Open user menu"
+          {!isAuthenticated ? (
+            <Link
+              href={`/${locale}/login`}
+              className="text-primary hover:text-primary/80 transition-colors font-medium"
             >
-              <UserAvatarIcon avatarUrl={user?.avatar_url} name={user?.name} size={36} />
-            </button>
+              {t('nav.login')}
+            </Link>
+          ) : (
+            <div ref={avatarMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setAvatarMenuState((prev) =>
+                    prev.open && prev.path === pathname
+                      ? { open: false, path: null }
+                      : { open: true, path: pathname },
+                  )
+                }
+                className="cursor-pointer text-primary hover:text-primary/80 transition-colors"
+                aria-label="Open user menu"
+              >
+                <UserAvatarIcon avatarUrl={user?.avatar_url} name={user?.name} size={36} />
+              </button>
 
-            {isAvatarMenuOpen && (
-              <div className="absolute right-0 top-12 z-120 w-[270px] rounded-xl border border-primary/20 bg-white p-2 shadow-lg">
-                {isAuthenticated ? (
+              {isAvatarMenuOpen && (
+                <div className="absolute right-0 top-12 z-120 w-[270px] rounded-xl border border-primary/20 bg-white p-2 shadow-lg">
                   <>
                     <div className="flex flex-col gap-1">
                       <Link
@@ -188,36 +174,31 @@ export function Header() {
                       </button>
                     </div>
                   </>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <Link
-                      href={`/${locale}/login`}
-                      onClick={() => setAvatarMenuState({ open: false, path: null })}
-                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                        <polyline points="10 17 15 12 10 7" />
-                        <line x1="15" y1="12" x2="3" y2="12" />
-                      </svg>
-                      <span className="text-left">{t('nav.login')}</span>
-                    </Link>
-                    <Link
-                      href={`/${locale}/register`}
-                      onClick={() => setAvatarMenuState({ open: false, path: null })}
-                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14" />
-                        <path d="M5 12h14" />
-                      </svg>
-                      <span className="text-left">{t('auth.register')}</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
+          <NavButton
+            href="/cart"
+            text={t('nav.cart')}
+            hideLabel
+            badge={cartCount}
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="w-6 h-6"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            }
+          />
           <LanguageSwitcher />
         </div>
         

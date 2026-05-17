@@ -85,9 +85,6 @@ function OrdersContent() {
           <h1 className="text-3xl font-bold text-gray-900">
             {t('orders.title')}
           </h1>
-          <p className="text-gray-500 mt-2">
-            {t('orders.subtitle')}
-          </p>
         </div>
 
         {/* Filter tabs */}

@@ -21,6 +21,8 @@ lerna-debug.log*
 
 # IDEs and editors
 /.idea
+/.kilo
+/.VSCodeCounter
 .project
 .classpath
 .c9/

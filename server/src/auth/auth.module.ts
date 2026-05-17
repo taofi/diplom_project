@@ -15,6 +15,7 @@ import { TokenModule } from '../token/token.module';
 import { EmailModule } from '../email/email.module';
 import { CartModule } from '../cart/cart.module';
 import { OrderModule } from '../order/order.module';
+import { PaymentModule } from '../payment/payment.module';
 import { User } from '../db/models/user.model';
 import { UserRole as UserRoleModel } from '../db/models/user-role.model';
 
@@ -36,6 +37,7 @@ import { UserRole as UserRoleModel } from '../db/models/user-role.model';
     EmailModule,
     forwardRef(() => CartModule),
     forwardRef(() => OrderModule),
+    forwardRef(() => PaymentModule),
   ],
   controllers: [AuthController, CheckoutVerificationController],
   providers: [AuthService, CheckoutVerificationService, JwtStrategy, JwtAuthGuard, RolesGuard],

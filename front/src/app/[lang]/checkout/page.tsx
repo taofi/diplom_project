@@ -173,18 +173,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      const response = await checkoutApi.checkout(payload);
+      const response = await checkoutApi.createCheckoutSession(payload);
       
-      if (response.success) {
-        toastSuccess(t('checkout.orderSuccess') || 'Order placed successfully!');
-        // Очищаем корзину
-        await refreshCart();
-        // Перенаправляем на страницу успеха
-        router.push(`/${locale}/checkout/success?orderId=${response.order.id}`);
+      if (response.url) {
+        window.location.href = response.url;
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toastError(t('checkout.orderFailed') || 'Failed to place order');
+      toastError(t('checkout.orderFailed') || 'Failed to create checkout session');
     } finally {
       setIsSubmitting(false);
     }
@@ -426,7 +422,7 @@ export default function CheckoutPage() {
                     className="w-full"
                     size="lg"
                   >
-                    {t('checkout.placeOrder') || 'Place Order'}
+                    {t('checkout.pay') || 'Place Order'}
                   </Button>
                   <p className="text-xs text-red-500 mt-2 text-center">
                     {t('checkout.verification.placeOrderDisabled') || 'Verify email to place order'}
@@ -442,7 +438,7 @@ export default function CheckoutPage() {
                   {isSubmitting ? (
                     <Spinner size="sm" />
                   ) : (
-                    t('checkout.placeOrder') || 'Place Order'
+                    t('checkout.pay') || 'Place Order'
                   )}
                 </Button>
               )}
