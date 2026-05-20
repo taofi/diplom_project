@@ -46,6 +46,7 @@ import { TranslationModule } from '../translation/translation.module';
 // Redis
 import { RedisModule } from '../redis/redis.module';
 import { CommonModule } from '../common/common.module';
+import { StripeModule } from '../payment/stripe/stripe.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { CommonModule } from '../common/common.module';
     TranslationModule,
     RedisModule,
     CommonModule,
+    StripeModule,
     SequelizeModule.forFeature([
       ChatRoom,
       ChatMessage,
@@ -88,6 +90,14 @@ import { CommonModule } from '../common/common.module';
     OfferService,
     ChatGateway,
   ],
-  exports: [ChatService, TempChatService, ChatStateService, ChatCacheService, OfferService],
+  exports: [
+    ChatService,
+    TempChatService,
+    ChatStateService,
+    ChatCacheService,
+    OfferService,
+    OfferRepository,
+    ChatNotificationService,
+  ],
 })
 export class ChatModule {}

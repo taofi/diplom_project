@@ -52,6 +52,11 @@ export class UserProductService {
     const productLicense = userProduct.product_license as ProductLicense & {
       product: Product;
     };
+
+    if (!productLicense || !productLicense.product) {
+      return null;
+    }
+
     const product = productLicense.product;
     const fileUrl = product.file_url;
 

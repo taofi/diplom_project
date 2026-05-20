@@ -323,6 +323,7 @@
       "commercial": "Commercial",
       "extended": "Extended"
     },
+    "recommendations": "recommendations",
     "addToCart": "Add to cart",
     "buyNow": "Buy now",
     "addedToCart": "Asset added to cart!",
@@ -495,6 +496,7 @@
     "tryAgain": "Try Again"
   },
   "chat": {
+    "total": "Total",
     "title": "Chats",
     "subtitle": "Communicate with asset authors",
     "myChats": "My Chats",

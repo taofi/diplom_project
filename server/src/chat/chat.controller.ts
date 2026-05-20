@@ -20,6 +20,7 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
+import { PayOrderDto } from './dto/offer.dto';
 import { ChatAttachmentsInterceptor } from './interceptors/chat-attachments.interceptor';
 
 import { MessageType } from '../db/models/chat-message.model';
@@ -174,6 +175,21 @@ export class ChatController {
   @Get('rooms/:id/offers')
   async getChatOffers(@Param('id') id: string) {
     return this.chatService.getChatOffers(parseInt(id, 10));
+  }
+
+  // ==================== Offer Payment ====================
+
+  /**
+   * POST /chat/offers/:id/pay
+   * Создать Stripe Checkout Session для оплаты оформленного заказа
+   */
+  @Post('offers/:id/pay')
+  async payOffer(
+    @CurrentUserId() userId: number,
+    @Param('id') id: string,
+    @Body() dto: PayOrderDto,
+  ) {
+    return this.offerService.payOrder(parseInt(id, 10), userId, dto);
   }
 
   // ==================== Orders ====================

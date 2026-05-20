@@ -10,12 +10,13 @@ import { Spinner } from '@/components/ui';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { Offer } from '@/types/chat';
+import type { PayOrderResponse } from '@/types/chat/offer.types';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   offer: Offer;
-  onSuccess: (offer: Offer) => void;
+  onSuccess: (result: PayOrderResponse) => void;
 }
 
 export function PaymentModal({ isOpen, onClose, offer, onSuccess }: PaymentModalProps) {
@@ -144,9 +145,15 @@ export function PaymentModal({ isOpen, onClose, offer, onSuccess }: PaymentModal
 
     setIsSubmitting(true);
     try {
-      const updatedOffer = await chatApi.payOrder(offer.id, { simulateSuccess: true });
-      toastSuccess(t('chat.paymentSuccess') || 'Payment successful!');
-      onSuccess(updatedOffer);
+      const result = await chatApi.payOrder(offer.id, {});
+      const sessionUrl = result.sessionUrl;
+      if (sessionUrl) {
+        // Открываем форму оплаты Stripe в новой вкладке
+        window.open(sessionUrl, '_blank');
+        onSuccess(result);
+      } else {
+        toastError(t('chat.paymentSessionNotCreated') || 'Payment session not created');
+      }
       onClose();
     } catch (error) {
       const err = error as Error;
@@ -217,127 +224,8 @@ export function PaymentModal({ isOpen, onClose, offer, onSuccess }: PaymentModal
             </div>
           </div>
 
-          {/* Для неавторизованных - форма email с верификацией */}
-          {!isAuthenticated && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('checkout.email') || 'Email'} *
-              </label>
 
-              {!emailVerified ? (
-                <>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Input
-                        type="email"
-                        name="email"
-                        value={guestEmail}
-                        onChange={(value) => {
-                          setGuestEmail(value);
-                          setEmailVerified(false);
-                          setVerificationError('');
-                        }}
-                        placeholder={t('checkout.emailPlaceholder') || 'your@email.com'}
-                        disabled={showCodeInput}
-                        required
-                      />
-                    </div>
-                    {!showCodeInput && isEmailValid && (
-                      <Button
-                        onClick={handleSendCode}
-                        disabled={isSendingCode}
-                        variant="secondary"
-                      >
-                        {isSendingCode ? <Spinner size="sm" /> : (t('checkout.verification.sendCode') || 'Send')}
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Поле ввода кода */}
-                  {showCodeInput && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('checkout.verification.codePlaceholder') || 'Введите код'}
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <Input
-                            type="text"
-                            name="verificationCode"
-                            value={verificationCode}
-                            onChange={(value) => {
-                              const digitsOnly = value.replace(/\D/g, '').slice(0, 6);
-                              setVerificationCode(digitsOnly);
-                              setVerificationError('');
-                            }}
-                            placeholder="000000"
-                            maxLength={6}
-                          />
-                        </div>
-                        <Button
-                          onClick={handleVerifyCode}
-                          disabled={isVerifying || verificationCode.length !== 6}
-                        >
-                          {isVerifying ? <Spinner size="sm" /> : (t('checkout.verification.verify') || 'Verify')}
-                        </Button>
-                      </div>
-
-                      {/* Ошибка верификации */}
-                      {verificationError && (
-                        <p className="text-sm text-red-500 mt-2">
-                          {verificationError}
-                        </p>
-                      )}
-
-                      {/* Таймер и кнопка повторной отправки */}
-                      <div className="mt-3">
-                        {resendTimer > 0 ? (
-                          <p className="text-sm text-gray-500">
-                            {t('checkout.verification.resendIn').replace('{seconds}', String(resendTimer)) || `Повторить через ${resendTimer} сек`}
-                          </p>
-                        ) : (
-                          <button
-                            onClick={handleResendCode}
-                            className="text-sm text-blue-600 hover:text-blue-800"
-                          >
-                            {t('checkout.verification.resendCode') || 'Resend code'}
-                          </button>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-gray-500 mt-2">
-                        {t('checkout.verification.codeSentTo') || `Код отправлен на ${guestEmail}`}
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-sm text-green-700">
-                    {t('checkout.verification.emailVerified') || 'Email verified'}
-                  </span>
-                </div>
-              )}
-
-              {!emailVerified && (
-                <p className="text-sm text-gray-500 mt-2">
-                  {t('checkout.verification.note') || 'Verify email to pay'}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Для авторизованных - информация из профиля */}
-          {isAuthenticated && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">
-                {t('checkout.authenticatedNote') || 'Your payment will be associated with your account'}
-              </p>
-            </div>
-          )}
+          
         </div>
 
         {/* Кнопки */}

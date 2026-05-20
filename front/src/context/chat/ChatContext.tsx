@@ -47,7 +47,7 @@ interface ChatContextType {
   counterOffer: (offerId: number, newPrice: number) => Promise<void>;
   confirmPrice: (offerId: number) => Promise<void>;
   uploadOfferFiles: (offerId: number, images: File[], file: File | null) => Promise<void>;
-  payOrder: (offerId: number, simulateSuccess?: boolean) => Promise<void>;
+  payOrder: (offerId: number) => Promise<void>;
   getOfferFiles: (offerId: number) => Promise<{ preview_url: string | null; source_files_urls: string[] | null }>;
   
   // Custom orders
@@ -279,7 +279,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         id: user.id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar_url || undefined,
+        avatar_url: user.avatar_url || undefined,
       };
     } catch (error) {
       console.error('Error loading user info:', error);
@@ -326,7 +326,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           id: buyer.id,
           name: buyer.name,
           email: buyer.email,
-          avatar: buyer.avatar || buyer.avatar_url,
+          avatar_url: buyer.avatar_url,
         });
       }
       if (seller) {
@@ -334,7 +334,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           id: seller.id,
           name: seller.name,
           email: seller.email,
-          avatar: seller.avatar || seller.avatar_url,
+          avatar_url: seller.avatar_url,
         });
       }
       // Также сохраняем sender из всех сообщений
@@ -514,12 +514,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const payOrder = useCallback(async (offerId: number, simulateSuccess = false) => {
+  const payOrder = useCallback(async (offerId: number) => {
     try {
-      const offer = await chatApi.payOrder(offerId, { simulateSuccess });
-      setOffers(prev => prev.map(o => 
-        o.id === offerId ? offer : o
-      ));
+      await chatApi.payOrder(offerId, {});
     } catch (error) {
       console.error('Error paying order:', error);
       throw error;

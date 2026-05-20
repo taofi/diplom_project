@@ -48,20 +48,7 @@ export interface Offer {
   created_at: string | Date;
   updated_at: string | Date;
   deadline?: string;
-  // Legacy fields for backward compatibility - maps author_id to seller_id
-  seller_id: number;
-  responded_at?: string | null;
-  // Связанные данные (при загрузке с сервера)
-  creator?: {
-    id: number;
-    username: string;
-    avatar_url?: string;
-  };
-  author?: {
-    id: number;
-    username: string;
-    avatar_url?: string;
-  };
+  stripe_session_id?: string | null;
 }
 
 export interface OfferFiles {
@@ -94,4 +81,10 @@ export interface UploadFilesDto {
 // DTO для оплаты
 export interface PayOrderDto {
   simulateSuccess?: boolean;
+}
+
+// Ответ при оплате оффера
+export interface PayOrderResponse {
+  sessionUrl: string;
+  offerId: number;
 }

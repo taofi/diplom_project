@@ -139,6 +139,16 @@ export class OfferRepository {
     return offer;
   }
 
+  async setStripeSessionId(id: number, stripeSessionId: string | null): Promise<Offer> {
+    const offer = await this.findById(id);
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+    offer.stripe_session_id = stripeSessionId;
+    await offer.save();
+    return offer;
+  }
+
   async findByIdOrFail(id: number): Promise<Offer> {
     const offer = await this.findById(id);
     if (!offer) {

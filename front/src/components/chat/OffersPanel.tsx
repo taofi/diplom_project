@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useI18n } from '@/context/i18n/I18nContext';
 import { OfferCard } from './OfferCard';
 import type { Offer } from '@/types/chat';
+import type { PayOrderResponse } from '@/types/chat/offer.types';
 import { Spinner, Button } from '@/components/ui';
 import { OfferStatus } from '@/types/chat/offer.types';
 
@@ -16,7 +17,7 @@ interface OffersPanelProps {
   onDecline?: (offer: Offer) => void;
   onCounterOffer?: (offer: Offer) => void;
   onConfirmPrice?: (offer: Offer) => void;
-  onPay?: (offer: Offer) => void;
+  onPay?: (result: PayOrderResponse) => void;
   onUploadFiles?: (offer: Offer) => void;
   onDownloadFiles?: (offer: Offer) => void;
   isLoading?: boolean;

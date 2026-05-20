@@ -265,6 +265,7 @@ export function ChatWindow({
   const roomTypingUsers = room ? typingUsers.get(room.id) : undefined;
   const isTyping = roomTypingUsers ? roomTypingUsers.size > 0 : false;
 
+
   if (!room) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -289,9 +290,9 @@ export function ChatWindow({
                 alt={room.translatedProductName || room.product?.name || 'Product'}
                 width={40} height={40} className="w-full h-full object-cover"
               />
-            ) : otherUser?.avatar ? (
+            ) : otherUser?.avatar_url ? (
               <ServerImage
-                src={otherUser.avatar} alt={otherUser.name}
+                src={otherUser.avatar_url} alt={otherUser.name}
                 width={40} height={40} className="w-full h-full object-cover"
               />
             ) : (

@@ -1,18 +1,27 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, StreamableFile } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, StreamableFile, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Stripe from 'stripe';
 import { OfferRepository } from '../repositories/offer.repository';
 import { Offer, OfferStatus } from '../../db/models/offer.model';
 import { CreateOfferDto, CounterOfferDto, PayOrderDto } from '../dto/offer.dto';
 import { ChatNotificationService } from './chat-notification.service';
 import { FileService } from '../../common/services/file.service';
 import type { MulterFile } from '../../common/services/file.service';
+import { StripeService } from '../../payment/stripe/stripe.service';
 import { createReadStream } from 'fs';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class OfferService {
+  private readonly logger = new Logger(OfferService.name);
+
   constructor(
     private offerRepository: OfferRepository,
     private chatNotificationService: ChatNotificationService,
     private fileService: FileService,
+    private readonly stripeService: StripeService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -47,8 +56,21 @@ export class OfferService {
     };
   }
 
-  private parseJsonStringArray(value: string | null): string[] | null {
-    if (!value || typeof value !== 'string') {
+  private parseJsonStringArray(value: string | null | string[]): string[] | null {
+    if (!value) {
+      return null;
+    }
+
+    // Если уже массив (Sequelize может автоматически парсить JSON)
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    if (value.length === 0) {
       return null;
     }
 
@@ -422,9 +444,12 @@ export class OfferService {
   }
 
   /**
-   * Оплатить заказ (Заказчик)
+   * Оплатить заказ (Заказчик) — через Stripe Checkout Session
+   * Создаёт сессию оплаты и сохраняет stripe_session_id на оффере.
+   * Статус оффера меняется на COMPLETED только после подтверждения вебхуком Stripe.
+   * Возвращает сессию для открытия Stripe формы и обновлённый офер.
    */
-  async payOrder(offerId: number, userId: number, dto: PayOrderDto): Promise<Offer> {
+  async payOrder(offerId: number, userId: number, _dto: PayOrderDto): Promise<{ sessionUrl: string; offerId: number }> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
@@ -436,22 +461,56 @@ export class OfferService {
       throw new ForbiddenException('Cannot pay at this status');
     }
 
-    // Имитация оплаты (в реальности - вызов платёжного провайдера)
-    if (dto.simulateSuccess !== false) {
-      const updated = await this.offerRepository.markAsPaid(offerId);
-      
-      const serialized = this.serializeOffer(updated);
-      
-      // WebSocket: уведомить создателя
-      await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:paid', { offer: serialized });
-      // WebSocket: уведомить автора
-      await this.chatNotificationService.notifyUser(offer.author_id, 'offer:paid', { offer: serialized });
-      
-      return updated;
-    }
+    const priceAmount = Math.round(Number(offer.price) * 100);
+    const author = offer.author;
+    const authorName = author?.name || 'Offer';
+    const creatorEmailQuery = offer.creator?.email;
 
-    // Если оплата не прошла - возвращаем как есть
-    throw new ForbiddenException('Payment failed');
+    this.logger.log(`[payOrder] offerId=${offerId}, price=${offer.price}, amount=${priceAmount}, creatorEmail=${creatorEmailQuery}`);
+
+    // Base URL для фронтенда — используем тот же домен, что и для checkout, но перенаправляем на чат
+    const baseUrl =
+      this.configService.get<string>('STRIPE_CHECKOUT_SUCCESS_URL') ||
+      'http://localhost:4200/checkout/success';
+    // Обрезаем путь до корня домена для последующего построения URL чата
+    const origin = baseUrl.replace(/\/[^/]*$/, '');
+
+    const successUrl = `${origin}/pay-success`;
+    const cancelUrl = `${origin}/chat`;
+
+    const sessionCreateParams = {
+      orderId: offerId,
+      lineItems: [
+        {
+          price_data: {
+            currency: 'byn',
+            product_data: {
+              name: authorName,
+            },
+            unit_amount: priceAmount,
+          },
+          quantity: 1,
+        },
+      ],
+      successUrl,
+      cancelUrl,
+      metadata: {
+        offerId: String(offerId),
+        type: 'offer',
+      },
+      ...(creatorEmailQuery ? { customerEmail: creatorEmailQuery } : {}),
+    };
+
+    const session = await this.stripeService.createCheckoutSession(sessionCreateParams);
+
+    this.logger.log(`[payOrder] Stripe session created: ${session.id}, offerStatusBefore=${offer.status}`);
+
+    // Сохраняем stripe_session_id на оффере (не меняем статус — ждём вебхук)
+    await this.offerRepository.setStripeSessionId(offerId, session.id ?? null);
+
+    this.logger.log(`[payOrder] stripe_session_id saved, offerId=${offerId}, sessionUrl=${session.url?.substring(0, 80)}`);
+
+    return { sessionUrl: session.url ?? '', offerId };
   }
 
   /**
@@ -578,7 +637,7 @@ export class OfferService {
    * Скачать файл заказа как StreamableFile
    * Используется для прямого скачивания с правильными заголовками
    */
-  async downloadSourceFileAsStream(
+async downloadSourceFileAsStream(
     offerId: number,
     fileIndex: number,
     userId: number,
@@ -588,25 +647,39 @@ export class OfferService {
       throw new NotFoundException('Offer not found');
     }
 
-    // Проверка: только участники заказа
+    // Check: only participants
     if (offer.creator_id !== userId && offer.author_id !== userId) {
       throw new ForbiddenException('Not authorized');
     }
 
-    // Файлы доступны только если заказ оплачен
+    // Files available only if order is paid
     if (offer.status !== OfferStatus.COMPLETED || !offer.is_paid) {
       throw new ForbiddenException('Files are not available. Order must be paid.');
     }
 
-    // Получаем массив URL файлов
+    // Get array of file URLs
     let sourceFilesUrls: string[] = [];
+    console.log(`[OfferService] source_files_urls type: ${typeof offer.source_files_urls}, isArray: ${Array.isArray(offer.source_files_urls)}, value:`, offer.source_files_urls);
+    
     if (typeof offer.source_files_urls === 'string' && offer.source_files_urls.length > 0) {
       try {
-        sourceFilesUrls = JSON.parse(offer.source_files_urls) as string[];
-      } catch {
+        const parsed = JSON.parse(offer.source_files_urls) as string[];
+        console.log(`[OfferService] Parsed from string, length: ${parsed.length}`);
+        sourceFilesUrls = parsed;
+      } catch (e) {
+        console.log(`[OfferService] JSON parse error:`, e);
         sourceFilesUrls = [];
       }
+    } else if (Array.isArray(offer.source_files_urls)) {
+      // Sequelize might auto-parse JSON fields
+      sourceFilesUrls = offer.source_files_urls as string[];
+      console.log(`[OfferService] Using array directly, length: ${sourceFilesUrls.length}`);
+    } else {
+      console.log(`[OfferService] No valid source_files_urls found`);
     }
+
+    console.log(`[OfferService] source_files_urls raw value: "${offer.source_files_urls}"`);
+    console.log(`[OfferService] sourceFilesUrls parsed length: ${sourceFilesUrls.length}`);
 
     if (!sourceFilesUrls || sourceFilesUrls.length === 0) {
       throw new NotFoundException('No source files available');
@@ -625,14 +698,17 @@ export class OfferService {
     }
 
     const fullPath = this.fileService.getFullPath(fileUrl);
+    console.log(`[OfferService] Full path to file: ${fullPath}`);
+    console.log(`[OfferService] File exists: ${fs.existsSync(fullPath || '')}`);
+    
     if (!fullPath) {
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
 
-    // Используем getFileStream для получения информации о файле
-    const { filename, mimeType } = this.fileService.getFileStream(fileUrl);
-
-    // Создаём новый read stream и оборачиваем в StreamableFile
+    // Получаем имя файла из URL (более надежно)
+    const filename = fileUrl.split('/').pop() || 'download';
+    const mimeType = this.fileService['getMimeType'](filename);
+    // Создаём StreamableFile
     const readStream = createReadStream(fullPath);
     const streamableFile = new StreamableFile(readStream);
 

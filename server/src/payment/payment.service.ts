@@ -172,7 +172,7 @@ export class PaymentService {
 
     await payment.update({ status: PaymentStatus.SUCCESS });
 
-    const order = await this.orderModel.findByPk(payment.order_id);
+    const order = payment.order_id != null ? await this.orderModel.findByPk(payment.order_id) : null;
     if (order && order.status !== 'paid') {
       await order.update({ status: 'paid' });
     }

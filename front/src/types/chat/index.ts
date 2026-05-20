@@ -4,7 +4,7 @@ export interface ChatUser {
   id: number;
   name: string;
   email?: string;
-  avatar?: string;
+  avatar_url?: string;
   isOnline?: boolean;
 }
 

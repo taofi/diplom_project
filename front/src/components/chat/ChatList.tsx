@@ -117,9 +117,9 @@ export function ChatList({
                       height={48}
                       className="w-full h-full object-cover"
                     />
-                  ) : otherUser?.avatar ? (
+                  ) : otherUser?.avatar_url ? (
                     <ServerImage
-                      src={otherUser.avatar}
+                      src={otherUser.avatar_url}
                       alt={otherUser.name}
                       width={48}
                       height={48}

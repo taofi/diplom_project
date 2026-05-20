@@ -102,6 +102,10 @@ export class Offer extends Model {
   @Column({ type: DataType.DATE })
   declare paid_at: Date | null;
 
+  @AllowNull(true)
+  @Column({ type: DataType.STRING(255) })
+  declare stripe_session_id: string | null;
+
   @CreatedAt
   declare created_at: Date;
 

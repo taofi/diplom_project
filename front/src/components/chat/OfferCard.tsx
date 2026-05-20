@@ -9,6 +9,7 @@ import { ImageModal } from './ImageModal';
 import { PaymentModal } from './PaymentModal';
 import { PriceChangeModal } from './PriceChangeModal';
 import type { Offer } from '@/types/chat';
+import type { PayOrderResponse } from '@/types/chat/offer.types';
 import { UploadFilesModal } from './UploadFilesModal';
 
 interface OfferCardProps {
@@ -20,7 +21,7 @@ interface OfferCardProps {
   onDecline?: (offer: Offer) => void;
   onCounterOffer?: (offer: Offer) => void;
   onConfirmPrice?: (offer: Offer) => void;
-  onPay?: (offer: Offer) => void;
+  onPay?: (result: PayOrderResponse) => void;
   onUploadFiles?: (offer: Offer) => void;
   onDownloadFiles?: (offer: Offer, fileUrl?: string) => void;
   isLoading?: boolean;
@@ -340,17 +341,7 @@ export function OfferCard({
                     <span className="text-sm truncate max-w-[170px]" title={filename}>
                       {filename}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownloadFiles?.(offer, fileUrl);
-                      }}
-                    >
-                      {t('chat.downloadFiles')}
-                    </Button>
+                    
                   </li>
                 );
               })}
@@ -503,8 +494,8 @@ export function OfferCard({
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           offer={offer}
-          onSuccess={(updatedOffer) => {
-            onPay?.(updatedOffer);
+          onSuccess={(result) => {
+            onPay?.(result);
           }}
         />
       </div>

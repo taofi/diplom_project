@@ -74,9 +74,9 @@ export function MessageBubble({ message, currentUserId, isOffer = false }: Messa
     <div className={`flex gap-3 mb-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
       <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0 flex items-center justify-center overflow-hidden">
-        {sender?.avatar ? (
+        {sender?.avatar_url ? (
           <ServerImage
-            src={sender.avatar}
+            src={sender.avatar_url}
             alt={sender.name}
             width={32}
             height={32}

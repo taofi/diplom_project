@@ -452,12 +452,15 @@ export class FileService {
 
     // Определить базовую директорию
     if (cleanPath.startsWith('media/') || cleanPath.startsWith('temp/')) {
-      return path.join(process.cwd(), 'public', cleanPath);
+      const result = path.join(process.cwd(), 'public', cleanPath);
+      return result.split(path.sep).join('/');
     } else if (cleanPath.startsWith('files/')) {
-      return path.join(process.cwd(), cleanPath);
+      const result = path.join(process.cwd(), cleanPath);
+      return result.split(path.sep).join('/');
     } else {
       // Попробовать как относительный путь
-      return path.join(process.cwd(), cleanPath);
+      const result = path.join(process.cwd(), cleanPath);
+      return result.split(path.sep).join('/');
     }
   }
 

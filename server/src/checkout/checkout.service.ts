@@ -8,10 +8,13 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import { Order, OrderStatus } from '../db/models/order.model';
 import { OrderItem } from '../db/models/order-item.model';
-import { Payment } from '../db/models/payment.model';
 import { ProductLicense } from '../db/models/product-license.model';
 import { UserProduct } from '../db/models/user-product.model';
 import { User } from '../db/models/user.model';
+import { Payment, PaymentStatus } from '../db/models/payment.model';
+import { Offer, OfferStatus } from '../db/models/offer.model';
+import { OfferRepository } from '../chat/repositories/offer.repository';
+import { ChatNotificationService } from '../chat/services/chat-notification.service';
 import { CartService } from '../cart/cart.service';
 import { OrderService, OrderResponse } from '../order/order.service';
 import { EmailService } from '../email/email.service';
@@ -67,6 +70,10 @@ export class CheckoutService {
     private readonly userProductModel: typeof UserProduct,
     @InjectModel(User)
     private readonly userModel: typeof User,
+    @InjectModel(Offer)
+    private readonly offerModel: typeof Offer,
+    private readonly offerRepository: OfferRepository,
+    private readonly chatNotificationService: ChatNotificationService,
     private readonly cartService: CartService,
     private readonly orderService: OrderService,
     private readonly emailService: EmailService,
@@ -367,11 +374,17 @@ export class CheckoutService {
       
       if (isCheckoutSession(session)) {
         this.logger.log(`[DEBUG] Session metadata: ${JSON.stringify(session.metadata)}`);
-        
+
         if (event.type === 'checkout.session.async_payment_failed') {
           await this.handleCheckoutSessionFailed(session);
         } else {
-          await this.handleCheckoutSessionCompleted(session);
+          // Разбираем вебхук по типу сущности: order (по умолчанию) или offer
+          const metaType = session.metadata?.type;
+          if (metaType === 'offer') {
+            await this.handleOfferCheckoutSessionCompleted(session);
+          } else {
+            await this.handleCheckoutSessionCompleted(session);
+          }
         }
       } else {
         this.logger.warn(`[DEBUG] Session validation failed, object keys: ${Object.keys(session || {}).join(', ')}`);
@@ -411,6 +424,150 @@ export class CheckoutService {
 
     await this.finalizeOrder(orderId);
     this.logger.log(`[DEBUG] finalizeOrder completed for order ${orderId}`);
+  }
+
+  /**
+   * Обработка успешного Checkout Session для офера (Stripe вебхук)
+   * Вызывается когда metadata.type === 'offer'
+   * Создаёт Payment с offer_id (order_id = null), помечает офер COMPLETED + is_paid=true.
+   */
+  private async handleOfferCheckoutSessionCompleted(
+    session: CheckoutSessionData,
+  ): Promise<void> {
+    this.logger.log(`[DEBUG] handleOfferCheckoutSessionCompleted START, session.id=${session.id}`);
+    this.logger.log(`[DEBUG] session.metadata=${JSON.stringify(session.metadata)}`);
+
+    const offerId = session.metadata?.offerId
+      ? parseInt(session.metadata.offerId, 10)
+      : NaN;
+
+    if (!offerId || isNaN(offerId)) {
+      this.logger.error(
+        `[DEBUG] Invalid offerId in checkout session metadata: ${session.metadata?.offerId}`,
+      );
+      return;
+    }
+
+    this.logger.log(`Checkout session completed for offer ${offerId}, session: ${session.id}`);
+
+    const transaction = await this.sequelize.transaction();
+
+    try {
+      const offer = await this.offerModel.findByPk(offerId, { transaction });
+      if (!offer) {
+        await transaction.rollback();
+        this.logger.error(`[DEBUG] Offer ${offerId} not found for payment finalization`);
+        return;
+      }
+
+      this.logger.log(`[DEBUG] Offer found: id=${offer.id}, chat_room_id=${offer.chat_room_id}, status=${offer.status}, is_paid=${offer.is_paid}`);
+
+      if (offer.is_paid) {
+        this.logger.warn(`[DEBUG] Offer ${offerId} is already paid, skipping`);
+        await transaction.rollback();
+        return;
+      }
+
+      // Создаём или обновляем запись Payment для офера (offer_id вместо order_id)
+      const paymentModel = this.sequelize!.model('Payment');
+
+      const existingPayment = await paymentModel.findOne({
+        where: { provider_payment_id: session.id },
+        transaction,
+      });
+
+      const amount = session.amount_total ? session.amount_total / 100 : Number(offer.price);
+
+      if (existingPayment) {
+        await existingPayment.update({
+          offer_id: offerId,
+          provider_payment_id: session.id,
+          amount,
+          status: PaymentStatus.SUCCESS,
+        }, { transaction });
+        this.logger.log(`[DEBUG] Updated existing payment for offer ${offerId}`);
+      } else {
+        await paymentModel.create({
+          offer_id: offerId,
+          provider: 'stripe',
+          provider_payment_id: session.id,
+          amount,
+          status: PaymentStatus.SUCCESS,
+        }, { transaction });
+        this.logger.log(`[DEBUG] Created new payment for offer ${offerId} (offer_id=${offerId})`);
+      }
+
+      await transaction.commit();
+      this.logger.log(`[DEBUG] Transaction committed for offer ${offerId}`);
+
+      // Помечаем офер как оплаченный и завершённый
+      await offer.update({
+        is_paid: true,
+        paid_at: new Date(),
+        status: OfferStatus.COMPLETED,
+        stripe_session_id: session.id,
+      });
+
+      this.logger.log(`[DEBUG] Offer ${offerId} marked as COMPLETED and is_paid=true`);
+
+      // WebSocket: уведомить создателя
+      await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:paid', {
+        offer: {
+          id: offer.id,
+          chat_room_id: offer.chat_room_id,
+          creator_id: offer.creator_id,
+          author_id: offer.author_id,
+          description: offer.description,
+          price: Number(offer.price),
+          original_price: offer.original_price ? Number(offer.original_price) : null,
+          status: OfferStatus.COMPLETED,
+          preview_url: offer.preview_url,
+          source_files_urls: (() => { try { return JSON.parse(offer.source_files_urls || '[]'); } catch { return []; } })(),
+          creator_attachments_urls: (() => { try { return JSON.parse(offer.creator_attachments_urls || '[]'); } catch { return []; } })(),
+          author_images_urls: (() => { try { return JSON.parse(offer.author_images_urls || '[]'); } catch { return []; } })(),
+          author_file_url: offer.author_file_url,
+          is_paid: true,
+          paid_at: offer.paid_at,
+          created_at: offer.created_at,
+          updated_at: offer.updated_at,
+        },
+      });
+      this.logger.log(`[DEBUG] WS notify offer:paid → creator ${offer.creator_id}`);
+
+      // WebSocket: уведомить автора
+      await this.chatNotificationService.notifyUser(offer.author_id, 'offer:paid', {
+        offer: {
+          id: offer.id,
+          chat_room_id: offer.chat_room_id,
+          creator_id: offer.creator_id,
+          author_id: offer.author_id,
+          description: offer.description,
+          price: Number(offer.price),
+          original_price: offer.original_price ? Number(offer.original_price) : null,
+          status: OfferStatus.COMPLETED,
+          preview_url: offer.preview_url,
+          source_files_urls: (() => { try { return JSON.parse(offer.source_files_urls || '[]'); } catch { return []; } })(),
+          creator_attachments_urls: (() => { try { return JSON.parse(offer.creator_attachments_urls || '[]'); } catch { return []; } })(),
+          author_images_urls: (() => { try { return JSON.parse(offer.author_images_urls || '[]'); } catch { return []; } })(),
+          author_file_url: offer.author_file_url,
+          is_paid: true,
+          paid_at: offer.paid_at,
+          created_at: offer.created_at,
+          updated_at: offer.updated_at,
+        },
+      });
+      this.logger.log(`[DEBUG] WS notify offer:paid → author ${offer.author_id}`);
+
+      this.logger.log(`Offer ${offerId} payment finalized successfully`);
+    } catch (error) {
+      try {
+        await transaction.rollback();
+      } catch {
+        // ignore rollback error
+      }
+      this.logger.error(`Failed to finalize offer payment ${offerId}:`, error);
+      throw error;
+    }
   }
 
   private async handleCheckoutSessionFailed(

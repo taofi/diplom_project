@@ -17,7 +17,7 @@ import { OfferCreatorFilesInterceptor, OfferFilesInterceptor } from './intercept
 import { OfferService } from './services/offer.service';
 import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateOfferDto, CounterOfferDto, PayOrderDto } from './dto/offer.dto';
+import { CreateOfferDto, CounterOfferDto } from './dto/offer.dto';
 import { Offer } from '../db/models/offer.model';
 
 @Controller('chat/offers')
@@ -178,20 +178,6 @@ export class ChatOffersController {
   }
 
   /**
-   * POST /chat/offers/:id/pay
-   * Оплатить заказ (Заказчик)
-   */
-  @Post(':id/pay')
-  @HttpCode(HttpStatus.OK)
-  async payOrder(
-    @CurrentUserId() userId: number,
-    @Param('id') id: string,
-    @Body() dto: PayOrderDto,
-  ): Promise<Offer> {
-    return this.offerService.payOrder(parseInt(id, 10), userId, dto);
-  }
-
-  /**
    * GET /chat/offers/:id/files
    * Получить ссылки на файлы (с проверкой доступа)
    */
@@ -231,11 +217,17 @@ export class ChatOffersController {
       fileIdx,
       userId,
     );
-
+    const safeFilename = encodeURIComponent(fileInfo.filename);
     // Устанавливаем заголовки для скачивания
-    res.setHeader('Content-Disposition', `attachment; filename="${fileInfo.filename}"`);
-    res.setHeader('Content-Type', fileInfo.mimeType || 'application/octet-stream');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
+  // 2. Устанавливаем корректное имя с поддержкой UTF-8
+  res.setHeader(
+    'Content-Disposition', 
+    `attachment; filename="${fileInfo.filename}"; filename*=UTF-8''${safeFilename}`
+  );
+
+  res.setHeader('Content-Type', fileInfo.mimeType || 'application/octet-stream');
     return fileInfo.streamableFile;
   }
 }

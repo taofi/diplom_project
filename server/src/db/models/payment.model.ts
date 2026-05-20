@@ -9,8 +9,10 @@ import {
   ForeignKey,
   BelongsTo,
   CreatedAt,
+  AllowNull,
 } from 'sequelize-typescript';
 import { Order } from './order.model';
+import { Offer } from './offer.model';
 
 export enum PaymentStatus {
   PENDING = 'pending',
@@ -25,9 +27,16 @@ export class Payment extends Model {
   @Column(DataType.INTEGER)
   declare id: number;
 
+  // FK на Order (для checkout) или Offer (для оферов в чате) — хотя бы один из двух
+  @AllowNull(true)
   @ForeignKey(() => Order)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  declare order_id: number;
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  declare order_id: number | null;
+
+  @AllowNull(true)
+  @ForeignKey(() => Offer)
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  declare offer_id: number | null;
 
   @Column({ type: DataType.STRING(50), allowNull: false })
   declare provider: string; // stripe | yookassa
@@ -45,6 +54,10 @@ export class Payment extends Model {
   @CreatedAt
   declare created_at: Date;
 
+  // Ссылки на связанные сущности
   @BelongsTo(() => Order)
   declare order: Order;
+
+  @BelongsTo(() => Offer)
+  declare offer: Offer;
 }

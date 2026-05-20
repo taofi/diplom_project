@@ -1,10 +1,10 @@
 import api from '../lib/api';
 import type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
-import type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto } from '../types/chat/offer.types';
+import type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto, PayOrderResponse } from '../types/chat/offer.types';
 
 // Re-export types for convenience
 export type { ChatRoom, ChatMessage, CustomOrder } from '../types/chat';
-export type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto } from '../types/chat/offer.types';
+export type { Offer, OfferFiles, CreateOfferDto, CounterOfferDto, PayOrderDto, PayOrderResponse } from '../types/chat/offer.types';
 
 // API endpoints
 const CHAT_API = '/chat';
@@ -22,14 +22,14 @@ export const chatApi = {
 
   // Chat rooms - get visible chats only
   getChatRooms: async (locale?: string): Promise<{ rows: ChatRoom[]; count: number }> => {
-    const response = await api.get(`${CHAT_API}/rooms`, { 
+    const response = await api.get(`${CHAT_API}/rooms`, {
       headers: locale ? { 'accept-language': locale } : {}
     });
     return response.data;
   },
 
   getChatRoom: async (id: number, locale?: string): Promise<{ chatRoom: ChatRoom; messages: ChatMessage[]; total: number }> => {
-    const response = await api.get(`${CHAT_API}/rooms/${id}`, { 
+    const response = await api.get(`${CHAT_API}/rooms/${id}`, {
       headers: locale ? { 'accept-language': locale } : {}
     });
     return response.data;
@@ -255,9 +255,9 @@ export const chatApi = {
   },
 
   /**
-   * Оплатить заказ (Заказчик)
-   */
-  payOrder: async (offerId: number, dto?: PayOrderDto): Promise<Offer> => {
+    * Оплатить заказ (Заказчик)
+    */
+  payOrder: async (offerId: number, dto?: PayOrderDto): Promise<PayOrderResponse> => {
     const response = await api.post(`${CHAT_API}/offers/${offerId}/pay`, dto || {});
     return response.data;
   },
@@ -318,6 +318,30 @@ export const chatApi = {
     const response = await api.get(`${CHAT_API}/offers/${offerId}/download/${fileIndex}`, {
       responseType: 'blob',
     });
+
+    // 1. Извлекаем заголовок (на бэкенде должен быть разрешен Access-Control-Expose-Headers)
+    const contentDisposition = response.headers['content-disposition'];
+    let fileName = 'file'; // Имя по умолчанию
+
+    if (contentDisposition) {
+      // Регулярка для поиска filename="..."
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (fileNameMatch && fileNameMatch.length > 1) {
+        fileName = fileNameMatch[1];
+      }
+    }
+
+    // 2. Создаем ссылку в DOM и "кликаем" по ней
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName); // ТУТ задается имя
+    document.body.appendChild(link);
+    link.click();
+
+    // 3. Чистим за собой
+    link.remove();
+    window.URL.revokeObjectURL(url);
     return response.data;
   },
 
