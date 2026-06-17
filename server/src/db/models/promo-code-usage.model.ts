@@ -46,3 +46,5 @@ export class PromoCodeUsage extends Model {
   @BelongsTo(() => User)
   declare user: User;
 }
+
+

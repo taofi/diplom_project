@@ -33,3 +33,5 @@ export class LicenseTypeTranslation extends Model {
   @BelongsTo(() => LicenseType)
   declare license_type: LicenseType;
 }
+
+

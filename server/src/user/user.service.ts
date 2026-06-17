@@ -31,8 +31,6 @@ export class UserService {
     private readonly userRoleModel: typeof UserRoleModel,
   ) {}
 
-  // Вспомогательная функция для нормализации ролей (используем импортированную)
-  // Удаляем дублирующий метод normalizeRoles из сервиса
   private normalizeUserRoles(roles: unknown): string[] {
     return normalizeRoles(roles);
   }
@@ -62,7 +60,6 @@ export class UserService {
       include: [{ model: this.userRoleModel, as: 'user_roles' }],
     });
 
-    // Нормализуем роли для каждого пользователя
     const normalizedUsers = rows.map((user) => {
       const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
       (user as unknown as { role: string[] }).role = normalizedRoles;
@@ -90,7 +87,6 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // Нормализуем роли
     const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
     (user as unknown as { role: string[] }).role = normalizedRoles;
 
@@ -100,10 +96,8 @@ export class UserService {
   async updateRoles(id: number, roles: string[]): Promise<User> {
     const normalizedRoles = normalizeRoles(roles);
 
-    // Удаляем старые роли
     await this.userRoleModel.destroy({ where: { user_id: id } });
 
-    // Создаем новые роли
     for (const role of normalizedRoles) {
       await this.userRoleModel.create({
         user_id: id,
@@ -111,7 +105,6 @@ export class UserService {
       });
     }
 
-    // Возвращаем пользователя
     return this.findById(id);
   }
 
@@ -120,7 +113,6 @@ export class UserService {
 
     await user.update({ locale });
 
-    // Возвращаем пользователя без пароля
     const updatedUser = await this.findById(id);
     return updatedUser;
   }
@@ -160,3 +152,5 @@ export class UserService {
     };
   }
 }
+
+

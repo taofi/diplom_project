@@ -70,7 +70,6 @@ export class Order extends Model {
   @UpdatedAt
   declare updated_at: Date;
 
-  // Associations
   @BelongsTo(() => User)
   declare user: User;
 
@@ -89,3 +88,5 @@ export class Order extends Model {
   @HasOne(() => PromoCodeUsage, 'order_id')
   declare promo_code_usage: PromoCodeUsage;
 }
+
+

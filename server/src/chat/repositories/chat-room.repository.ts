@@ -55,11 +55,7 @@ export class ChatRoomRepository {
     });
   }
 
-  /**
-   * Find all visible chat rooms for a user (for chat list display)
-   * Only returns chats where visibility is VISIBLE
-   * Includes: buyer, seller, product with translations and cover media
-   */
+  
   async findVisibleByUserId(
     userId: number,
     options?: FindOptions,
@@ -76,8 +72,6 @@ export class ChatRoomRepository {
           model: Product,
           as: 'product',
           include: [
-            // Убрали ProductTranslation - переводы берутся отдельно через translationService
-            // для правильной фильтрации по языку пользователя
             {
               model: ProductMedia,
               where: { is_cover: true },
@@ -86,7 +80,6 @@ export class ChatRoomRepository {
             },
           ],
         },
-        // Добавляем UserProduct для получения данных о лицензии и цене
         {
           model: UserProduct,
           as: 'user_product',
@@ -103,10 +96,7 @@ export class ChatRoomRepository {
     });
   }
 
-  /**
-   * Find pending chat rooms for a user (created by other user, waiting for first message)
-   * Used to check if a pending chat exists when creating a new one
-   */
+  
   async findPendingByUserId(
     userId: number,
     options?: FindOptions,
@@ -122,9 +112,7 @@ export class ChatRoomRepository {
     });
   }
 
-  /**
-   * Find a specific pending chat by buyer and seller/product
-   */
+  
   async findPendingByParticipants(
     buyerId: number,
     sellerId: number,
@@ -140,9 +128,7 @@ export class ChatRoomRepository {
     });
   }
 
-  /**
-   * Update chat room visibility to VISIBLE
-   */
+  
   async makeVisible(id: number): Promise<ChatRoom> {
     const chatRoom = await this.findById(id);
     if (!chatRoom) {
@@ -192,7 +178,6 @@ export class ChatRoomRepository {
   }
 
   async create(data: CreateChatRoomDto): Promise<ChatRoom> {
-    // Маппим camelCase в snake_case для Sequelize
     return this.chatRoomModel.create({
       buyer_id: data.buyerId,
       seller_id: data.sellerId,
@@ -225,3 +210,5 @@ export class ChatRoomRepository {
     await chatRoom.destroy();
   }
 }
+
+

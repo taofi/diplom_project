@@ -9,3 +9,5 @@ export class UpdateLicenseTypeDto {
   @IsOptional()
   description?: string;
 }
+
+

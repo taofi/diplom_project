@@ -25,7 +25,6 @@ export enum UserRoleEnum {
   AUTHOR = 'author',
 }
 
-// Тип для роли пользователя (строка, не enum в БД)
 export type UserRoleType = 'admin' | 'user' | 'author';
 
 @Table({ tableName: 'users', timestamps: true })
@@ -61,7 +60,6 @@ export class User extends Model {
   @UpdatedAt
   declare updated_at: Date;
 
-  // Associations
   @HasMany(() => UserRoleModel)
   declare user_roles: UserRoleModel[];
   @HasMany(() => Product, 'seller_id')
@@ -85,13 +83,13 @@ export class User extends Model {
   @HasMany(() => ChatMessage, 'sender_id')
   declare chat_messages: ChatMessage[];
 
-  // Явная сериализация - роли теперь берутся из связанной таблицы user_roles
   toJSON(): Record<string, unknown> {
     const values: Record<string, unknown> = { ...super.toJSON() };
-    // Убираем user_roles из вывода, возвращаем роли в виде массива
     const roles = this.user_roles?.map((ur) => ur.role) || ['user'];
     values.role = roles;
     delete (values).user_roles;
     return values;
   }
 }
+
+

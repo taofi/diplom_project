@@ -52,3 +52,5 @@ export class ProductTranslation extends Model<ProductTranslation> {
   })
   declare language: Language;
 }
+
+

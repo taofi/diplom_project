@@ -10,7 +10,6 @@ export class SendVerificationCodeDto {
   locale?: string = 'ru';
 }
 
-// DTO для элемента корзины
 export class CartItemDto {
   @IsNumber()
   productId: number;
@@ -56,3 +55,4 @@ export class CheckoutVerifyResponseDto {
   refreshToken?: string;
   guestId?: string;
 }
+

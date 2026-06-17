@@ -19,3 +19,5 @@ import { AuthModule } from '../auth/auth.module';
   exports: [CategoryService, SequelizeModule],
 })
 export class CategoryModule {}
+
+

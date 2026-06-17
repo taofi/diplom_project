@@ -49,3 +49,5 @@ export class CreatePromoCodeDto {
   @IsOptional()
   isActive?: boolean;
 }
+
+

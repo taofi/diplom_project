@@ -18,3 +18,5 @@ export class ProductCategory extends Model {
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare category_id: number;
 }
+
+

@@ -103,3 +103,5 @@ export class PromoCodeRepository {
     await promoCode.destroy();
   }
 }
+
+

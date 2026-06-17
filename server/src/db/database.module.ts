@@ -2,7 +2,6 @@ import { Module, Global } from '@nestjs/common';
 import { SequelizeModule as NestSequelizeModule } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 
-// Models
 import {
   User,
   UserRoleModel,
@@ -86,3 +85,5 @@ export const SEQUELIZE_TOKEN = 'SEQUELIZE';
   exports: [NestSequelizeModule, SEQUELIZE_TOKEN],
 })
 export class DatabaseModule {}
+
+

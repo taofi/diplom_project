@@ -44,3 +44,5 @@ export class ProductMedia extends Model {
   @BelongsTo(() => Product)
   declare product: Product;
 }
+
+

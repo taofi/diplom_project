@@ -27,3 +27,5 @@ export class UpdateGuestCartItemDto {
   @IsNumber({}, { message: 'Quantity must be a number' })
   quantity?: number;
 }
+
+

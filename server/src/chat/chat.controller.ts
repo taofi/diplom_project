@@ -33,12 +33,8 @@ export class ChatController {
     private readonly offerService: OfferService,
   ) {}
 
-  // ==================== Chat Rooms ====================
 
-  /**
-   * POST /chat/rooms
-   * Создать чат напрямую в БД (с visibility: PENDING)
-   */
+  
   @Post('rooms')
   @HttpCode(HttpStatus.CREATED)
   async createChat(
@@ -53,10 +49,7 @@ export class ChatController {
     );
   }
 
-  /**
-   * GET /chat/rooms
-   * Получить все видимые чаты пользователя
-   */
+  
   @Get('rooms')
   async getUserChatRooms(
     @CurrentUserId() userId: number,
@@ -73,10 +66,7 @@ export class ChatController {
     );
   }
 
-  /**
-   * GET /chat/rooms/:id
-   * Получить чат с сообщениями
-   */
+  
   @Get('rooms/:id')
   async getChatRoom(
     @Param('id') id: string,
@@ -93,22 +83,14 @@ export class ChatController {
     );
   }
 
-  /**
-   * GET /chat/rooms/unread
-   * Получить все непрочитанные сообщения пользователя
-   * Возвращает: { roomId: count, ... }
-   */
+  
   @Get('rooms/unread')
   async getUnreadCounts(@CurrentUserId() userId: number) {
     const unreadMap = await this.chatService.getAllUnreadCounts(userId);
-    // Конвертируем Map в объект
     return Object.fromEntries(unreadMap);
   }
 
-  /**
-   * POST /chat/rooms/:id/read
-   * Пометить чат как прочитанный
-   */
+  
   @Post('rooms/:id/read')
   @HttpCode(HttpStatus.OK)
   async markAsRead(
@@ -119,12 +101,8 @@ export class ChatController {
     return { success: true };
   }
 
-  // ==================== Messages ====================
 
-  /**
-   * GET /chat/rooms/:id/messages
-   * Получить сообщения чата
-   */
+  
   @Get('rooms/:id/messages')
   async getMessages(
     @Param('id') id: string,
@@ -138,10 +116,7 @@ export class ChatController {
     );
   }
 
-  /**
-   * POST /chat/messages
-   * Отправить сообщение (REST fallback)
-   */
+  
   @Post('messages')
   @HttpCode(HttpStatus.CREATED)
   async sendMessage(
@@ -177,12 +152,8 @@ export class ChatController {
     return this.chatService.getChatOffers(parseInt(id, 10));
   }
 
-  // ==================== Offer Payment ====================
 
-  /**
-   * POST /chat/offers/:id/pay
-   * Создать Stripe Checkout Session для оплаты оформленного заказа
-   */
+  
   @Post('offers/:id/pay')
   async payOffer(
     @CurrentUserId() userId: number,
@@ -192,22 +163,14 @@ export class ChatController {
     return this.offerService.payOrder(parseInt(id, 10), userId, dto);
   }
 
-  // ==================== Orders ====================
 
-  /**
-   * GET /chat/orders
-   * Получить активные заказы пользователя
-   */
+  
   @Get('orders')
   async getUserOrders(@CurrentUserId() userId: number) {
     return this.chatService.getUserOrders(userId);
   }
 
-  /**
-   * GET /chat/orders/all
-   * Получить все заказы пользователя (включая завершённые)
-   * Используется для страницы заказов
-   */
+  
   @Get('orders/all')
   async getAllUserOrders(@CurrentUserId() userId: number) {
     return this.chatService.getAllUserOrders(userId);
@@ -215,5 +178,7 @@ export class ChatController {
 
 
 }
+
+
 
 

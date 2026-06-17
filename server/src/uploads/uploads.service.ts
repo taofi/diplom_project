@@ -9,11 +9,7 @@ const MAX_TEMP_MEDIA_SIZE = 400 * 1024 * 1024;
 export class UploadsService {
   constructor(private readonly fileService: FileService) {}
 
-  /**
-   * Загрузить медиа файл во временную папку
-   * @param userId - ID пользователя
-   * @param file - Загруженный файл
-   */
+  
   uploadTempMedia(userId: number, file: MulterFile): FileUploadResult {
     const mimeType = file?.mimetype || '';
     const isSupportedMedia =
@@ -29,13 +25,8 @@ export class UploadsService {
     return this.fileService.saveTempMedia(file, userId);
   }
 
-  /**
-   * Загрузить основной файл продукта во временную папку
-   * @param userId - ID пользователя
-   * @param file - Загруженный файл
-   */
+  
   uploadTempFile(userId: number, file: MulterFile): FileUploadResult {
-    // Проверить размер (макс 50MB)
     if (file.size > 50 * 1024 * 1024) {
       throw new BadRequestException('File size must be less than 50MB');
     }
@@ -43,13 +34,7 @@ export class UploadsService {
     return this.fileService.saveTempFile(file, userId);
   }
 
-  /**
-   * Переместить все временные файлы продукта в постоянную папку
-   * @param userId - ID пользователя
-   * @param productId - ID продукта
-   * @param tempFileUrl - Временный URL основного файла (опционально)
-   * @param tempMediaUrls - Массив временных URL медиа
-   */
+  
   moveProductFiles(
     userId: number,
     productId: number,
@@ -61,7 +46,6 @@ export class UploadsService {
   } {
     let fileResult: FileUploadResult | null = null;
 
-    // Переместить основной файл
     if (tempFileUrl) {
       const result = this.fileService.moveTempFileToProduct(
         userId,
@@ -73,7 +57,6 @@ export class UploadsService {
       }
     }
 
-    // Переместить медиа файлы
     const mediaResults: FileUploadResult[] = [];
     if (tempMediaUrls && tempMediaUrls.length > 0) {
       const results = this.fileService.moveTempMediaToProduct(
@@ -90,26 +73,17 @@ export class UploadsService {
     };
   }
 
-  /**
-   * Очистить временную папку пользователя
-   * @param userId - ID пользователя
-   */
+  
   clearTempFolder(userId: number): void {
     this.fileService.deleteTempFolder(userId);
   }
 
-  /**
-   * Загрузить аватар пользователя
-   * @param userId - ID пользователя
-   * @param file - Загруженный файл
-   */
+  
   uploadAvatar(userId: number, file: MulterFile): FileUploadResult {
-    // Проверить тип файла (только изображения)
     if (!file?.mimetype?.startsWith('image/')) {
       throw new BadRequestException('Only image files are allowed for avatar');
     }
 
-    // Проверить размер (макс 10MB)
     if (file.size > 10 * 1024 * 1024) {
       throw new BadRequestException('Avatar file size must be less than 10MB');
     }
@@ -117,18 +91,16 @@ export class UploadsService {
     return this.fileService.saveUserAvatar(file, userId);
   }
 
-  /**
-   * Проверить, является ли URL временным
-   */
+  
   isTempUrl(url: string): boolean {
     return url.includes('/temp/');
   }
 
-  /**
-   * Извлечь userId из временного URL
-   */
+  
   getUserIdFromTempUrl(url: string): number | null {
-    const match = url.match(/\/temp\/(\d+)\//);
+    const match = url.match(/\/temp\/(\d+)\
     return match ? parseInt(match[1], 10) : null;
   }
 }
+
+

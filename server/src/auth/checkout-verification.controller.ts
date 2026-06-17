@@ -20,10 +20,7 @@ export class CheckoutVerificationController {
     private readonly checkoutVerificationService: CheckoutVerificationService,
   ) {}
 
-  /**
-   * Отправить код верификации на email
-   * POST /auth/checkout/send-code
-   */
+  
   @Post('send-code')
   @HttpCode(HttpStatus.OK)
   async sendVerificationCode(
@@ -35,10 +32,7 @@ export class CheckoutVerificationController {
     );
   }
 
-  /**
-   * Подтвердить код и создать аккаунт
-   * POST /auth/checkout/verify-code
-   */
+  
   @Post('verify-code')
   @HttpCode(HttpStatus.OK)
   async verifyCode(
@@ -50,7 +44,8 @@ export class CheckoutVerificationController {
       dto.code,
       'ru',
       guestId,
-      dto.cart, // Передаём корзину с фронта
+      dto.cart,
     );
   }
 }
+

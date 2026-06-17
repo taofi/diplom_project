@@ -14,10 +14,8 @@ export class MulterErrorInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((error) => {
-        // Логируем ошибки Multer
         console.error('[MulterErrorInterceptor] Error:', error);
         
-        // Проверяем, является ли это ошибкой Multer
         if (error.message && error.message.includes('Unexpected field')) {
           console.error('[MulterErrorInterceptor] Multer unexpected field error detected');
           console.error('[MulterErrorInterceptor] Full error:', JSON.stringify(error));
@@ -28,3 +26,4 @@ export class MulterErrorInterceptor implements NestInterceptor {
     );
   }
 }
+

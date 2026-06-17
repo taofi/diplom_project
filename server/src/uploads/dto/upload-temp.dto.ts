@@ -1,8 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
-/**
- * DTO для подтверждения перемещения файлов продукта
- */
+
 export class ConfirmProductFilesDto {
   @IsNumber({}, { message: 'Product ID must be a number' })
   productId: number;
@@ -15,3 +13,5 @@ export class ConfirmProductFilesDto {
   @IsString({ each: true })
   tempMediaUrls?: string[];
 }
+
+

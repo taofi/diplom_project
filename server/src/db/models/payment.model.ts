@@ -27,7 +27,6 @@ export class Payment extends Model {
   @Column(DataType.INTEGER)
   declare id: number;
 
-  // FK на Order (для checkout) или Offer (для оферов в чате) — хотя бы один из двух
   @AllowNull(true)
   @ForeignKey(() => Order)
   @Column({ type: DataType.INTEGER, allowNull: true })
@@ -39,7 +38,7 @@ export class Payment extends Model {
   declare offer_id: number | null;
 
   @Column({ type: DataType.STRING(50), allowNull: false })
-  declare provider: string; // stripe | yookassa
+  declare provider: string;
 
   @Column({ type: DataType.STRING(255), allowNull: false })
   declare provider_payment_id: string;
@@ -54,10 +53,11 @@ export class Payment extends Model {
   @CreatedAt
   declare created_at: Date;
 
-  // Ссылки на связанные сущности
   @BelongsTo(() => Order)
   declare order: Order;
 
   @BelongsTo(() => Offer)
   declare offer: Offer;
 }
+
+

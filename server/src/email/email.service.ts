@@ -48,9 +48,7 @@ export class EmailService {
     private readonly productLicenseModel: typeof ProductLicense,
   ) {}
 
-  /**
-   * Отправить email с использованием шаблона
-   */
+  
   async sendTemplatedEmail(
     to: string,
     templateName: TemplateName,
@@ -73,9 +71,7 @@ export class EmailService {
     }
   }
 
-  /**
-   * Отправить простой email без шаблона
-   */
+  
   async sendEmail(options: SendEmailOptions): Promise<void> {
     try {
       await this.mailerService.sendMail({
@@ -91,9 +87,7 @@ export class EmailService {
     }
   }
 
-  /**
-   * Отправить код подтверждения
-   */
+  
   async sendVerificationCode(
     email: string,
     code: string,
@@ -106,9 +100,7 @@ export class EmailService {
     }, options.locale);
   }
 
-  /**
-   * Отправить приветственное письмо
-   */
+  
   async sendWelcome(
     email: string,
     name: string,
@@ -117,9 +109,7 @@ export class EmailService {
     await this.sendTemplatedEmail(email, 'welcome', { name }, locale);
   }
 
-  /**
-   * Отправить письмо для сброса пароля
-   */
+  
   async sendPasswordReset(
     email: string,
     name: string,
@@ -134,9 +124,7 @@ export class EmailService {
     }, locale);
   }
 
-  /**
-   * Отправить подтверждение покупки
-   */
+  
   async sendPurchaseConfirmation(
     email: string,
     name: string,
@@ -155,9 +143,7 @@ export class EmailService {
     }, locale);
   }
 
-  /**
-   * Отправить письмо о созданном аккаунте с паролем
-   */
+  
   async sendAccountCreated(
     email: string,
     name: string,
@@ -171,16 +157,14 @@ export class EmailService {
     }, locale);
   }
 
-  /**
-   * Получить вложения для заказа
-   */
+  
   async getOrderAttachments(orderId: number): Promise<EmailAttachment[]> {
     const attachments: EmailAttachment[] = [];
 
     try {
       this.logger.log(`[DEBUG] Getting attachments for order ${orderId}`);
       
-      // Находим заказ с элементами заказа
+      
       const order = await this.orderModel.findByPk(orderId, {
         include: [
           {
@@ -231,7 +215,7 @@ export class EmailService {
         this.logger.log(`[DEBUG] Checking file at: ${fullPath}`);
         this.logger.log(`[DEBUG] process.cwd(): ${process.cwd()}`);
 
-        // Проверяем существование файла
+        
         if (fs.existsSync(fullPath)) {
           const filename = fileUrl.split('/').pop() || 'file';
           this.logger.log(`[DEBUG] File FOUND: ${filename}, size: ${fs.statSync(fullPath).size} bytes`);
@@ -257,15 +241,13 @@ export class EmailService {
     return attachments;
   }
 
-  /**
-   * Отправить подтверждение заказа с файлами
-   */
+  
   async sendOrderConfirmationWithFiles(
     email: string,
     orderId: number,
     locale: string = 'ru'
   ): Promise<void> {
-    // Проверяем email на валидность
+    
     if (!email || typeof email !== 'string' || !email.trim()) {
       this.logger.warn(`[DEBUG] Invalid or empty email provided for order ${orderId}. Skipping email sending.`);
       return;
@@ -273,7 +255,7 @@ export class EmailService {
 
     const trimmedEmail = email.trim();
     
-    // Простая проверка формата email
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
       this.logger.warn(`[DEBUG] Email "${trimmedEmail}" has invalid format for order ${orderId}. Skipping email sending.`);
@@ -281,12 +263,12 @@ export class EmailService {
     }
 
     try {
-      // Получаем вложения
+      
       const attachments = await this.getOrderAttachments(orderId);
 
       this.logger.log(`[DEBUG] Preparing to send email to ${trimmedEmail} with ${attachments.length} attachments`);
       
-      // Получаем HTML из шаблона
+      
       const { subject, body } = this.templateService.render(
         'orderConfirmation',
         locale,
@@ -296,7 +278,7 @@ export class EmailService {
         }
       );
 
-      // Отправляем email с вложениями
+      
       const mailResult = await this.mailerService.sendMail({
         to: trimmedEmail,
         subject,
@@ -316,9 +298,7 @@ export class EmailService {
     }
   }
 
-  /**
-   * Сформировать HTML для подтверждения заказа
-   */
+  
   private getOrderConfirmationHtml(
     orderId: number,
     attachmentsCount: number,
@@ -336,9 +316,7 @@ export class EmailService {
     return body;
   }
 
-  /**
-   * Определить MIME тип по расширению файла
-   */
+  
   private getMimeType(filename: string): string {
     const ext = path.extname(filename).toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -385,3 +363,5 @@ export class EmailService {
     return path.join(process.cwd(), normalized);
   }
 }
+
+

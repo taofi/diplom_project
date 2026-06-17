@@ -77,7 +77,6 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: User) {
-    // user уже имеет toJSON() который добавляет role из user_roles
     const userData = user.toJSON();
     const roles = userData.role as string[];
 
@@ -102,3 +101,5 @@ export class AuthController {
     return this.authService.updateProfile(userId, dto);
   }
 }
+
+

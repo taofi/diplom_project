@@ -5,3 +5,5 @@ export class UpdateUserLocaleDto {
   @IsLocale({ message: 'Locale must be a valid locale' })
   locale: string;
 }
+
+

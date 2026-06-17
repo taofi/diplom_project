@@ -1,9 +1,4 @@
-/**
- * Типы для Product Response
- * Разделение на типы для списка и для детального просмотра
- * 
- * Основные типы переэкспортируются из product.types.ts
- */
+
 
 import { Language } from '../../common/enums/language.enum';
 import type { EntityBase } from '../base/entity-base';
@@ -15,7 +10,6 @@ import type { LicenseType } from '../../db/models/license-type.model';
 import type { User } from '../../db/models/user.model';
 import { normalizeLanguage } from '../../translation/utils/language.utils';
 
-// Re-export типов из product.types.ts
 export type {
   ProductType,
   MediaType,
@@ -26,26 +20,15 @@ export type {
   LicenseInfo,
 } from './product.types';
 
-// Re-export enum из product.types.ts
 export { ProductType as ProductTypeEnum, MediaType as MediaTypeEnum } from './product.types';
 
-// =======================
-// BASE PRODUCT FIELDS
-// =======================
 
-/**
- * Базовые поля Product (snake_case - как в базе данных)
- * Переименовано для избежания конфликта с product.types.ts
- * name, description перенесены в product_translations
- * sku удален
- */
+
 export interface ProductFieldsResponse extends EntityBase {
   id: number;
   seller_id: number;
-  // name и description теперь в translations
   price: number;
   discount_price: number | null;
-  // sku удален
   type: import('./product.types').ProductType;
   file_url: string;
   stock: number;
@@ -56,17 +39,8 @@ export interface ProductFieldsResponse extends EntityBase {
   updated_at: Date;
 }
 
-// =======================
-// RESPONSE TYPES
-// =======================
 
-/**
- * Product для списка (camelCase)
- * - main_image: вычисляется из media where is_cover = true
- * - НЕТ массива media
- * - name, description берутся из translations
- * - sku удален
- */
+
 export interface ProductListItemResponse {
   id: number;
   sellerId: number;
@@ -74,7 +48,6 @@ export interface ProductListItemResponse {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  // sku удален
   type: import('./product.types').ProductType;
   fileUrl: string;
   stock: number;
@@ -89,14 +62,11 @@ export interface ProductListItemResponse {
     avatarUrl?: string | null;
   };
 
-  // Relations - только то, что нужно для списка
   licenses?: import('./product.types').LicenseInfo[];
   categories?: import('./product.types').CategoryInfo[];
 }
 
-/**
- * Product с загруженными отношениями (для детального просмотра)
- */
+
 export type ProductWithFullRelations = ProductFieldsResponse & {
   seller?: User;
   translations?: ProductTranslation[];
@@ -107,15 +77,7 @@ export type ProductWithFullRelations = ProductFieldsResponse & {
   categories?: Category[];
 };
 
-/**
- * Product для детального просмотра (полный)
- * - ВСЕ translations
- * - ВСЕ media
- * - main_image (вычисляется из media where is_cover = true)
- * - ВСЕ licenses
- * - ВСЕ categories
- * - sku удален
- */
+
 export interface ProductDetailResponse {
   id: number;
   sellerId: number;
@@ -123,7 +85,6 @@ export interface ProductDetailResponse {
   description: string | null;
   price: number;
   discountPrice: number | null;
-  // sku удален
   type: import('./product.types').ProductType;
   fileUrl: string;
   stock: number;
@@ -138,48 +99,34 @@ export interface ProductDetailResponse {
     avatarUrl?: string | null;
   };
 
-  // Relations - полный набор для детального просмотра
   translations?: import('./product.types').TranslationInfo[];
   media?: import('./product.types').MediaInfo[];
   licenses?: import('./product.types').LicenseInfo[];
   categories?: import('./product.types').CategoryInfo[];
 }
 
-// =======================
-// RESPONSE FACTORY FUNCTIONS
-// =======================
 
-/**
- * Создать ProductListItemResponse из сущности с отношениями
- * - Вычисляет price = MIN(licenses.price)
- * - Вычисляет main_image из media where is_cover = true
- * - НЕ включает массив media
- * - name и description берутся из translations
- */
+
 export function createProductListItemResponse(
   product: ProductWithFullRelations,
   language?: string,
 ): ProductListItemResponse {
   const normalizedLang = normalizeLanguage(language);
-  // Вычисляем price как минимальную цену из лицензий
   let price = 0;
   if (product.licenses && product.licenses.length > 0) {
     const prices = product.licenses.map((l) => Number(l.price));
     price = Math.min(...prices);
   }
 
-  // Получаем main_image из медиа где is_cover = true
   let mainImage = '';
   if (product.media && product.media.length > 0) {
     const coverMedia = product.media.find((m) => m.is_cover);
     mainImage = coverMedia ? String(coverMedia.url) : '';
   }
 
-  // Получаем name и description из translations
   let name = '';
   let description: string | null = null;
 
-  // Работаем с translations - используем toJSON() для получения dataValues
   const translations = product.translations;
 
   if (translations && translations.length > 0) {
@@ -203,7 +150,6 @@ export function createProductListItemResponse(
     discountPrice: product.discount_price
       ? Number(product.discount_price)
       : null,
-    // sku удален
     type: product.type,
     fileUrl: product.file_url,
     stock: product.stock,
@@ -222,7 +168,6 @@ export function createProductListItemResponse(
     };
   }
 
-  // Добавляем licenses
   if (product.licenses) {
     response.licenses = product.licenses.map((l) => {
       let licenseName = '';
@@ -250,7 +195,6 @@ export function createProductListItemResponse(
     });
   }
 
-  // Добавляем categories
   if (product.categories) {
     response.categories = product.categories.map((cat) => ({
       id: cat.id,
@@ -261,35 +205,24 @@ export function createProductListItemResponse(
   return response;
 }
 
-/**
- * Создать ProductDetailResponse из сущности с отношениями
- * - Включает ВСЕ translations
- * - Включает ВСЕ media
- * - Вычисляет main_image из media where is_cover = true
- * - Включает ВСЕ licenses
- * - Включает ВСЕ categories
- * - name и description берутся из translations по языку
- */
+
 export function createProductDetailResponse(
   product: ProductWithFullRelations,
   language?: string,
 ): ProductDetailResponse {
   const normalizedLang = normalizeLanguage(language);
-  // Вычисляем price как минимальную цену из лицензий
   let price = 0;
   if (product.licenses && product.licenses.length > 0) {
     const prices = product.licenses.map((l) => Number(l.price));
     price = Math.min(...prices);
   }
 
-  // Получаем main_image из медиа где is_cover = true
   let mainImage = '';
   if (product.media && product.media.length > 0) {
     const coverMedia = product.media.find((m) => m.is_cover);
     mainImage = coverMedia ? String(coverMedia.url) : '';
   }
 
-  // Получаем name и description из translations
   let name = '';
   let description: string | null = null;
 
@@ -315,7 +248,6 @@ export function createProductDetailResponse(
     discountPrice: product.discount_price
       ? Number(product.discount_price)
       : null,
-    // sku удален
     type: product.type,
     fileUrl: product.file_url,
     stock: product.stock,
@@ -334,7 +266,6 @@ export function createProductDetailResponse(
     };
   }
 
-  // Добавляем translations
   if (product.translations) {
     response.translations = product.translations.map((t) => ({
       language: t.language,
@@ -344,7 +275,6 @@ export function createProductDetailResponse(
     }));
   }
 
-  // Добавляем media
   if (product.media) {
     response.media = product.media.map((m) => ({
       id: m.id,
@@ -355,7 +285,6 @@ export function createProductDetailResponse(
     }));
   }
 
-  // Добавляем licenses
   if (product.licenses) {
     response.licenses = product.licenses.map((l) => {
       let licenseName = '';
@@ -384,7 +313,6 @@ export function createProductDetailResponse(
     });
   }
 
-  // Добавляем categories
   if (product.categories) {
     response.categories = product.categories.map((cat) => ({
       id: cat.id,
@@ -420,9 +348,7 @@ function getCategoryName(category: Category, normalizedLanguage: string): string
   return normalizedTranslations.find((translation) => !!translation.name)?.name || '';
 }
 
-/**
- * Результат с продуктами и пагинацией (для внутреннего использования)
- */
+
 export interface ProductListResponseInternal {
   data: ProductListItemResponse[];
   meta: {
@@ -433,9 +359,7 @@ export interface ProductListResponseInternal {
   };
 }
 
-/**
- * Создать ProductListResponse из списка продуктов
- */
+
 export function createProductListResponseForResponse(
   products: ProductWithFullRelations[],
   total: number,
@@ -453,3 +377,5 @@ export function createProductListResponseForResponse(
     },
   };
 }
+
+

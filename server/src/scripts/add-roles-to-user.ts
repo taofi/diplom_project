@@ -1,7 +1,4 @@
-/**
- * Скрипт для добавления ролей пользователю с ID 6
- * Запуск: npx ts-node src/scripts/add-roles-to-user.ts
- */
+
 import { Sequelize } from 'sequelize-typescript';
 import { config } from 'dotenv';
 
@@ -19,17 +16,15 @@ const sequelize = new Sequelize({
 
 async function addRolesToUser6() {
   const userId = 6;
-  const roles = ['admin', 'user']; // роли для пользователя 6
+  const roles = ['admin', 'user'];
 
   try {
     await sequelize.authenticate();
     console.log('Подключение к БД установлено');
 
-    // Удаляем старые роли если есть
     await sequelize.query(`DELETE FROM user_roles WHERE user_id = ${userId}`);
     console.log('Старые роли удалены');
 
-    // Добавляем новые роли
     for (const role of roles) {
       await sequelize.query(
         `INSERT INTO user_roles (user_id, role, created_at, updated_at) VALUES (${userId}, '${role}', NOW(), NOW())`
@@ -46,3 +41,4 @@ async function addRolesToUser6() {
 }
 
 addRolesToUser6();
+

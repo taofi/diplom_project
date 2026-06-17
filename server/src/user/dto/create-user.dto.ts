@@ -48,3 +48,5 @@ export class CreateUserDto {
   @IsOptional()
   companyLogo?: string;
 }
+
+

@@ -37,7 +37,7 @@ export class PromoCode extends Model {
 
   @AllowNull(true)
   @Column(DataType.INTEGER)
-  declare max_uses: number | null; // NULL = безлимитный
+  declare max_uses: number | null;
 
   @Default(0)
   @Column(DataType.INTEGER)
@@ -59,3 +59,5 @@ export class PromoCode extends Model {
   @HasMany(() => PromoCodeUsage, 'promo_code_id')
   declare usages: PromoCodeUsage[];
 }
+
+

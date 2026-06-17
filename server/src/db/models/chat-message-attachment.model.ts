@@ -58,3 +58,5 @@ export class ChatMessageAttachment extends Model {
   @BelongsTo(() => ChatRoom, 'chat_room_id')
   declare room: ChatRoom;
 }
+
+

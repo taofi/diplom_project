@@ -30,3 +30,5 @@ export class CategoryTranslation extends Model {
   @BelongsTo(() => Category)
   declare category: Category;
 }
+
+

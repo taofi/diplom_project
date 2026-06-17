@@ -25,7 +25,6 @@ export interface CartItemResponse {
   };
 }
 
-// Тип для гостевой корзины в памяти
 interface GuestCartItem {
   id: number;
   productLicenseId: number;
@@ -37,8 +36,6 @@ interface GuestCart {
   items: GuestCartItem[];
 }
 
-// Глобальное хранилище гостевых корзин (в памяти)
-// В production лучше использовать Redis
 const guestCarts = new Map<string, GuestCart>();
 let guestItemIdCounter = 1;
 
@@ -53,11 +50,8 @@ export class CartService {
     private readonly translationService: TranslationService,
   ) {}
 
-  // ============ Guest Cart Methods ============
 
-  /**
-   * Получить гостевую корзину
-   */
+  
   async getGuestCart(guestId: string): Promise<GuestCartItem[]> {
     const cart = guestCarts.get(guestId);
     if (!cart) {
@@ -66,16 +60,13 @@ export class CartService {
     return cart.items;
   }
 
-  /**
-   * Получить гостевую корзину с форматированными данными (с переводами)
-   */
+  
   async getFormattedGuestCart(guestId: string, locale?: string): Promise<CartItemResponse[]> {
     const cart = guestCarts.get(guestId);
     if (!cart || cart.items.length === 0) {
       return [];
     }
 
-    // Загружаем данные о каждом товаре
     const formattedItems: CartItemResponse[] = [];
     
     for (const item of cart.items) {
@@ -87,7 +78,6 @@ export class CartService {
           formattedItems.push(formattedItem);
         }
       } catch (error) {
-        // Пропускаем товары, которые не удалось загрузить
         console.error('Failed to load product for guest cart item:', error);
       }
     }
@@ -95,22 +85,18 @@ export class CartService {
     return formattedItems;
   }
 
-  /**
-   * Форматировать элемент корзины из ProductLicense
-   */
+  
   private async formatCartItemFromLicense(
     productLicense: ProductLicense & { product?: Product },
     locale?: string,
   ): Promise<CartItemResponse> {
     const product = productLicense.product;
 
-    // Получаем переводы
     let productName = '';
     let licenseTypeName = '';
     let coverImage: string | null = null;
 
     if (product) {
-      // Получаем перевод продукта
       const productTranslation = await this.translationService.getProductTranslation(
         product.id,
         locale,
@@ -118,20 +104,16 @@ export class CartService {
       if (productTranslation) {
         productName = productTranslation.name;
       } else {
-        // Fallback - используем main_image как имя
         productName = `Product #${product.id}`;
       }
 
-      // Получаем главное изображение (is_cover = true)
       coverImage = await this.translationService.getProductCoverImage(product.id);
       
-      // Fallback на main_image если нет обложки
       if (!coverImage && product.main_image) {
         coverImage = product.main_image;
       }
     }
 
-    // Получаем перевод типа лицензии
     if (productLicense.license_type_id) {
       const licenseTranslation = await this.translationService.getLicenseTypeTranslation(
         productLicense.license_type_id,
@@ -143,15 +125,15 @@ export class CartService {
     }
 
     return {
-      id: 0, // Will be set by caller
+      id: 0,
       productId: product?.id || 0,
       licenseTypeId: productLicense.license_type_id || 0,
-      quantity: 1, // Для гостевой корзины quantity всегда 1
+      quantity: 1,
       product: {
         id: product?.id || 0,
         name: productName,
         price: productLicense.price || 0,
-        slug: `product-${product?.id}`, // Используем ID вместо slug
+        slug: `product-${product?.id}`,
         coverImage,
       },
       licenseType: {
@@ -161,11 +143,8 @@ export class CartService {
     };
   }
 
-  /**
-   * Добавить товар в гостевую корзину
-   */
+  
   async addGuestItem(guestId: string, dto: AddCartItemDto): Promise<GuestCartItem> {
-    // Проверяем, существует ли товар с таким license
     const productLicense = await this.productLicenseModel.findOne({
       where: {
         product_id: dto.productId,
@@ -177,24 +156,20 @@ export class CartService {
       throw new NotFoundException('Product with this license not found');
     }
 
-    // Получаем или создаём корзину
     let cart = guestCarts.get(guestId);
     if (!cart) {
       cart = { guestId, items: [] };
       guestCarts.set(guestId, cart);
     }
 
-    // Проверяем, есть ли уже такой товар (по правилам плана - не добавляем дубликаты)
     const existingItem = cart.items.find(
       (item) => item.productLicenseId === productLicense.id,
     );
 
     if (existingItem) {
-      // Товар уже есть, возвращаем существующий (не увеличиваем количество)
       return existingItem;
     }
 
-    // Добавляем новый элемент (без quantity - всегда 1)
     const newItem: GuestCartItem = {
       id: guestItemIdCounter++,
       productLicenseId: productLicense.id,
@@ -204,9 +179,7 @@ export class CartService {
     return newItem;
   }
 
-  /**
-   * Добавить товар в гостевую корзину и вернуть с переводами
-   */
+  
   async addFormattedGuestItem(
     guestId: string,
     dto: AddCartItemDto,
@@ -214,7 +187,6 @@ export class CartService {
   ): Promise<CartItemResponse> {
     const item = await this.addGuestItem(guestId, dto);
     
-    // Загружаем данные о товаре с переводами
     const productLicense = await this.getProductLicense(item.productLicenseId);
     if (!productLicense) {
       throw new NotFoundException('Product not found');
@@ -225,10 +197,7 @@ export class CartService {
     return formattedItem;
   }
 
-  /**
-   * Обновить количество товара в гостевой корзине
-   * (больше не поддерживается - quantity всегда 1)
-   */
+  
   async updateGuestItemQuantity(
     guestId: string,
     itemId: number,
@@ -245,13 +214,11 @@ export class CartService {
       throw new NotFoundException('Cart item not found');
     }
 
-    // Если quantity <= 0, удаляем товар
     if (quantity <= 0) {
       cart.items = cart.items.filter((i) => i.id !== itemId);
       throw new NotFoundException('Cart item removed');
     }
 
-    // Загружаем данные о товаре с переводами
     const productLicense = await this.getProductLicense(item.productLicenseId);
     if (!productLicense) {
       throw new NotFoundException('Product not found');
@@ -262,9 +229,7 @@ export class CartService {
     return formattedItem;
   }
 
-  /**
-   * Удалить товар из гостевой корзины
-   */
+  
   async removeGuestItem(guestId: string, itemId: number): Promise<void> {
     const cart = guestCarts.get(guestId);
     if (!cart) {
@@ -279,59 +244,45 @@ export class CartService {
     cart.items.splice(itemIndex, 1);
   }
 
-  /**
-   * Очистить гостевую корзину
-   */
+  
   async clearGuestCart(guestId: string): Promise<void> {
     guestCarts.delete(guestId);
   }
 
-  /**
-   * Получить количество товаров в гостевой корзине
-   */
+  
   async getGuestCartCount(guestId: string): Promise<number> {
     const cart = guestCarts.get(guestId);
     if (!cart) {
       return 0;
     }
-    // Всегда 1 на товар
     return cart.items.length;
   }
 
-  /**
-   * Синхронизировать гостевую корзину с пользовательской
-   */
+  
   async syncCart(
     userId: number,
     guestItems: Array<{ productLicenseId: number }>,
     locale?: string,
   ): Promise<CartItemResponse[]> {
-    // Для каждого элемента гостевой корзины добавляем в пользовательскую
     for (const guestItem of guestItems) {
-      // Проверяем, есть ли уже такой товар
       const existingItem = await this.cartItemRepository.findByUserAndProduct(
         userId,
         guestItem.productLicenseId,
       );
 
       if (!existingItem) {
-        // Создаём новый элемент (quantity всегда 1)
         await this.cartItemRepository.create({
           user_id: userId,
           product_license_id: guestItem.productLicenseId,
           quantity: 1,
         });
       }
-      // Если товар уже есть - не добавляем дубликат
     }
 
-    // Возвращаем обновлённую корзину
     return this.getCart(userId, locale);
   }
 
-  /**
-   * Получить корзину пользователя
-   */
+  
   async getCart(userId: number, locale?: string): Promise<CartItemResponse[]> {
     const cartItems = await this.cartItemRepository.findByUserId(userId, {
       include: [
@@ -349,11 +300,8 @@ export class CartService {
     return this.formatCartItems(cartItems, locale);
   }
 
-  /**
-   * Добавить товар в корзину
-   */
+  
   async addItem(userId: number, dto: AddCartItemDto, locale?: string): Promise<CartItemResponse> {
-    // Проверяем, существует ли товар с таким license
     const productLicense = await this.productLicenseModel.findOne({
       where: {
         product_id: dto.productId,
@@ -365,14 +313,12 @@ export class CartService {
       throw new NotFoundException('Product with this license not found');
     }
 
-    // Проверяем, есть ли уже такой товар в корзине
     const existingItem = await this.cartItemRepository.findByUserAndProduct(
       userId,
       productLicense.id,
     );
 
     if (existingItem) {
-      // Товар уже есть - увеличиваем количество на quantity из DTO
       const newQuantity = (existingItem.quantity || 1) + (dto.quantity || 1);
       await existingItem.update({ quantity: newQuantity });
       await existingItem.reload();
@@ -389,14 +335,12 @@ export class CartService {
       return this.formatCartItem(fullItem!, locale);
     }
 
-    // Создаем новый элемент корзины с quantity из DTO (по умолчанию 1)
     const cartItem = await this.cartItemRepository.create({
       user_id: userId,
       product_license_id: productLicense.id,
       quantity: dto.quantity || 1,
     });
 
-    // Загружаем с связями для возврата
     const fullItem = await this.cartItemRepository.findById(cartItem.id, {
       include: [
         {
@@ -413,9 +357,7 @@ export class CartService {
     return this.formatCartItem(fullItem, locale);
   }
 
-  /**
-   * Обновить количество товара в корзине
-   */
+  
   async updateItemQuantity(
     userId: number,
     itemId: number,
@@ -433,16 +375,13 @@ export class CartService {
       throw new NotFoundException('Cart item removed');
     }
 
-    // Обновляем количество
     await cartItem.update({ quantity });
     await cartItem.reload();
 
     return this.formatCartItem(cartItem, locale);
   }
 
-  /**
-   * Удалить товар из корзины
-   */
+  
   async removeItem(userId: number, itemId: number): Promise<void> {
     const cartItem = await this.cartItemRepository.findById(itemId);
 
@@ -453,35 +392,25 @@ export class CartService {
     await this.cartItemRepository.delete(itemId);
   }
 
-  /**
-   * Очистить корзину
-   */
+  
   async clearCart(userId: number): Promise<void> {
     await this.cartItemRepository.deleteByUserId(userId);
   }
 
-  /**
-   * Получить количество товаров в корзине
-   */
+  
   async getCartCount(userId: number): Promise<number> {
     const cartItems = await this.cartItemRepository.findByUserId(userId);
-    // Сумма всех quantity
     return cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   }
 
-  /**
-   * Получить ProductLicense с включенными данными
-   */
+  
   private async getProductLicense(id: number) {
     return this.productLicenseModel.findByPk(id, {
       include: [{ model: this.productModel }],
     });
   }
 
-  /**
-   * Найти product_license_id по productId и licenseTypeId
-   * Используется при синхронизации корзины с фронта
-   */
+  
   async findProductLicenseId(
     productId: number,
     licenseTypeId: number,
@@ -495,9 +424,7 @@ export class CartService {
     return productLicense?.id || null;
   }
 
-  /**
-   * Форматировать элемент корзины
-   */
+  
   private async formatCartItem(
     cartItem: CartItem,
     locale?: string,
@@ -505,13 +432,11 @@ export class CartService {
     const license = (cartItem as any).product_license;
     const product = license?.product;
 
-    // Получаем переводы
     let productName = product?.name || '';
     let licenseTypeName = '';
     let coverImage: string | null = null;
 
     if (product) {
-      // Получаем перевод продукта
       const productTranslation = await this.translationService.getProductTranslation(
         product.id,
         locale,
@@ -520,11 +445,9 @@ export class CartService {
         productName = productTranslation.name;
       }
 
-      // Получаем главное изображение
       coverImage = await this.translationService.getProductCoverImage(product.id);
     }
 
-    // Получаем перевод типа лицензии
     if (license?.license_type_id) {
       const licenseTranslation = await this.translationService.getLicenseTypeTranslation(
         license.license_type_id,
@@ -558,11 +481,10 @@ export class CartService {
     };
   }
 
-  /**
-   * Форматировать массив элементов корзины
-   */
+  
   private async formatCartItems(cartItems: CartItem[], locale?: string): Promise<CartItemResponse[]> {
-    // Используем Promise.all для параллельной загрузки переводов
     return Promise.all(cartItems.map((item) => this.formatCartItem(item, locale)));
   }
 }
+
+

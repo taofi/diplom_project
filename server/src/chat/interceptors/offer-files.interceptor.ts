@@ -4,7 +4,7 @@ import multer from 'multer';
 import { diskStorage } from 'multer';
 import { Request } from 'express';
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
 const imageOnlyFields = new Set(['preview', 'images']);
 
@@ -127,3 +127,4 @@ export class OfferCreatorFilesInterceptor implements NestInterceptor {
     });
   }
 }
+

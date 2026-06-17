@@ -66,9 +66,7 @@ export class StripeService {
     }
   }
 
-  /**
-   * Создать Stripe Checkout Session для оплаты заказа
-   */
+  
   async createCheckoutSession(params: {
     orderId: number;
     lineItems: Array<{
@@ -119,7 +117,7 @@ export class StripeService {
    async getCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
      try {
        return await this.stripe.checkout.sessions.retrieve(sessionId);
-     } catch (error: unknown) { // error теперь unknown (безопасно)
+     } catch (error: unknown) {
        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
        this.logger.error(
          `Failed to retrieve checkout session ${sessionId}: ${errorMessage}`,
@@ -161,3 +159,4 @@ handleWebhook(payload: Buffer, sigHeader: string): Stripe.Event {
     return event;
   }
 }
+

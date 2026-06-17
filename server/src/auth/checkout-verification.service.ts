@@ -11,14 +11,12 @@ import { EmailService } from '../email/email.service';
 import { CartService } from '../cart/cart.service';
 import { OrderService } from '../order/order.service';
 
-// Генерация 6-значного кода
 function generateVerificationCode(): string {
   return Math.floor(Math.random() * 1000000)
     .toString()
     .padStart(6, '0');
 }
 
-// Генерация пароля (12 символов)
 function generatePassword(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let password = '';
@@ -28,7 +26,6 @@ function generatePassword(): string {
   return password;
 }
 
-// Извлечение имени из email
 function extractNameFromEmail(email: string): string {
   const parts = email.split('@');
   return parts[0] || 'Пользователь';
@@ -47,29 +44,22 @@ export class CheckoutVerificationService {
     private orderService: OrderService,
   ) {}
 
-  /**
-   * Отправить код верификации на email
-   */
+  
    async sendVerificationCode(email: string, locale: string = 'ru'): Promise<{
      success: boolean;
      message: string;
      expiresIn: number;
    }> {
-     // Проверить, не отправлен ли уже код (можно добавить rate limiting)
      const existingCode = await this.tokenService.getVerificationCode(email);
      if (existingCode) {
-       // Код уже отправлен - не отправляем новый сразу
        throw new BadRequestException('Code already sent. Please request a new one or wait for the current code to expire.');
      }
 
-    // Генерировать код
     const verificationCode = generateVerificationCode();
-    const ttlSeconds = 300; // 5 минут
+    const ttlSeconds = 300;
 
-    // Сохранить код в Redis
     await this.tokenService.setVerificationCode(email, verificationCode, ttlSeconds);
 
-    // Отправить email с кодом
     try {
       await this.emailService.sendVerificationCode(
         email,
@@ -92,10 +82,7 @@ export class CheckoutVerificationService {
     };
   }
 
-  /**
-   * Подтвердить код и создать аккаунт
-   * @param cartItems - элементы корзины с фронта (новый подход)
-   */
+  
   async verifyCodeAndCreateAccount(
     email: string,
     code: string,
@@ -119,11 +106,9 @@ export class CheckoutVerificationService {
     message: string;
     error: string;
   }> {
-    // Проверить код
     const isValid = await this.tokenService.verifyCode(email, code);
 
     if (!isValid) {
-      // Проверить, есть ли код и не истек ли он
       const storedCode = await this.tokenService.getVerificationCode(email);
       
       if (!storedCode) {
@@ -141,21 +126,16 @@ export class CheckoutVerificationService {
       };
     }
 
-    // Удалить код из Redis (он больше не нужен)
     await this.tokenService.deleteVerificationCode(email);
 
-    // Проверить, существует ли пользователь
     const existingUser = await this.userModel.findOne({
       where: { email },
       include: [{ model: this.userRoleModel }],
     });
 
-    // Если пользователь уже существует - добавляем товары на его аккаунт и логиним
     if (existingUser) {
-      // Получаем роли пользователя
       const roles = existingUser.user_roles?.map(ur => ur.role) || ['user'];
 
-      // Переносим заказы гостя на пользователя (по email)
       try {
         const transferredOrdersCount = await this.orderService.transferGuestOrdersToUser(
           existingUser.id,
@@ -167,10 +147,8 @@ export class CheckoutVerificationService {
         }
       } catch (error) {
         console.error('[CheckoutVerification] Failed to transfer orders:', error);
-        // Продолжаем, даже если не удалось перенести заказы
       }
 
-      // Синхронизируем корзину (переданную с фронта)
       if (cartItems && cartItems.length > 0) {
         try {
           const syncedItems: Array<{ productLicenseId: number; productId: number }> = [];
@@ -198,7 +176,6 @@ export class CheckoutVerificationService {
           console.error('[CheckoutVerification] Failed to sync cart:', error);
         }
       }
-      // TODO: Удалить загрузку гостевой корзины по guestId когда frontend перейдёт на новый подход
       else if (guestId) {
         try {
           const guestCartItems = await this.cartService.getGuestCart(guestId);
@@ -216,7 +193,6 @@ export class CheckoutVerificationService {
         }
       }
 
-      // Генерируем токены для существующего пользователя
       const tokens = await this.tokenService.generateTokens({
         sub: existingUser.id,
         email: existingUser.email,
@@ -238,14 +214,11 @@ export class CheckoutVerificationService {
       };
     }
 
-    // Сгенерировать пароль
     const password = generatePassword();
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Извлечь имя из email
     const name = extractNameFromEmail(email);
 
-    // Создать пользователя
     const user = await this.userModel.create({
       email,
       password_hash: passwordHash,
@@ -253,17 +226,13 @@ export class CheckoutVerificationService {
       locale,
     });
 
-    // Создать роль по умолчанию
     await this.userRoleModel.create({
       user_id: user.id,
       role: 'user',
     });
 
-    // Синхронизируем корзину (переданную с фронта)
     if (cartItems && cartItems.length > 0) {
       try {
-        // Для каждого товара нужно получить правильный product_license_id
-        // по productId и licenseTypeId
         const syncedItems: Array<{ productLicenseId: number; productId: number }> = [];
         
         for (const item of cartItems) {
@@ -287,12 +256,9 @@ export class CheckoutVerificationService {
         }
       } catch (error) {
         console.error('[CheckoutVerification] Failed to sync cart:', error);
-        // Продолжаем, даже если не удалось синхронизировать корзину
       }
     }
-    // TODO: Удалить загрузку гостевой корзины по guestId когда frontend перейдёт на новый подход
     else if (guestId) {
-      // Для обратной совместимости - пробуем загрузить с сервера (старый подход)
       try {
         const guestCartItems = await this.cartService.getGuestCart(guestId);
         if (guestCartItems.length > 0) {
@@ -309,7 +275,6 @@ export class CheckoutVerificationService {
       }
     }
 
-    // Перенести заказы гостя на пользователя (по email)
     try {
       const transferredOrdersCount = await this.orderService.transferGuestOrdersToUser(
         user.id,
@@ -321,10 +286,8 @@ export class CheckoutVerificationService {
       }
     } catch (error) {
       console.error('[CheckoutVerification] Failed to transfer orders:', error);
-      // Продолжаем, даже если не удалось перенести заказы
     }
 
-    // Отправить email с паролем
     try {
       await this.emailService.sendAccountCreated(
         email,
@@ -334,10 +297,8 @@ export class CheckoutVerificationService {
       );
     } catch (error) {
       console.error('Failed to send account created email:', error);
-      // Продолжаем, даже если не удалось отправить email с паролем
     }
 
-    // Сгенерировать токены
     const tokens = await this.tokenService.generateTokens({
       sub: user.id,
       email: user.email,
@@ -359,3 +320,4 @@ export class CheckoutVerificationService {
     };
   }
 }
+

@@ -46,12 +46,12 @@ export class ChatRoom extends Model {
   @AllowNull(true)
   @ForeignKey(() => Product)
   @Column({ type: DataType.INTEGER, onDelete: 'CASCADE' })
-  declare product_id: number | null; // NULL = общий чат без товара
+  declare product_id: number | null;
 
   @AllowNull(true)
   @ForeignKey(() => UserProduct)
   @Column({ type: DataType.INTEGER, onDelete: 'CASCADE' })
-  declare user_product_id: number | null; // Связь с купленным товаром
+  declare user_product_id: number | null;
 
   @Default(ChatRoomStatus.OPEN)
   @Column(DataType.ENUM(...Object.values(ChatRoomStatus)))
@@ -70,7 +70,6 @@ export class ChatRoom extends Model {
   @UpdatedAt
   declare updated_at: Date;
 
-  // Associations
   @BelongsTo(() => User, 'buyer_id')
   declare buyer: User;
 
@@ -87,3 +86,5 @@ export class ChatRoom extends Model {
   declare messages: ChatMessage[];
 
 }
+
+

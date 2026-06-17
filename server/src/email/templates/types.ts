@@ -1,14 +1,10 @@
-/**
- * Интерфейс одного шаблона email
- */
+
 export interface EmailTemplate {
   subject: string;
   body: string;
 }
 
-/**
- * Все доступные типы шаблонов
- */
+
 export interface EmailTemplates {
   verificationCode: EmailTemplate;
   welcome: EmailTemplate;
@@ -18,34 +14,26 @@ export interface EmailTemplates {
   orderConfirmation: EmailTemplate;
 }
 
-/**
- * Переменные для подстановки в шаблоны
- */
+
 export interface TemplateVariables {
-  // Общие
   name?: string;
   email?: string;
 
-  // verificationCode
   code?: string;
   expires?: string;
 
-  // passwordReset
   resetLink?: string;
 
-  // purchaseConfirmation
   orderId?: string;
   orderItems?: string;
   totalPrice?: string;
 
-  // accountCreated
   password?: string;
 
-  // orderConfirmation
   attachmentsCount?: string;
 }
 
-/**
- * Ключи шаблонов
- */
+
 export type TemplateName = keyof EmailTemplates;
+
+

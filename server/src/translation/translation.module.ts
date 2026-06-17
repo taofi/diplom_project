@@ -17,3 +17,4 @@ import { ProductMedia } from '../db/models/product-media.model';
   exports: [TranslationService],
 })
 export class TranslationModule {}
+

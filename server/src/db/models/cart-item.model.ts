@@ -39,3 +39,5 @@ export class CartItem extends Model {
   @BelongsTo(() => ProductLicense)
   declare product_license: ProductLicense;
 }
+
+

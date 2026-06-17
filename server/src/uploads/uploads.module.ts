@@ -11,3 +11,5 @@ import { AuthModule } from '../auth/auth.module';
   exports: [UploadsService],
 })
 export class UploadsModule {}
+
+

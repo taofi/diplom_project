@@ -23,12 +23,7 @@ interface RawBodyRequest extends Request {
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
 
-  /**
-   * POST /checkout/session — Создать Stripe Checkout Session (Phase 1)
-   * Создаёт заказ (PENDING) и возвращает URL для оплаты через Stripe.
-   * Для авторизованных пользователей — JWT автоматически.
-   * Для гостей — передаётся x-guest-id и guestEmail в body.
-   */
+  
   @Post('session')
   @UseGuards(OptionalJwtAuthGuard)
   async createCheckoutSession(
@@ -52,12 +47,7 @@ export class CheckoutController {
     throw new BadRequestException('User ID or guest ID is required');
   }
 
-  /**
-   * POST /checkout/webhook — Приём уведомлений от Stripe (Phase 2)
-   * Вызывается Stripe после подтверждения оплаты.
-   * Защищён проверкой подписи (StripeService.handleWebhook).
-   * Не требует авторизации (JWT) — подпись Stripe является аутентификацией.
-   */
+  
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleStripeWebhook(
@@ -78,3 +68,4 @@ export class CheckoutController {
     }
   }
 }
+

@@ -33,3 +33,5 @@ import { UploadsModule } from '../uploads/uploads.module';
   exports: [ProductService, ProductMediaService, ProductRepository, SequelizeModule],
 })
 export class ProductModule {}
+
+

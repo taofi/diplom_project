@@ -1,4 +1,3 @@
-// Типы для WebSocket чата
 
 export interface ChatUser {
   id: number;
@@ -16,7 +15,6 @@ export interface TempChat {
   updatedAt: string;
 }
 
-// Типы для расширенного ChatRoom с переводами
 export interface ChatRoomProductTranslated {
   translatedName: string;
   translatedDescription?: string;
@@ -63,7 +61,6 @@ export interface InitTempChatPayload {
   userProductId?: number;
 }
 
-// Server -> Client events
 export interface NewMessageEvent {
   message: {
     id: number;
@@ -156,3 +153,5 @@ export interface OrderUpdatedEvent {
     updatedAt: string;
   };
 }
+
+

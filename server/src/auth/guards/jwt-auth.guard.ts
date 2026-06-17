@@ -47,13 +47,11 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid token format');
     }
 
-    // Check if token is blacklisted
     const isBlacklisted = await this.tokenService.isTokenBlacklisted(token);
     if (isBlacklisted) {
       throw new UnauthorizedException('Token has been revoked');
     }
 
-    // Validate token and get user
     try {
       const payload = this.jwtService.verify<{ sub: number }>(token);
       
@@ -63,7 +61,6 @@ export class JwtAuthGuard implements CanActivate {
       
       const user = await this.authService.getProfile(payload.sub);
       
-      // Присваиваем полный объект пользователя в request для использования в декораторах @CurrentUser()
       request.user = user;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -76,3 +73,5 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 }
+
+

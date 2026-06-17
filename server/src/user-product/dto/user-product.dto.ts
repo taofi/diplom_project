@@ -1,6 +1,4 @@
-/**
- * DTO для ответа с купленным товаром
- */
+
 export class UserProductResponse {
   id: number;
   productId: number;
@@ -14,3 +12,5 @@ export class UserProductResponse {
   sellerId: number;
   count: number;
 }
+
+

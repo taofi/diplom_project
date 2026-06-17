@@ -10,3 +10,5 @@ export class AddLicenseDto {
   @Min(0)
   price: number;
 }
+
+

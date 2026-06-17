@@ -29,3 +29,5 @@ export class Category extends Model {
   @BelongsToMany(() => Product, () => ProductCategory)
   declare products: Product[];
 }
+
+

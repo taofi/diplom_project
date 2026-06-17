@@ -28,9 +28,7 @@ const MAX_TEMP_MEDIA_SIZE = 400 * 1024 * 1024;
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  /**
-   * Загрузить временное медиа (изображение)
-   */
+  
   @Post('temp/media')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -79,9 +77,7 @@ export class UploadsController {
     return result;
   }
 
-  /**
-   * Загрузить временный файл продукта
-   */
+  
   @Post('temp/file')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -124,10 +120,7 @@ export class UploadsController {
     return result;
   }
 
-  /**
-   * Подтвердить перемещение файлов продукта
-   * (переместить из temp в product/{id})
-   */
+  
   @Post('temp/confirm')
   confirmProductFiles(
     @CurrentUserId() userId: number,
@@ -143,19 +136,14 @@ export class UploadsController {
     return result;
   }
 
-  /**
-   * Очистить временную папку пользователя
-   */
+  
   @Delete('temp')
   clearTempFolder(@CurrentUserId() userId: number) {
     this.uploadsService.clearTempFolder(userId);
     return { success: true };
   }
 
-  /**
-   * Загрузить аватар пользователя
-   * Сохраняет в public/user/{userId}/avatar.{ext}
-   */
+  
   @Post('avatar')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -195,3 +183,5 @@ export class UploadsController {
     return result;
   }
 }
+
+

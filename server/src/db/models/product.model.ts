@@ -43,8 +43,6 @@ export class Product extends Model {
   @Column({ type: DataType.STRING(500), allowNull: false })
   declare file_url: string;
 
-  // name и description перенесены в product_translations
-  // sku удален
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false, defaultValue: 0 })
   declare price: number;
@@ -73,7 +71,6 @@ export class Product extends Model {
   @UpdatedAt
   declare updated_at: Date;
 
-  // Associations
   @BelongsTo(() => User, 'seller_id')
   declare seller: User;
 
@@ -92,3 +89,5 @@ export class Product extends Model {
   @HasMany(() => ChatRoom, 'product_id')
   declare chat_rooms: ChatRoom[];
 }
+
+

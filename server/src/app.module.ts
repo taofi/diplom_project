@@ -37,7 +37,6 @@ import emailConfig from './config/email.config';
         acceptRanges: true,
       },
     }),
-    // Serve static files from server/files for product downloads
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'files'),
       serveRoot: '/files',
@@ -74,3 +73,5 @@ import emailConfig from './config/email.config';
   providers: [AppService],
 })
 export class AppModule {}
+
+

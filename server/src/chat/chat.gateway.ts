@@ -44,14 +44,12 @@ export class ChatGateway
   afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
     
-    // Передаем сервер в сервисы для рассылки сообщений
     this.chatMessageService.setServer(server);
     this.chatNotificationService.setServer(server);
   }
 
   handleConnection(client: Socket) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const token: string | undefined =
         client.handshake.auth.token ||
         client.handshake.headers.authorization?.replace('Bearer ', '');
@@ -81,7 +79,6 @@ export class ChatGateway
     const userId = (client.data as { userId: number }).userId;
     console.log(`Client disconnected: ${client.id}, userId: ${userId}`);
     
-    // Обрабатываем отключение сокета через ChatStateService
     if (userId) {
       this.chatStateService.onUserDisconnect(userId, client.id);
     }
@@ -96,7 +93,6 @@ export class ChatGateway
       return { error: 'Unauthorized' };
     }
 
-    // Создаем чат напрямую в БД с visibility: PENDING
     const chat = await this.chatService.createPendingChat(
       userId,
       payload.sellerId,
@@ -104,7 +100,6 @@ export class ChatGateway
       payload.userProductId,
     );
 
-    // Возвращаем ID чата (он невидим для автора пока не будет отправлено сообщение)
     return { chatId: chat.id };
   }
 
@@ -119,13 +114,10 @@ export class ChatGateway
 
     client.join(`chat:${payload.roomId}`);
     
-    // Устанавливаем активную комнату в Redis для отслеживания состояния
     await this.chatStateService.setUserActiveRoom(userId, client.id, payload.roomId);
     
-    // Добавляем пользователя в список активных пользователей комнаты
     await this.chatStateService.addUserToRoomActiveList(userId, payload.roomId);
     
-    // Отмечаем сообщения как прочитанные
     await this.chatService.markMessagesAsRead(payload.roomId, userId);
 
     return { success: true };
@@ -142,13 +134,10 @@ export class ChatGateway
 
     client.leave(`chat:${payload.roomId}`);
 
-    // Очищаем активную комнату в Redis
     await this.chatStateService.clearUserActiveRoom(userId, client.id);
     
-    // Удаляем пользователя из списка активных пользователей комнаты
     const isRoomEmpty = await this.chatStateService.removeUserFromRoomActiveList(userId, payload.roomId);
     
-    // Если в комнате больше нет активных пользователей, инвалидируем кэш
     if (isRoomEmpty) {
       await this.chatCacheService.invalidateChatRoomCache(payload.roomId);
       console.log(`[ChatGateway] Room ${payload.roomId} is now empty, cache invalidated`);
@@ -180,7 +169,6 @@ export class ChatGateway
       return { error: 'Unauthorized' };
     }
 
-    // Делегируем отправку сообщения в ChatMessageService
     const result = await this.chatMessageService.sendMessage({
       roomId: payload.roomId,
       senderId: userId,
@@ -196,10 +184,7 @@ export class ChatGateway
     return { success: true, message: result.message };
   }
 
-  /**
-   * Установить активную комнату (вызывается при переключении вкладок)
-   * Это позволяет отслеживать, в каком чате пользователь на каждой вкладке
-   */
+  
   @SubscribeMessage('setActiveRoom')
   async handleSetActiveRoom(client: Socket, payload: { roomId: number }) {
     console.log(`[ChatGateway] setActiveRoom called: roomId=${payload.roomId}, clientId=${client.id}`);
@@ -213,9 +198,7 @@ export class ChatGateway
     return { success: true };
   }
 
-  /**
-   * Очистить активную комнату (вызывается при закрытии вкладки)
-   */
+  
   @SubscribeMessage('clearActiveRoom')
   async handleClearActiveRoom(client: Socket) {
     console.log(`[ChatGateway] clearActiveRoom: clientId=${client.id}`);
@@ -237,7 +220,6 @@ export class ChatGateway
       return;
     }
 
-    // Рассылаем событие typing всем в комнате, кроме отправителя
     client.to(`chat:${payload.roomId}`).emit('userTyping', {
       roomId: payload.roomId,
       userId,
@@ -245,16 +227,11 @@ export class ChatGateway
     });
   }
 
-  // Метод для отправки уведомлений из сервиса
   notifyUser(userId: number, event: string, data: unknown) {
-    // Найти сокеты пользователя и отправить им событие
-    // Это можно расширить для реализации уведомлений
     this.server.emit(event, data);
   }
 
-  /**
-   * Уведомление о создании нового заказа
-   */
+  
   notifyOfferCreated(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
     console.log(`[ChatGateway] notifyOfferCreated: chatRoomId=${chatRoomId}`);
@@ -264,9 +241,7 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Уведомление об изменении статуса заказа
-   */
+  
   notifyStatusChanged(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
     console.log(`[ChatGateway] notifyStatusChanged: chatRoomId=${chatRoomId}`);
@@ -275,9 +250,7 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Уведомление об изменении цены
-   */
+  
   notifyPriceChanged(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
     if (chatRoomId) {
@@ -285,9 +258,7 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Уведомление о загрузке файлов
-   */
+  
   notifyFilesUploaded(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
     if (chatRoomId) {
@@ -295,9 +266,7 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Уведомление об оплате заказа
-   */
+  
   notifyPaymentCompleted(offer: unknown) {
     const chatRoomId = (offer as { chat_room_id?: number })?.chat_room_id;
     if (chatRoomId) {
@@ -305,9 +274,7 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Сериализация данных заказа для отправки клиенту
-   */
+  
   private serializeOffer(offer: unknown) {
     const o = offer as {
       id?: number;
@@ -364,3 +331,5 @@ export class ChatGateway
     };
   }
 }
+
+

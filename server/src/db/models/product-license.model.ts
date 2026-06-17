@@ -48,3 +48,5 @@ export class ProductLicense extends Model {
   @HasMany(() => UserProduct, 'product_license_id')
   declare user_products: UserProduct[];
 }
+
+

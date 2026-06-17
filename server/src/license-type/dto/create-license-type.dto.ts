@@ -9,3 +9,5 @@ export class CreateLicenseTypeDto {
   @IsOptional()
   description?: string;
 }
+
+

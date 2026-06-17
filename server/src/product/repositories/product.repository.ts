@@ -32,29 +32,20 @@ type ProductWhereOptions = {
   type?: ProductType;
   seller_id?: number | { [Op.in]: number[] };
   price?: { [Op.gte]?: number; [Op.lte]?: number };
-  // Поиск по name/description перенесен в translations
 };
 
-/**
- * Интерфейс для создания Product в БД
- * price и mainImage убраны - они вычисляемые
- * name, description, sku убраны - перенесены в product_translations
- */
+
 interface ProductCreateData {
-  // price убран - вычисляется как MIN(licenses.price)
   discount_price: number | null;
   type: ProductType;
   file_url: string;
   stock: number;
   is_active: boolean;
   is_featured: boolean;
-  // main_image убран - берется из media where is_cover = true
   seller_id: number;
 }
 
-/**
- * Интерфейс для обновления Product
- */
+
 type ProductUpdateData = Partial<ProductCreateData>;
 
 @Injectable()
@@ -100,16 +91,13 @@ export class ProductRepository {
 
     if (!product) return null;
 
-    // Вычисляем price как минимальную цену из лицензий
     if (product.licenses && product.licenses.length > 0) {
       const prices = product.licenses.map((l) => Number(l.price));
       (product as unknown as ProductWithComputedFields).price = Math.min(...prices);
     } else {
-      // Товар без лицензий не может быть продан
       (product as unknown as ProductWithComputedFields).price = 0;
     }
 
-    // Получаем main_image из медиа где is_cover = true
     if (product.media && product.media.length > 0) {
       const coverMedia = product.media.find((m) => m.is_cover);
       const url = coverMedia?.url;
@@ -118,7 +106,6 @@ export class ProductRepository {
       (product as unknown as ProductWithComputedFields).main_image = '';
     }
 
-    // Добавляем типизированные связи
     return product as unknown as ProductWithRelations;
   }
 
@@ -132,11 +119,7 @@ export class ProductRepository {
     });
   }
 
-  /**
-   * Получить продукт по ID с полными отношениями
-   * Включает: translations, media, licenses, categories
-   * main_image вычисляется из media where is_cover = true
-   */
+  
   async findByIdWithFullRelations(
     id: number,
     language?: string,
@@ -162,7 +145,6 @@ export class ProductRepository {
 
     if (!product) return null;
 
-    // Вычисляем price как минимальную цену из лицензий
     if (product.licenses && product.licenses.length > 0) {
       const prices = product.licenses.map((l) => Number(l.price));
       (product as unknown as ProductWithComputedFields).price = Math.min(
@@ -172,7 +154,6 @@ export class ProductRepository {
       (product as unknown as ProductWithComputedFields).price = 0;
     }
 
-    // Получаем main_image из медиа где is_cover = true
     if (product.media && product.media.length > 0) {
       const coverMedia = product.media.find((m) => m.is_cover);
       const url = coverMedia?.url;
@@ -186,11 +167,7 @@ export class ProductRepository {
     return product as unknown as ProductWithFullRelations;
   }
 
-  /**
-   * Получить список продуктов для отображения (оптимизированный запрос)
-   * Включает: licenses, categories, translations
-   * НЕ включает: media массив (только main_image вычисляется)
-   */
+  
   async findAllForList(
     query: ProductQueryParams = {},
   ): Promise<{ rows: ProductWithFullRelations[]; count: number }> {
@@ -214,7 +191,6 @@ export class ProductRepository {
 
     const where: ProductWhereOptions = {};
 
-    // Фильтрация по категории через include (связь many-to-many через ProductCategory)
     const categoryInclude = categoryId
       ? {
           model: Category,
@@ -241,7 +217,6 @@ export class ProductRepository {
       where.is_featured = isFeatured;
     }
 
-    // Фильтрация по минимальной цене лицензий (а не по базовому полю price)
     if (minPrice !== undefined || maxPrice !== undefined) {
       const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
       
@@ -255,7 +230,6 @@ export class ProductRepository {
       }
     }
 
-    // Поиск по translations (ru и en)
     let translationWhere: Record<string, unknown> | undefined;
     if (search) {
       translationWhere = {
@@ -267,10 +241,8 @@ export class ProductRepository {
       };
     }
 
-    // Сортировка
     let order: FindOptions<Product>['order'];
     if (sortBy === 'price') {
-      // Сортировка по минимальной цене лицензий
       const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
       order = [[this.sequelize.literal(priceSubquery), sortOrder.toUpperCase() as 'ASC' | 'DESC']];
     } else {
@@ -281,36 +253,31 @@ export class ProductRepository {
       where,
       offset,
       limit,
-      distinct: true, // Важно для правильного подсчета count при использовании include
+      distinct: true,
       order,
       include: [
         { model: User, as: 'seller', attributes: ['id', 'name', 'avatar_url'] },
         categoryInclude,
         { model: ProductLicense, include: [{ model: LicenseType, include: [LicenseTypeTranslation] }] },
-        // Загружаем только media с is_cover = true для main_image
         {
           model: ProductMedia,
           where: { is_cover: true },
           required: false,
         },
-        // Загружаем translations для получения name/description
-        // При наличии поиска - фильтруем по name/description в обоих языках
         {
           model: ProductTranslation,
           as: 'translations',
           where: translationWhere,
-          required: !!search, // Если есть поиск, то join обязателен
+          required: !!search,
         },
       ],
     });
 
 
 
-    // Вычисляем price и main_image для каждого товара
     const rows = result.rows.map((product): ProductWithFullRelations => {
 
 
-      // price = MIN(licenses.price)
       if (product.licenses && product.licenses.length > 0) {
         const prices = product.licenses.map((l) => Number(l.price));
         (product as unknown as ProductWithComputedFields).price = Math.min(...prices);
@@ -318,7 +285,6 @@ export class ProductRepository {
         (product as unknown as ProductWithComputedFields).price = 0;
       }
 
-      // main_image из media где is_cover = true
       if (product.media && product.media.length > 0) {
         const coverMedia = product.media.find((m) => m.is_cover);
         (product as unknown as ProductWithComputedFields).main_image = coverMedia ? String(coverMedia.url) : '';
@@ -358,7 +324,6 @@ export class ProductRepository {
 
     const where: ProductWhereOptions = {};
 
-    // Фильтрация по категории через include (связь many-to-many через ProductCategory)
     const categoryInclude = categoryId
       ? {
           model: Category,
@@ -385,7 +350,6 @@ export class ProductRepository {
       where.is_featured = isFeatured;
     }
 
-    // Фильтрация по минимальной цене лицензий (а не по базовому полю price)
     if (minPrice !== undefined || maxPrice !== undefined) {
       const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
       
@@ -399,7 +363,6 @@ export class ProductRepository {
       }
     }
 
-    // Поиск по translations (ru и en) для админ-панели
     let translationWhere: Record<string, unknown> | undefined;
     if (search) {
       translationWhere = {
@@ -411,10 +374,8 @@ export class ProductRepository {
       };
     }
 
-    // Сортировка
     let order: FindOptions<Product>['order'];
     if (sortBy === 'price') {
-      // Сортировка по минимальной цене лицензий
       const priceSubquery = `(SELECT MIN(pl.price) FROM product_licenses pl WHERE pl.product_id = "Product".id)`;
       order = [[this.sequelize.literal(priceSubquery), sortOrder.toUpperCase() as 'ASC' | 'DESC']];
     } else {
@@ -425,13 +386,12 @@ export class ProductRepository {
       where,
       offset,
       limit,
-      distinct: true, // Важно для правильного подсчета count при использовании include
+      distinct: true,
       order,
       include: [
         categoryInclude,
         { model: ProductMedia },
         { model: ProductLicense },
-        // Загружаем translations для поиска
         {
           model: ProductTranslation,
           as: 'translations',
@@ -441,18 +401,14 @@ export class ProductRepository {
       ],
     });
 
-    // Вычисляем price и main_image для каждого товара
     const rows = result.rows.map((product): ProductWithComputedFields => {
-      // price = MIN(licenses.price)
       if (product.licenses && product.licenses.length > 0) {
         const prices = product.licenses.map((l) => Number(l.price));
         product.price = Math.min(...prices);
       } else {
-        // Товар без лицензий не может быть продан
         product.price = 0;
       }
 
-      // main_image = media where is_cover = true
       if (product.media && product.media.length > 0) {
         const coverMedia = product.media.find((m) => m.is_cover);
         product.main_image = coverMedia ? String(coverMedia.url) : '';
@@ -473,22 +429,18 @@ export class ProductRepository {
     data: CreateProductDto,
     sellerId: number,
   ): Promise<ProductWithRelations> {
-    // name и description теперь создаются через translations
     const createData: ProductCreateData = {
-      // price убран - вычисляется как MIN(licenses.price)
       discount_price: data.discountPrice ?? null,
       type: data.type,
       file_url: data.fileUrl ?? '',
       stock: data.stock ?? 0,
       is_active: data.isActive ?? true,
       is_featured: data.isFeatured ?? false,
-      // main_image убран - берется из media where is_cover = true
       seller_id: sellerId,
     };
 
     const product = await this.productModel.create(createData as any);
 
-    // Add categories
     if (data.categoryIds && data.categoryIds.length > 0) {
       for (const categoryId of data.categoryIds) {
         await ProductCategory.create({
@@ -498,7 +450,6 @@ export class ProductRepository {
       }
     }
 
-    // Add translations
     if (data.translations && data.translations.length > 0) {
       for (const translation of data.translations) {
         await this.productTranslationModel.create({
@@ -512,7 +463,6 @@ export class ProductRepository {
       }
     }
 
-    // Add licenses
     if (data.licenses && data.licenses.length > 0) {
       for (const license of data.licenses) {
         await this.productLicenseModel.create({
@@ -537,11 +487,8 @@ export class ProductRepository {
       throw new NotFoundException('Product not found');
     }
 
-    // Update basic fields
     const updateData: ProductUpdateData = {};
 
-    // name, description, sku перенесены в translations - больше не обновляем здесь
-    // price убран - вычисляется как MIN(licenses.price)
     if (data.discountPrice !== undefined)
       updateData.discount_price = data.discountPrice;
     if (data.type !== undefined) updateData.type = data.type;
@@ -549,11 +496,9 @@ export class ProductRepository {
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;
     if (data.isFeatured !== undefined) updateData.is_featured = data.isFeatured;
-    // main_image убран - берется из media where is_cover = true
 
     await product.update(updateData);
 
-    // Update categories if provided
     if (data.categoryIds !== undefined) {
       await ProductCategory.destroy({ where: { product_id: id } });
       for (const categoryId of data.categoryIds) {
@@ -564,25 +509,21 @@ export class ProductRepository {
       }
     }
 
-    // Update translations if provided - upsert instead of delete + create
     if (data.translations !== undefined) {
       for (const translation of data.translations) {
         const lang = (translation.language as Language) || Language.ENGLISH;
         
-        // Проверяем, существует ли перевод для этого языка
         const existingTranslation = await this.productTranslationModel.findOne({
           where: { productId: id, language: lang },
         });
         
         if (existingTranslation) {
-          // Обновляем существующий перевод
           await existingTranslation.update({
             name: translation.name || '',
             description: translation.description || '',
             shortDescription: translation.shortDescription || '',
           });
         } else {
-          // Создаем новый перевод - используем product_id для базы данных
           await this.productTranslationModel.create({
             productId: id,
             name: translation.name || '',
@@ -605,10 +546,8 @@ export class ProductRepository {
       throw new NotFoundException('Product not found');
     }
 
-    // Delete all media files from disk
     this.deleteAllMediaFiles(id);
 
-    // Delete related records
     await ProductCategory.destroy({ where: { product_id: id } });
     await this.productTranslationModel.destroy({ where: { productId: id } });
     await this.productLicenseModel.destroy({ where: { product_id: id } });
@@ -617,9 +556,7 @@ export class ProductRepository {
     await product.destroy();
   }
 
-  /**
-   * Delete all media files for a product from disk
-   */
+  
   private deleteAllMediaFiles(productId: number): void {
     this.fileService.deleteMediaFolderFiles(MediaFolder.PRODUCT, productId);
   }
@@ -648,7 +585,6 @@ export class ProductRepository {
       throw new NotFoundException('Media not found');
     }
 
-    // Delete the file from disk
     if (media.url) {
       this.fileService.deleteFile(media.url);
     }
@@ -703,7 +639,6 @@ export class ProductRepository {
   }
 
   async deleteAllLicenses(productId: number): Promise<void> {
-    // Находим ID лицензий этого продукта, которые используются в заказах
     const usedLicenseIds = await this.sequelize.query(
       `SELECT pl.id FROM product_licenses pl
        INNER JOIN order_items oi ON pl.id = oi.product_license_id
@@ -716,7 +651,6 @@ export class ProductRepository {
 
     const usedIds = (usedLicenseIds as { id: number }[]).map((row) => row.id);
 
-    // Удаляем только те лицензии, которые НЕ используются в заказах
     if (usedIds.length > 0) {
       await this.productLicenseModel.destroy({
         where: {
@@ -725,10 +659,11 @@ export class ProductRepository {
         },
       });
     } else {
-      // Если нет используемых лицензий - удаляем все
       await this.productLicenseModel.destroy({
         where: { product_id: productId },
       });
     }
   }
 }
+
+

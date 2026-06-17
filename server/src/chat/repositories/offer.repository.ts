@@ -43,10 +43,7 @@ export class OfferRepository {
     });
   }
 
-  /**
-   * Найти все заказы пользователя (включая завершённые)
-   * Используется для страницы заказов
-   */
+  
   async findAllByUser(userId: number): Promise<Offer[]> {
     return this.offerModel.findAll({
       where: {
@@ -157,3 +154,4 @@ export class OfferRepository {
     return offer;
   }
 }
+

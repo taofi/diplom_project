@@ -24,9 +24,7 @@ export class OfferService {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Сериализация данных заказа для отправки клиенту
-   */
+  
   private serializeOffer(offer: Offer): Record<string, unknown> {
     const isPaidCompleted = offer.status === OfferStatus.COMPLETED && offer.is_paid;
     const sourceFilesUrls = isPaidCompleted
@@ -61,7 +59,6 @@ export class OfferService {
       return null;
     }
 
-    // Если уже массив (Sequelize может автоматически парсить JSON)
     if (Array.isArray(value)) {
       return value;
     }
@@ -81,9 +78,7 @@ export class OfferService {
     }
   }
 
-  /**
-   * Создать заказ (Заказчик)
-   */
+  
   async createOffer(userId: number, dto: CreateOfferDto): Promise<Offer> {
     console.log(`[OfferService] createOffer: userId=${userId}, chatRoomId=${dto.chatRoomId}, authorId=${dto.authorId}`);
     
@@ -101,11 +96,9 @@ export class OfferService {
     const serialized = this.serializeOffer(offer);
     console.log(`[OfferService] Serialized offer:`, JSON.stringify(serialized));
     
-    // WebSocket: уведомить создателя (заказчика)
     console.log(`[OfferService] Sending offer:created to creator userId=${userId}`);
     await this.chatNotificationService.notifyUser(userId, 'offer:created', { offer: serialized });
     
-    // WebSocket: уведомить автора (продавца)
     console.log(`[OfferService] Sending offer:created to author userId=${dto.authorId}`);
     await this.chatNotificationService.notifyUser(dto.authorId, 'offer:created', { offer: serialized });
 
@@ -113,10 +106,7 @@ export class OfferService {
     return offer;
   }
 
-  /**
-   * Принять заказ (Автор)
-   * Если original_price существует - устанавливаем price = original_price
-   */
+  
   async acceptOffer(offerId: number, userId: number): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -126,7 +116,6 @@ export class OfferService {
       throw new ForbiddenException('Not your offer');
     }
 
-    // Если есть original_price (автор предложил свою цену) - используем её
     if (offer.original_price !== null && typeof offer.original_price === 'number') {
       await this.offerRepository.updatePriceOnly(offerId, offer.original_price);
     }
@@ -138,17 +127,13 @@ export class OfferService {
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:statusChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:statusChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Отклонить заказ (Любой участник)
-   */
+  
   async rejectOffer(offerId: number, userId: number): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -165,36 +150,27 @@ export class OfferService {
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:statusChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:statusChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Отклонить предложение (с дополнительной логикой сброса цены)
-   * Защита: только участники сделки могут отклонить
-   * Поддерживает: WAITING_AUTHOR, WAITING_USER
-   */
+  
   async declineOffer(offerId: number, userId: number): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
-    // Защита: только автор (продавец) или создатель (покупатель) может отклонить
     if (offer.author_id !== userId && offer.creator_id !== userId) {
       throw new ForbiddenException('Only offer participants can decline the offer');
     }
 
-    // Поддержка WAITING_AUTHOR и WAITING_USER
     if (offer.status !== OfferStatus.WAITING_AUTHOR && offer.status !== OfferStatus.WAITING_USER) {
       throw new BadRequestException('Offer cannot be declined at this status');
     }
 
-    // Если отклоняем после изменения цены - сбрасываем original_price
     if (offer.status === OfferStatus.WAITING_USER && offer.original_price) {
       await this.offerRepository.updatePriceOnly(offerId, offer.original_price);
     }
@@ -206,17 +182,13 @@ export class OfferService {
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:statusChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:statusChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Изменить цену (Автор)
-   */
+  
   async counterOffer(offerId: number, userId: number, dto: CounterOfferDto): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -229,31 +201,24 @@ export class OfferService {
       throw new ForbiddenException('Cannot change price at this status');
     }
 
-    // Сохраняем старую цену как original_price
     const updated = await this.offerRepository.updatePrice(
       offerId,
       dto.newPrice,
       offer.price,
     );
 
-    // Меняем статус на waiting_user
     await this.offerRepository.updateStatus(offerId, OfferStatus.WAITING_USER);
     updated.status = OfferStatus.WAITING_USER;
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:priceChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:priceChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Изменить цену (Заказчик)
-   * Работает для статуса WAITING_USER - заказчик предлагает свою цену
-   */
+  
   async counterOfferFromCreator(offerId: number, userId: number, dto: CounterOfferDto): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -266,30 +231,24 @@ export class OfferService {
       throw new ForbiddenException('Cannot change price at this status');
     }
 
-    // Сохраняем текущую цену как original_price (это цена автора)
     const updated = await this.offerRepository.updatePrice(
       offerId,
       dto.newPrice,
       offer.price,
     );
 
-    // Меняем статус обратно на waiting_author
     await this.offerRepository.updateStatus(offerId, OfferStatus.WAITING_AUTHOR);
     updated.status = OfferStatus.WAITING_AUTHOR;
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:priceChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:priceChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Подтвердить цену (Заказчик)
-   */
+  
   async confirmPrice(offerId: number, userId: number): Promise<Offer> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -309,17 +268,13 @@ export class OfferService {
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:statusChanged', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:statusChanged', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Загрузить файлы (Автор)
-   */
+  
   async uploadFiles(
     offerId: number,
     userId: number,
@@ -365,23 +320,18 @@ export class OfferService {
       authorFileUrl,
     );
 
-    // Меняем статус на awaiting_payment
     await this.offerRepository.updateStatus(offerId, OfferStatus.AWAITING_PAYMENT);
     updated.status = OfferStatus.AWAITING_PAYMENT;
 
     const serialized = this.serializeOffer(updated);
     
-    // WebSocket: уведомить создателя
     await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:filesUploaded', { offer: serialized });
-    // WebSocket: уведомить автора
     await this.chatNotificationService.notifyUser(offer.author_id, 'offer:filesUploaded', { offer: serialized });
     
     return updated;
   }
 
-  /**
-   * Загрузить вложения заказчика после создания заказа
-   */
+  
   async uploadCreatorFiles(
     offerId: number,
     userId: number,
@@ -443,12 +393,7 @@ export class OfferService {
     return updated;
   }
 
-  /**
-   * Оплатить заказ (Заказчик) — через Stripe Checkout Session
-   * Создаёт сессию оплаты и сохраняет stripe_session_id на оффере.
-   * Статус оффера меняется на COMPLETED только после подтверждения вебхуком Stripe.
-   * Возвращает сессию для открытия Stripe формы и обновлённый офер.
-   */
+  
   async payOrder(offerId: number, userId: number, _dto: PayOrderDto): Promise<{ sessionUrl: string; offerId: number }> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
@@ -468,11 +413,9 @@ export class OfferService {
 
     this.logger.log(`[payOrder] offerId=${offerId}, price=${offer.price}, amount=${priceAmount}, creatorEmail=${creatorEmailQuery}`);
 
-    // Base URL для фронтенда — используем тот же домен, что и для checkout, но перенаправляем на чат
     const baseUrl =
       this.configService.get<string>('STRIPE_CHECKOUT_SUCCESS_URL') ||
-      'http://localhost:4200/checkout/success';
-    // Обрезаем путь до корня домена для последующего построения URL чата
+      'http:
     const origin = baseUrl.replace(/\/[^/]*$/, '');
 
     const successUrl = `${origin}/pay-success`;
@@ -505,7 +448,6 @@ export class OfferService {
 
     this.logger.log(`[payOrder] Stripe session created: ${session.id}, offerStatusBefore=${offer.status}`);
 
-    // Сохраняем stripe_session_id на оффере (не меняем статус — ждём вебхук)
     await this.offerRepository.setStripeSessionId(offerId, session.id ?? null);
 
     this.logger.log(`[payOrder] stripe_session_id saved, offerId=${offerId}, sessionUrl=${session.url?.substring(0, 80)}`);
@@ -513,9 +455,7 @@ export class OfferService {
     return { sessionUrl: session.url ?? '', offerId };
   }
 
-  /**
-   * Получить заказ с файлами (с проверкой доступа)
-   */
+  
   async getOfferFiles(offerId: number, userId: number): Promise<{
     preview_url: string | null;
     source_files_urls: string[] | null;
@@ -528,7 +468,6 @@ export class OfferService {
       throw new NotFoundException('Offer not found');
     }
 
-    // Проверка: пользователь - участник заказа
     if (offer.creator_id !== userId && offer.author_id !== userId) {
       throw new ForbiddenException('Not authorized');
     }
@@ -547,12 +486,10 @@ export class OfferService {
       author_file_url: null,
     };
 
-    // Превью доступно если awaiting_payment или completed
     if (offer.status === OfferStatus.AWAITING_PAYMENT || offer.status === OfferStatus.COMPLETED) {
       result.preview_url = offer.preview_url;
     }
 
-    // Исходники доступны ТОЛЬКО если completed И is_paid
     if (offer.status === OfferStatus.COMPLETED && offer.is_paid) {
       result.author_file_url = offer.author_file_url;
       const sourceUrls = offer.source_files_urls;
@@ -570,24 +507,17 @@ export class OfferService {
     return result;
   }
 
-  /**
-   * Получить все заказы в чате
-   */
+  
   async getRoomOffers(roomId: number): Promise<Offer[]> {
     return this.offerRepository.findByChatRoom(roomId);
   }
 
-  /**
-   * Получить заказ по ID
-   */
+  
   async getOfferById(offerId: number): Promise<Offer> {
     return this.offerRepository.findByIdOrFail(offerId);
   }
 
-  /**
-   * Скачать файл заказа (исходники)
-   * GET /chat/offers/:id/download/:fileIndex
-   */
+  
   async downloadSourceFile(
     offerId: number,
     fileIndex: number,
@@ -598,17 +528,14 @@ export class OfferService {
       throw new NotFoundException('Offer not found');
     }
 
-    // Проверка: только участники заказа
     if (offer.creator_id !== userId && offer.author_id !== userId) {
       throw new ForbiddenException('Not authorized');
     }
 
-    // Файлы доступны только если заказ оплачен
     if (offer.status !== OfferStatus.COMPLETED || !offer.is_paid) {
       throw new ForbiddenException('Files are not available. Order must be paid.');
     }
 
-    // Получаем массив URL файлов
     let sourceFilesUrls: string[] = [];
     if (typeof offer.source_files_urls === 'string' && offer.source_files_urls.length > 0) {
       try {
@@ -629,14 +556,10 @@ export class OfferService {
     const fileUrl = sourceFilesUrls[fileIndex];
     console.log(`[OfferService] Downloading file: ${fileUrl}`);
 
-    // Используем FileService для получения потока
     return this.fileService.getFileStream(fileUrl);
   }
 
-  /**
-   * Скачать файл заказа как StreamableFile
-   * Используется для прямого скачивания с правильными заголовками
-   */
+  
 async downloadSourceFileAsStream(
     offerId: number,
     fileIndex: number,
@@ -647,17 +570,14 @@ async downloadSourceFileAsStream(
       throw new NotFoundException('Offer not found');
     }
 
-    // Check: only participants
     if (offer.creator_id !== userId && offer.author_id !== userId) {
       throw new ForbiddenException('Not authorized');
     }
 
-    // Files available only if order is paid
     if (offer.status !== OfferStatus.COMPLETED || !offer.is_paid) {
       throw new ForbiddenException('Files are not available. Order must be paid.');
     }
 
-    // Get array of file URLs
     let sourceFilesUrls: string[] = [];
     console.log(`[OfferService] source_files_urls type: ${typeof offer.source_files_urls}, isArray: ${Array.isArray(offer.source_files_urls)}, value:`, offer.source_files_urls);
     
@@ -671,7 +591,6 @@ async downloadSourceFileAsStream(
         sourceFilesUrls = [];
       }
     } else if (Array.isArray(offer.source_files_urls)) {
-      // Sequelize might auto-parse JSON fields
       sourceFilesUrls = offer.source_files_urls as string[];
       console.log(`[OfferService] Using array directly, length: ${sourceFilesUrls.length}`);
     } else {
@@ -692,7 +611,6 @@ async downloadSourceFileAsStream(
     const fileUrl = sourceFilesUrls[fileIndex];
     console.log(`[OfferService] Downloading file as stream: ${fileUrl}`);
 
-    // Проверяем что файл существует
     if (!this.fileService.fileExists(fileUrl)) {
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
@@ -705,10 +623,8 @@ async downloadSourceFileAsStream(
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
 
-    // Получаем имя файла из URL (более надежно)
     const filename = fileUrl.split('/').pop() || 'download';
     const mimeType = this.fileService['getMimeType'](filename);
-    // Создаём StreamableFile
     const readStream = createReadStream(fullPath);
     const streamableFile = new StreamableFile(readStream);
 
@@ -719,3 +635,4 @@ async downloadSourceFileAsStream(
     };
   }
 }
+

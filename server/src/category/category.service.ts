@@ -29,7 +29,6 @@ export class CategoryService {
   }
 
   async findAll(language?: string): Promise<CategoryResponse[]> {
-    // Always load ALL translations for admin panel, but filter by language for the main name field
     const categories = await this.categoryModel.findAll({
       include: [
         {
@@ -61,7 +60,6 @@ export class CategoryService {
   }
 
   async findBySlug(slug: string, language?: string): Promise<CategoryResponse> {
-    // First find the category by translations
     const translation = await this.translationModel.findOne({
       where: { name: slug },
       include: [{ model: Category }],
@@ -77,7 +75,6 @@ export class CategoryService {
   async create(createCategoryDto: CreateCategoryDto, language: string = 'ru'): Promise<CategoryResponse> {
     const category = await this.categoryModel.create();
 
-    // Create translation
     await this.translationModel.create({
       category_id: category.id,
       locale: language,
@@ -97,7 +94,6 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Update or create translation
     const existingTranslation = await this.translationModel.findOne({
       where: { category_id: id, locale: language },
     });
@@ -121,13 +117,10 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Delete all translations
     await this.translationModel.destroy({ where: { category_id: id } });
 
-    // Delete all product-category relations
     await this.productCategoryModel.destroy({ where: { category_id: id } });
 
-    // Delete category
     await category.destroy();
   }
 
@@ -144,7 +137,6 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Get product IDs for this category
     const productCategories = await this.productCategoryModel.findAll({
       where: { category_id: id },
     });
@@ -153,13 +145,11 @@ export class CategoryService {
   }
 
   async addProduct(categoryId: number, productId: number): Promise<ProductCategory> {
-    // Check if category exists
     const category = await this.categoryModel.findByPk(categoryId);
     if (!category) {
       throw new NotFoundException(`Category with ID ${categoryId} not found`);
     }
 
-    // Check if relation already exists
     const existing = await this.productCategoryModel.findOne({
       where: { category_id: categoryId, product_id: productId },
     });
@@ -204,7 +194,6 @@ export class CategoryService {
       }
     }
 
-    // Include all translations
     result.translations = translations?.map((t) => ({
       locale: t.locale,
       name: t.name,
@@ -213,3 +202,5 @@ export class CategoryService {
     return result;
   }
 }
+
+

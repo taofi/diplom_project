@@ -5,7 +5,7 @@ import { diskStorage } from 'multer';
 import { Request } from 'express';
 
 const MAX_FILES = 5;
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
 function fileFilter(
   _req: Request,
@@ -64,3 +64,5 @@ export class ChatAttachmentsInterceptor implements NestInterceptor {
     });
   }
 }
+
+

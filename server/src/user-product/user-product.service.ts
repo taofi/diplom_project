@@ -39,9 +39,7 @@ export class UserProductService {
     private readonly fileService: FileService,
   ) {}
 
-  /**
-   * Получить информацию о файле для скачивания
-   */
+  
   async getFileInfo(userId: number, userProductId: number): Promise<FileDownloadInfo | null> {
     const userProduct = await this.getUserProductById(userId, userProductId);
 
@@ -64,7 +62,6 @@ export class UserProductService {
       return null;
     }
 
-    // Делегируем получение информации файла в FileService
     try {
       const { filename, mimeType } = this.fileService.getFileStream(fileUrl);
       return { filename, mimeType };
@@ -73,9 +70,7 @@ export class UserProductService {
     }
   }
 
-  /**
-   * Получить список купленных товаров пользователя
-   */
+  
   async getUserProducts(userId: number, locale: string = 'en'): Promise<UserProductResponse[]> {
     const userProducts = await this.userProductModel.findAll({
       where: { user_id: userId },
@@ -92,7 +87,6 @@ export class UserProductService {
       order: [['purchased_at', 'DESC']],
     });
 
-    // Трансформируем данные с учётом локали
     const results: UserProductResponse[] = [];
 
     for (const up of userProducts) {
@@ -103,7 +97,6 @@ export class UserProductService {
       const product = productLicense.product;
       const licenseType = productLicense.license_type;
 
-      // Получаем переводы
       const productTranslation = await this.translationService.getProductTranslation(
         product.id,
         locale,
@@ -113,7 +106,6 @@ export class UserProductService {
         locale,
       );
 
-      // Получаем главное изображение (is_cover = true)
       const productImage = await this.translationService.getProductCoverImage(product.id);
 
       results.push({
@@ -134,9 +126,7 @@ export class UserProductService {
     return results;
   }
 
-  /**
-   * Получить конкретный купленный товар по ID
-   */
+  
   async getUserProductById(userId: number, userProductId: number): Promise<UserProduct | null> {
     return this.userProductModel.findOne({
       where: { id: userProductId, user_id: userId },
@@ -150,11 +140,8 @@ export class UserProductService {
     });
   }
 
-  /**
-   * Скачать файл купленного товара
-   */
+  
   async downloadProduct(userId: number, userProductId: number): Promise<StreamableFile> {
-    // Получаем запись о покупке, проверяя что она принадлежит пользователю
     const userProduct = await this.getUserProductById(userId, userProductId);
 
     if (!userProduct) {
@@ -171,13 +158,10 @@ export class UserProductService {
       throw new NotFoundException('File not available for this product');
     }
 
-    // Делегируем получение потока файла в FileService
-    // Сначала проверяем, что файл существует
     if (!this.fileService.fileExists(fileUrl)) {
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
     
-    // Получаем полный путь и создаём поток
     const fullPath = this.fileService.getFullPath(fileUrl);
     if (!fullPath) {
       throw new NotFoundException(`File not found: ${fileUrl}`);
@@ -187,17 +171,13 @@ export class UserProductService {
     return new StreamableFile(readStream);
   }
 
-  /**
-   * Создать или обновить UserProduct
-   * При повторной покупке увеличивает count
-   */
+  
   async addOrUpdateUserProduct(
     userId: number,
     productLicenseId: number,
     orderId: number,
     quantity: number,
   ): Promise<UserProduct> {
-    // Ищем существующий UserProduct
     const existingUserProduct = await this.userProductModel.findOne({
       where: {
         user_id: userId,
@@ -206,13 +186,11 @@ export class UserProductService {
     });
 
     if (existingUserProduct) {
-      // Обновляем существующий - увеличиваем count
       const newCount = (existingUserProduct.count || 1) + quantity;
       await existingUserProduct.update({ count: newCount, order_id: orderId });
       return existingUserProduct;
     }
 
-    // Создаём новый UserProduct
     return this.userProductModel.create({
       user_id: userId,
       product_license_id: productLicenseId,
@@ -222,3 +200,5 @@ export class UserProductService {
     });
   }
 }
+
+

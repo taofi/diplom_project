@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../redis/redis.service';
 import { ChatRoomRepository } from '../repositories/chat-room.repository';
 
-const ROOM_MEMBERS_CACHE_TTL = 1800; // 30 minutes in seconds
+const ROOM_MEMBERS_CACHE_TTL = 1800;
 
 @Injectable()
 export class ChatCacheService {
@@ -14,23 +14,16 @@ export class ChatCacheService {
     private readonly chatRoomRepository: ChatRoomRepository,
   ) {}
 
-  /**
-   * Формирование ключа для кэша участников комнаты
-   */
+  
   private getRoomMembersKey(roomId: number): string {
     return `${this.ROOM_MEMBERS_KEY_PREFIX}:${roomId}`;
   }
 
-  /**
-   * Получить участников чата (из кэша или БД)
-   * @param roomId ID комнаты чата
-   * @returns Массив userId участников чата
-   */
+  
   async getChatRoomMembers(roomId: number): Promise<number[]> {
     const cacheKey = this.getRoomMembersKey(roomId);
 
     try {
-      // Пробуем получить из кэша
       const cached = await this.redisService.get(cacheKey);
       if (cached) {
         this.logger.log(`Cache hit for room ${roomId} members: ${cached}`);
@@ -38,7 +31,6 @@ export class ChatCacheService {
         return members;
       }
 
-      // Кэша нет - получаем из БД
       this.logger.log(`Cache miss for room ${roomId} members, fetching from DB`);
       const chatRoom = await this.chatRoomRepository.findById(roomId);
       
@@ -47,17 +39,14 @@ export class ChatCacheService {
         return [];
       }
 
-      // Участники чата - это buyer и seller
       const members = [chatRoom.buyer_id, chatRoom.seller_id];
       this.logger.log(`Found members for room ${roomId}: ${members.join(', ')}`);
 
-      // Сохраняем в кэш с TTL
       await this.redisService.set(cacheKey, JSON.stringify(members), ROOM_MEMBERS_CACHE_TTL);
 
       return members;
     } catch (error) {
       this.logger.error(`Error getting chat room members for ${roomId}:`, error);
-      // При ошибке пробуем получить из БД как резервный вариант
       try {
         const chatRoom = await this.chatRoomRepository.findById(roomId);
         if (chatRoom) {
@@ -70,11 +59,7 @@ export class ChatCacheService {
     }
   }
 
-  /**
-   * Кэшировать участников чата вручную
-   * @param roomId ID комнаты
-   * @param userIds Массив userId участников
-   */
+  
   async cacheChatRoomMembers(roomId: number, userIds: number[]): Promise<void> {
     const cacheKey = this.getRoomMembersKey(roomId);
     try {
@@ -85,10 +70,7 @@ export class ChatCacheService {
     }
   }
 
-  /**
-   * Инвалидировать кэш участников чата
-   * @param roomId ID комнаты
-   */
+  
   async invalidateChatRoomCache(roomId: number): Promise<void> {
     const cacheKey = this.getRoomMembersKey(roomId);
     try {
@@ -99,10 +81,7 @@ export class ChatCacheService {
     }
   }
 
-  /**
-   * Обновить TTL кэша при активности
-   * @param roomId ID комнаты
-   */
+  
   async refreshCacheTTL(roomId: number): Promise<void> {
     const cacheKey = this.getRoomMembersKey(roomId);
     try {
@@ -116,3 +95,5 @@ export class ChatCacheService {
     }
   }
 }
+
+

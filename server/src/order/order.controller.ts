@@ -14,17 +14,13 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  /**
-   * GET /orders - Получить все заказы пользователя
-   */
+  
   @Get()
   async getOrders(@CurrentUserId() userId: number): Promise<OrderResponse[]> {
     return this.orderService.getOrdersByUserId(userId);
   }
 
-  /**
-   * GET /orders/:id - Получить конкретный заказ
-   */
+  
   @Get(':id')
   async getOrder(
     @CurrentUserId() userId: number,
@@ -33,3 +29,5 @@ export class OrderController {
     return this.orderService.getOrderById(orderId);
   }
 }
+
+

@@ -18,7 +18,6 @@ import { normalizeRoles } from './utils/normalize-roles';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
-// Генерация случайного кода
 function generateVerificationCode(length: number = 6): string {
   return Math.floor(
     Math.random() * Math.pow(10, length)
@@ -119,13 +118,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Обновляем locale пользователя при входе (если передан)
     if (dto.locale) {
       await user.update({ locale: dto.locale });
       await user.reload();
     }
 
-    // Нормализуем роли перед отправкой
     const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
 
     const tokens = await this.tokenService.generateTokens({
@@ -153,11 +150,9 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      // Verify refresh token
       const payload = await this.tokenService.verifyRefreshToken(refreshToken);
       const userId = payload.sub as number;
 
-      // Validate refresh token in Redis
       const isValid = await this.tokenService.validateRefreshToken(
         userId.toString(),
         refreshToken,
@@ -167,10 +162,8 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Revoke old refresh token (rotation)
       await this.tokenService.revokeRefreshToken(userId.toString());
 
-      // Get user
       const user = await this.userModel.findByPk(userId, {
         include: [{ model: this.userRoleModel, as: 'user_roles' }],
       });
@@ -179,10 +172,8 @@ export class AuthService {
         throw new UnauthorizedException('User not found');
       }
 
-      // Нормализуем роли перед отправкой
       const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
 
-      // Generate new tokens
       const tokens = await this.tokenService.generateTokens({
         sub: user.id,
         email: user.email,
@@ -202,18 +193,13 @@ export class AuthService {
   }
 
   async logout(userId: number, accessToken: string): Promise<void> {
-    // Revoke refresh token
     await this.tokenService.revokeRefreshToken(userId.toString());
 
-    // Add access token to blacklist
-    // We need to get the expiry time from the token
-    // For simplicity, we'll use a default TTL matching JWT expiry
-    const ttl = 15 * 60; // 15 minutes in seconds
+    const ttl = 15 * 60;
     await this.tokenService.blacklistAccessToken(accessToken, ttl);
   }
 
   async logoutAll(userId: number): Promise<void> {
-    // Revoke refresh token
     await this.tokenService.revokeRefreshToken(userId.toString());
   }
 
@@ -221,7 +207,6 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
 
-    // Возвращаем одинаковый ответ, чтобы не раскрывать наличие пользователя.
     if (!user) {
       return {
         message: 'If this email exists, password reset instructions have been sent.',
@@ -232,7 +217,7 @@ export class AuthService {
     const expiresInMinutes = 60;
     await this.tokenService.setPasswordResetToken(email, resetToken, expiresInMinutes * 60);
 
-    const frontendUrl = 'http://localhost:4000';
+    const frontendUrl = 'http:
     const resetLink =
       `${frontendUrl}/${user.locale || 'ru'}/reset-password` +
       `?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(email)}`;
@@ -297,7 +282,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // Обновляем только переданные поля
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) {
       updateData.name = data.name;
@@ -313,7 +297,6 @@ export class AuthService {
       await user.update(updateData);
     }
 
-    // Нормализуем роли
     const normalizedRoles = normalizeRoles(
       user.user_roles?.map((ur) => ur.role),
     );
@@ -339,12 +322,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // Нормализуем роли
     const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
     
-    // Формируем объект с ролями для обратной совместимости (чтобы toJSON() мог их вернуть)
     (user as unknown as { role: string[] }).role = normalizedRoles;
     
     return user;
   }
 }
+
+

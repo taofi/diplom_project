@@ -10,26 +10,16 @@ import {
   FileFolder,
 } from '../../types/base';
 
-// Экспорт для обратной совместимости
 export { MediaFolder, FileFolder };
 export type { FileUploadResult, FileDeleteResult, MulterFile, FileInfo };
 
-/**
- * FileService - низкоуровневые операции с файлами
- * Используется UploadsModule для более высокоуровневых операций
- */
+
 @Injectable()
 export class FileService {
-  // Базовые пути
   private readonly publicMediaBasePath = 'public/media';
   private readonly filesBasePath = 'files';
 
-  /**
-   * Сохранить файл в public/media
-   * @param file - Загруженный файл
-   * @param folder - Папка (product, temp)
-   * @param entityId - ID сущности
-   */
+  
   saveMediaFile(
     file: MulterFile,
     folder: MediaFolder,
@@ -45,7 +35,6 @@ export class FileService {
     const filename = this.generateUniqueFilename(targetDir, file.originalname);
     const filePath = path.join(targetDir, filename);
 
-    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
     const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!fileData) {
       throw new Error('No file data available: both buffer and path are undefined');
@@ -62,12 +51,7 @@ export class FileService {
     };
   }
 
-  /**
-   * Сохранить файл в files/
-   * @param file - Загруженный файл
-   * @param folder - Папка (product, temp)
-   * @param entityId - ID сущности
-   */
+  
   saveProductFile(
     file: MulterFile,
     folder: FileFolder,
@@ -83,7 +67,6 @@ export class FileService {
     const filename = this.generateUniqueFilename(targetDir, file.originalname);
     const filePath = path.join(targetDir, filename);
 
-    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
     const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!fileData) {
       throw new Error('No file data available: both buffer and path are undefined');
@@ -100,9 +83,7 @@ export class FileService {
     };
   }
 
-  /**
-   * Сохранить временный файл (media) в public/temp/{userId}/
-   */
+  
   saveTempMedia(file: MulterFile, userId: number): FileUploadResult {
     if (!userId) {
       throw new Error('User ID is required for saving temp media');
@@ -113,7 +94,6 @@ export class FileService {
     const filename = this.generateUniqueFilename(targetDir, file.originalname);
     const filePath = path.join(targetDir, filename);
 
-    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
     const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!fileData) {
       throw new Error('No file data available: both buffer and path are undefined');
@@ -130,9 +110,7 @@ export class FileService {
     };
   }
 
-  /**
-   * Сохранить временный файл (product file) в files/temp/{userId}/
-   */
+  
   saveTempFile(file: MulterFile, userId: number): FileUploadResult {
     if (!userId) {
       throw new Error('User ID is required for saving temp file');
@@ -147,7 +125,6 @@ export class FileService {
     const filename = this.generateUniqueFilename(targetDir, file.originalname);
     const filePath = path.join(targetDir, filename);
 
-    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
     const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!fileData) {
       throw new Error('No file data available: both buffer and path are undefined');
@@ -164,21 +141,15 @@ export class FileService {
     };
   }
 
-  /**
-   * Сохранить аватар пользователя в public/user/{userId}/
-   * @param file - Загруженный файл
-   * @param userId - ID пользователя
-   */
+  
   saveUserAvatar(file: MulterFile, userId: number): FileUploadResult {
     const targetDir = path.join('public', 'user', userId.toString());
     this.ensureDirectory(targetDir);
 
-    // Всегда сохраняем как avatar.{ext}
     const ext = path.extname(file.originalname) || '.png';
     const filename = `avatar${ext}`;
     const filePath = path.join(targetDir, filename);
 
-    // Удаляем старый аватар если есть
     const existingFiles = fs.readdirSync(targetDir).filter(f => f.startsWith('avatar'));
     for (const existingFile of existingFiles) {
       if (existingFile !== filename) {
@@ -186,7 +157,6 @@ export class FileService {
       }
     }
 
-    // Поддержка как memory storage (file.buffer), так и disk storage (file.path)
     const fileData = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!fileData) {
       throw new Error('No file data available: both buffer and path are undefined');
@@ -203,24 +173,16 @@ export class FileService {
     };
   }
 
-  /**
-   * Переместить файл из одной папки в другую
-   * @param fromPath - Текущий путь к файлу (относительный или абсолютный)
-   * @param toDir - Целевая директория
-   * @param newFilename - Новое имя файла (опционально)
-   */
+  
   moveFile(
     fromPath: string,
     toDir: string,
     newFilename?: string,
   ): FileUploadResult | null {
-    // Определить полный путь
     let fullFromPath = fromPath;
 
 
 
-    // Если путь относительный, определить базовую директорию
-    // Убираем ведующий слеш если есть
     const cleanFromPath = fromPath.startsWith('/') ? fromPath.slice(1) : fromPath;
     
     if (!path.isAbsolute(cleanFromPath)) {
@@ -243,49 +205,40 @@ export class FileService {
       return null;
     }
 
-    // Создать целевую директорию
     this.ensureDirectory(toDir);
 
-    // Определить новое имя
     const originalName = path.basename(fullFromPath);
     const filename = newFilename || originalName;
     const toPath = path.join(toDir, filename);
 
-    // Переместить файл (rename = move, исходный файл удаляется)
     fs.renameSync(fullFromPath, toPath);
     
-    // Проверяем что файл перемещен (исходный должен быть удален)
     if (fs.existsSync(fullFromPath)) {
       fs.unlinkSync(fullFromPath);
     }
 
-    // Определить URL (без ведущего слеша)
-    // Нормализуем путь для кроссплатформенной совместимости
     const normalizedToDir = toDir.replace(/\\/g, '/');
     let url: string;
     
 
     
     if (normalizedToDir.includes('public/media') || normalizedToDir.includes('media/product')) {
-      // Для media файлов - формируем путь media/product/{id}/filename
       const productMatch = normalizedToDir.match(/media\/product\/(\d+)/);
       if (productMatch) {
         url = `media/product/${productMatch[1]}/${filename}`;
 
       } else {
-        // Fallback для других случаев
         const relativePath = toDir.replace(path.join(process.cwd(), 'public'), '');
-        url = `media${relativePath}/${filename}`.replace(/\\/g, '/').replace(/^\//, '');
+        url = `media${relativePath}/${filename}`.replace(/\\/g, '/').replace(/^\
       }
     } else if (normalizedToDir.includes('files')) {
-      // Для файлов - формируем путь files/product/{id}/filename
       const fileProductMatch = normalizedToDir.match(/files\/product\/(\d+)/);
       if (fileProductMatch) {
         url = `files/product/${fileProductMatch[1]}/${filename}`;
 
       } else {
         const relativePath = toDir.replace(process.cwd(), '');
-        url = `${relativePath}/${filename}`.replace(/\\/g, '/').replace(/^\//, '');
+        url = `${relativePath}/${filename}`.replace(/\\/g, '/').replace(/^\
       }
     } else {
       url = filename;
@@ -304,12 +257,7 @@ export class FileService {
     };
   }
 
-  /**
-   * Переместить временные media файлы в папку продукта
-   * @param userId - ID пользователя
-   * @param productId - ID продукта
-   * @param tempUrls - Массив временных URL медиа
-   */
+  
   moveTempMediaToProduct(
     userId: number,
     productId: number,
@@ -332,12 +280,7 @@ export class FileService {
     return results;
   }
 
-  /**
-   * Переместить временный файл продукта в папку продукта
-   * @param userId - ID пользователя
-   * @param productId - ID продукта
-   * @param tempUrl - Временный URL файла
-   */
+  
   moveTempFileToProduct(
     userId: number,
     productId: number,
@@ -352,10 +295,7 @@ export class FileService {
     return this.moveFile(tempUrl, targetDir);
   }
 
-  /**
-   * Удалить файл
-   * @param filePath - Путь к файлу (URL или относительный путь)
-   */
+  
   deleteFile(filePath: string): FileDeleteResult {
     const fullPath = this.getFullPath(filePath);
 
@@ -367,9 +307,7 @@ export class FileService {
     return { success: true, deletedPath: fullPath };
   }
 
-  /**
-   * Удалить все файлы в папке сущности (media)
-   */
+  
   deleteMediaFolderFiles(folder: MediaFolder, entityId: number): void {
     const targetDir = path.join(this.publicMediaBasePath, folder, entityId.toString());
 
@@ -378,9 +316,7 @@ export class FileService {
     }
   }
 
-  /**
-   * Удалить все файлы в папке сущности (files)
-   */
+  
   deleteFileFolderFiles(folder: FileFolder, entityId: number): void {
     const targetDir = path.join(this.filesBasePath, folder, entityId.toString());
 
@@ -389,11 +325,8 @@ export class FileService {
     }
   }
 
-  /**
-   * Удалить временную папку пользователя (и media, и files)
-   */
+  
   deleteTempFolder(userId: number): void {
-    // Удалить temp media
     const tempMediaDir = path.join(
       this.publicMediaBasePath,
       MediaFolder.TEMP,
@@ -403,7 +336,6 @@ export class FileService {
       fs.rmSync(tempMediaDir, { recursive: true, force: true });
     }
 
-    // Удалить temp files
     const tempFilesDir = path.join(
       this.filesBasePath,
       FileFolder.TEMP,
@@ -414,17 +346,13 @@ export class FileService {
     }
   }
 
-  /**
-   * Проверить существование файла
-   */
+  
   fileExists(filePath: string): boolean {
     const fullPath = this.getFullPath(filePath);
     return fullPath ? fs.existsSync(fullPath) : false;
   }
 
-  /**
-   * Получить информацию о файле
-   */
+  
   getFileInfo(filePath: string): FileInfo | null {
     const fullPath = this.getFullPath(filePath);
 
@@ -439,18 +367,14 @@ export class FileService {
     };
   }
 
-  /**
-   * Получить полный путь к файлу из URL
-   */
+  
   getFullPath(filePath: string): string | null {
     let cleanPath = filePath;
 
-    // Убрать leading slash
     if (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.slice(1);
     }
 
-    // Определить базовую директорию
     if (cleanPath.startsWith('media/') || cleanPath.startsWith('temp/')) {
       const result = path.join(process.cwd(), 'public', cleanPath);
       return result.split(path.sep).join('/');
@@ -458,15 +382,12 @@ export class FileService {
       const result = path.join(process.cwd(), cleanPath);
       return result.split(path.sep).join('/');
     } else {
-      // Попробовать как относительный путь
       const result = path.join(process.cwd(), cleanPath);
       return result.split(path.sep).join('/');
     }
   }
 
-  /**
-   * Получить MIME тип по расширению файла
-   */
+  
   private getMimeType(filename: string): string {
     const ext = path.extname(filename).toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -490,20 +411,14 @@ export class FileService {
     return mimeTypes[ext] || 'application/octet-stream';
   }
 
-  /**
-   * Создать директорию
-   */
+  
   private ensureDirectory(dirPath: string): void {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
   }
 
-  /**
-   * Сгенерировать уникальное имя файла
-   * - Использует UUID вместо транслитерации
-   * - Добавляет counter если файл уже существует
-   */
+  
   private generateUniqueFilename(dirPath: string, originalName: string): string {
     const ext = path.extname(originalName);
     const uuid = crypto.randomUUID();
@@ -518,10 +433,7 @@ export class FileService {
     return filename;
   }
 
-  /**
-   * Получить поток файла для скачивания
-   * @param fileUrl - URL файла (например, "files/product/26/IMG_20250414_200355.jpg")
-   */
+  
   getFileStream(fileUrl: string): { stream: NodeJS.ReadableStream; filename: string; mimeType: string } {
     const fullPath = this.getFullPath(fileUrl);
     
@@ -529,25 +441,17 @@ export class FileService {
       throw new NotFoundException(`File not found: ${fileUrl}`);
     }
     
-    // Извлекаем имя файла
     const filename = path.basename(fullPath);
     
-    // Определяем MIME тип
     const mimeType = this.getMimeType(filename);
     
-    // Создаём ReadStream (Node.js stream)
     const stream = fs.createReadStream(fullPath);
     
     return { stream, filename, mimeType };
   }
 
-  // ==================== Методы для работы с Offer (заказами) ====================
 
-  /**
-   * Переместить временные media файлы в папку оффера (public/media/offers/{offerId}/)
-   * @param tempUrls - Массив временных URL медиа
-   * @param offerId - ID оффера
-   */
+  
   moveTempMediaToOffer(tempUrls: string[], offerId: number): FileUploadResult[] {
     const targetDir = path.join(
       this.publicMediaBasePath,
@@ -566,11 +470,7 @@ export class FileService {
     return results;
   }
 
-  /**
-   * Переместить временный файл в папку оффера (files/offers/{offerId}/)
-   * @param tempUrl - Временный URL файла
-   * @param offerId - ID оффера
-   */
+  
   moveTempFileToOffer(tempUrl: string, offerId: number): FileUploadResult | null {
     const targetDir = path.join(
       this.filesBasePath,
@@ -581,46 +481,30 @@ export class FileService {
     return this.moveFile(tempUrl, targetDir);
   }
 
-  /**
-   * Сохранить превью заказа
-   * @param file - Загруженный файл
-   * @param offerId - ID оффера
-   */
+  
   saveOfferPreview(file: MulterFile, offerId: number): FileUploadResult {
     return this.saveMediaFile(file, MediaFolder.OFFERS, offerId);
   }
 
-  /**
-   * Сохранить исходный файл заказа
-   * @param file - Загруженный файл
-   * @param offerId - ID оффера
-   */
+  
   saveOfferSourceFile(file: MulterFile, offerId: number): FileUploadResult {
     return this.saveProductFile(file, FileFolder.OFFERS, offerId);
   }
 
-  /**
-   * Сохранить файл-вложение заказчика в media/offers
-   * @param file - Загруженный файл
-   * @param offerId - ID оффера
-   */
+  
   saveCreatorAttachmentFile(file: MulterFile, offerId: number): FileUploadResult {
     return this.saveMediaFile(file, MediaFolder.OFFERS, offerId);
   }
 
-  /**
-   * Удалить все файлы оффера (media)
-   * @param offerId - ID оффера
-   */
+  
   deleteOfferMediaFiles(offerId: number): void {
     this.deleteMediaFolderFiles(MediaFolder.OFFERS, offerId);
   }
 
-  /**
-   * Удалить все файлы оффера (files)
-   * @param offerId - ID оффера
-   */
+  
   deleteOfferFiles(offerId: number): void {
     this.deleteFileFolderFiles(FileFolder.OFFERS, offerId);
   }
 }
+
+

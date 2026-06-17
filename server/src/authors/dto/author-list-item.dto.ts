@@ -9,3 +9,5 @@ export interface AuthorListItemDto {
   latestProducts: ProductListItemResponse[];
 }
 
+
+

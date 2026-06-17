@@ -22,9 +22,7 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  /**
-   * GET /cart - Получить корзину пользователя
-   */
+  
   @Get()
   @UseGuards(JwtAuthGuard)
   async getCart(
@@ -34,9 +32,7 @@ export class CartController {
     return this.cartService.getCart(userId, locale);
   }
 
-  /**
-   * POST /cart/items - Добавить товар в корзину
-   */
+  
   @Post('items')
   @UseGuards(JwtAuthGuard)
   async addItem(
@@ -47,10 +43,7 @@ export class CartController {
     return this.cartService.addItem(userId, dto, locale);
   }
 
-  /**
-   * PATCH /cart/items/:id - Изменить количество товара
-   * (больше не поддерживается - quantity всегда 1)
-   */
+  
   @Patch('items/:id')
   @UseGuards(JwtAuthGuard)
   async updateItemQuantity(
@@ -62,9 +55,7 @@ export class CartController {
     return this.cartService.updateItemQuantity(userId, itemId, quantity, locale);
   }
 
-  /**
-   * DELETE /cart/items/:id - Удалить товар из корзины
-   */
+  
   @Delete('items/:id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -75,9 +66,7 @@ export class CartController {
     await this.cartService.removeItem(userId, itemId);
   }
 
-  /**
-   * DELETE /cart - Очистить корзину
-   */
+  
   @Delete()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -85,9 +74,7 @@ export class CartController {
     await this.cartService.clearCart(userId);
   }
 
-  /**
-   * GET /cart/count - Получить количество товаров
-   */
+  
   @Get('count')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -96,11 +83,8 @@ export class CartController {
     return { count };
   }
 
-  // ============ Guest Cart Endpoints ============
 
-  /**
-   * GET /cart/guest - Получить гостевую корзину
-   */
+  
   @Get('guest')
   @HttpCode(HttpStatus.OK)
   async getGuestCart(
@@ -110,9 +94,7 @@ export class CartController {
     return this.cartService.getFormattedGuestCart(guestId, locale);
   }
 
-  /**
-   * POST /cart/guest/items - Добавить товар в гостевую корзину
-   */
+  
   @Post('guest/items')
   @HttpCode(HttpStatus.OK)
   async addGuestItem(
@@ -123,9 +105,7 @@ export class CartController {
     return this.cartService.addFormattedGuestItem(guestId, dto, locale);
   }
 
-  /**
-   * PATCH /cart/guest/items/:id - Изменить количество товара в гостевой корзине
-   */
+  
   @Patch('guest/items/:id')
   @HttpCode(HttpStatus.OK)
   async updateGuestItemQuantity(
@@ -137,9 +117,7 @@ export class CartController {
     return this.cartService.updateGuestItemQuantity(guestId, itemId, quantity, locale);
   }
 
-  /**
-   * DELETE /cart/guest/items/:id - Удалить товар из гостевой корзины
-   */
+  
   @Delete('guest/items/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeGuestItem(
@@ -149,18 +127,14 @@ export class CartController {
     await this.cartService.removeGuestItem(guestId, itemId);
   }
 
-  /**
-   * DELETE /cart/guest - Очистить гостевую корзину
-   */
+  
   @Delete('guest')
   @HttpCode(HttpStatus.NO_CONTENT)
   async clearGuestCart(@Headers('x-guest-id') guestId: string) {
     await this.cartService.clearGuestCart(guestId);
   }
 
-  /**
-   * GET /cart/guest/count - Получить количество товаров в гостевой корзине
-   */
+  
   @Get('guest/count')
   @HttpCode(HttpStatus.OK)
   async getGuestCartCount(@Headers('x-guest-id') guestId: string) {
@@ -168,9 +142,7 @@ export class CartController {
     return { count };
   }
 
-  /**
-   * POST /cart/sync - Синхронизировать гостевую корзину с пользовательской
-   */
+  
   @Post('sync')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -186,3 +158,5 @@ export class CartController {
     );
   }
 }
+
+

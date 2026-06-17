@@ -160,3 +160,4 @@ export class OfferFile extends Model {
   @BelongsTo(() => Offer)
   declare offer: Offer;
 }
+

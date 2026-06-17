@@ -210,9 +210,7 @@ export class PaymentService {
     this.logger.log(`Payment canceled for order ${payment.order_id}`);
   }
 
-/**
-    * Обработка успешного Checkout Session (оплата через Stripe Checkout)
-    */
+
   private async handleCheckoutSessionCompleted(session: CheckoutSessionData): Promise<void> {
     const orderId = session.metadata?.orderId
       ? parseInt(session.metadata.orderId, 10)
@@ -229,7 +227,7 @@ export class PaymentService {
       `Checkout session completed for order ${orderId}, session: ${session.id}`,
     );
 
-    // Создаём или обновляем запись Payment
+    
     const existingPayment = await this.paymentModel.findOne({
       where: { order_id: orderId },
     });
@@ -252,7 +250,7 @@ export class PaymentService {
       });
     }
 
-    // Обновляем статус заказа на PAID
+    
     const order = await this.orderModel.findByPk(orderId);
     if (order && order.status === OrderStatus.PENDING) {
       await order.update({ status: OrderStatus.PAID });
@@ -263,16 +261,14 @@ export class PaymentService {
       );
     }
 
-    // TODO: Вызов finalizeOrder из CheckoutService для:
-    // - Создания UserProducts
-    // - Очистки корзины
-    // - Отправки email
-    // Это делается в CheckoutService.handleStripeWebhook → handleCheckoutSessionCompleted
+    
+    
+    
+    
+    
   }
 
-  /**
-    * Обработка неудачного Checkout Session
-    */
+  
   private async handleCheckoutSessionFailed(session: CheckoutSessionData): Promise<void> {
     const orderId = session.metadata?.orderId
       ? parseInt(session.metadata.orderId, 10)
@@ -287,22 +283,21 @@ export class PaymentService {
       `Checkout session failed for order ${orderId}, session: ${session.id}`,
     );
 
-    // Обновляем статус заказа на CANCELLED
+    
     const order = await this.orderModel.findByPk(orderId);
     if (order && order.status === OrderStatus.PENDING) {
       await order.update({ status: OrderStatus.CANCELLED });
     }
   }
 
-/**
-    * Получить сессию и обновить Payment + Order (для проверки статуса)
-    */
+
    async handleCheckoutSessionWebhook(
      payload: Buffer,
      sigHeader: string,
    ): Promise<void> {
      const event = this.stripeService.handleWebhook(payload, sigHeader);
-     // Process the already-verified event
+     
      this.logger.log(`[DEBUG] handleCheckoutSessionWebhook event type: ${event.type}`);
    }
 }
+

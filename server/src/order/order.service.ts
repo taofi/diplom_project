@@ -53,29 +53,23 @@ export class OrderService {
     return this.orderModel.sequelize!;
   }
 
-  /**
-   * Создать заказ из корзины
-   */
+  
   async createOrderFromCart(options: CreateOrderFromCartOptions): Promise<OrderResponse> {
     const { userId, promoCodeId, guestEmail } = options;
 
-    // Получаем корзину
     const cartItems = await this.cartService.getCart(userId);
 
     if (cartItems.length === 0) {
       throw new NotFoundException('Cart is empty');
     }
 
-    // Рассчитываем общую сумму (учитываем quantity)
     const totalAmount = cartItems.reduce((sum, item) => {
       return sum + Number(item.product?.price || 0) * (item.quantity || 1);
     }, 0);
 
-    // Создаём заказ в транзакции
     const transaction = await this.sequelize.transaction();
     
     try {
-      // Создаём заказ
       const newOrder = await this.orderModel.create({
         user_id: userId,
         guest_email: guestEmail || null,
@@ -85,7 +79,6 @@ export class OrderService {
         promo_code_id: promoCodeId || null,
       }, { transaction });
 
-      // Создаём элементы заказа
       for (const item of cartItems) {
         const productLicense = await this.productLicenseModel.findByPk(item.productId);
         
@@ -99,26 +92,21 @@ export class OrderService {
         }
       }
 
-      // Очищаем корзину
       await this.cartService.clearCart(userId);
 
       await transaction.commit();
 
-      // Загружаем заказ с элементами
       return this.getOrderById(newOrder.id);
     } catch (error) {
       try {
         await transaction.rollback();
       } catch {
-        // Игнорируем ошибку rollback - транзакция уже могла быть зафиксирована
       }
       throw error;
     }
   }
 
-  /**
-   * Получить заказ по ID
-   */
+  
   async getOrderById(orderId: number): Promise<OrderResponse> {
     const order = await this.orderModel.findByPk(orderId, {
       include: [
@@ -146,9 +134,7 @@ export class OrderService {
     return this.formatOrder(order);
   }
 
-  /**
-   * Получить все заказы пользователя
-   */
+  
   async getOrdersByUserId(userId: number): Promise<OrderResponse[]> {
     const orders = await this.orderModel.findAll({
       where: { user_id: userId },
@@ -174,9 +160,7 @@ export class OrderService {
     return orders.map((order) => this.formatOrder(order));
   }
 
-  /**
-   * Обновить статус заказа
-   */
+  
   async updateOrderStatus(orderId: number, status: OrderStatus): Promise<OrderResponse> {
     const order = await this.orderModel.findByPk(orderId);
 
@@ -188,16 +172,12 @@ export class OrderService {
     return this.getOrderById(orderId);
   }
 
-  /**
-   * Перенести заказы гостя на пользователя по email
-   * Используется при верификации email на checkout
-   */
+  
   async transferGuestOrdersToUser(userId: number, guestEmail: string): Promise<number> {
-    // Находим все заказы с указанным email гостя
     const guestOrders = await this.orderModel.findAll({
       where: {
         guest_email: guestEmail,
-        user_id: null, // Только заказы без пользователя
+        user_id: null,
       },
     });
 
@@ -205,28 +185,22 @@ export class OrderService {
       return 0;
     }
 
-    // Обновляем user_id для всех найденных заказов
-    // Также нужно создать UserProduct для каждого orderItem
     const transaction = await this.sequelize.transaction();
 
     try {
       for (const order of guestOrders) {
-        // Обновляем заказ - привязываем к пользователю
         await order.update({ user_id: userId }, { transaction });
 
-        // Для каждого orderItem создаем UserProduct
         await this.orderItemModel.update(
-          { order_id: order.id }, // Это нужно для поиска orderItems
+          { order_id: order.id },
           { where: { order_id: order.id }, transaction }
         );
 
-        // Получаем orderItems и создаем UserProduct
         const orderItems = await this.orderItemModel.findAll({
           where: { order_id: order.id },
         });
 
         for (const orderItem of orderItems) {
-          // Проверяем, не существует ли уже UserProduct
           const existingUserProduct = await this.userProductModel.findOne({
             where: {
               user_id: userId,
@@ -235,11 +209,9 @@ export class OrderService {
           });
 
           if (existingUserProduct) {
-            // Обновляем существующий UserProduct - увеличиваем count
             const newCount = (existingUserProduct.count || 1) + (orderItem.quantity || 1);
             await existingUserProduct.update({ count: newCount }, { transaction });
           } else {
-            // Создаём новый UserProduct с count = quantity
             await this.userProductModel.create({
               user_id: userId,
               product_license_id: orderItem.product_license_id,
@@ -257,15 +229,12 @@ export class OrderService {
       try {
         await transaction.rollback();
       } catch {
-        // Игнорируем ошибку rollback
       }
       throw error;
     }
   }
 
-  /**
-   * Форматировать заказ для ответа
-   */
+  
   private formatOrder(order: Order & { order_items?: OrderItem[] }): OrderResponse {
     const items: OrderItemResponse[] = (order.order_items || []).map((item) => {
       const license = item.product_license as ProductLicense | null;
@@ -295,3 +264,5 @@ export class OrderService {
     };
   }
 }
+
+

@@ -46,8 +46,8 @@ export class PayOrderDto {
   simulateSuccess?: boolean = true;
 }
 
-// Ответ для контроллера (отладочный DTO — не валидируется на уровне слота)
 export interface PayOrderResponse {
   sessionUrl: string;
   offerId: number;
 }
+

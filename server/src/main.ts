@@ -6,7 +6,6 @@ import 'winston-daily-rotate-file';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { Request, Response, NextFunction } from 'express';
 
-// Middleware для захвата raw body для Stripe webhook
 function rawBodyMiddleware(req: Request, res: Response, next: NextFunction) {
   if (req.originalUrl === '/checkout/webhook' || req.originalUrl === '/payments/webhook') {
     const chunks: Buffer[] = [];
@@ -59,7 +58,7 @@ async function bootstrap() {
     app.use(rawBodyMiddleware);
 
     app.enableCors({
-      origin: ['http://localhost:4000', 'http://localhost:3000', 'http://localhost:3001'],
+      origin: ['http:
       credentials: true,
     });
 
@@ -73,3 +72,4 @@ async function bootstrap() {
 }
 
 void bootstrap();
+

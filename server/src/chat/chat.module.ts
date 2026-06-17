@@ -4,7 +4,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
 
-// Models
 import {
   ChatRoom,
   ChatMessage,
@@ -16,15 +15,12 @@ import {
   OfferFile,
 } from '../db/models';
 
-// Auth module for JwtAuthGuard
 import { AuthModule } from '../auth/auth.module';
 
-// Repositories
 import { ChatRoomRepository } from './repositories/chat-room.repository';
 import { ChatMessageRepository } from './repositories/chat-message.repository';
 import { OfferRepository } from './repositories/offer.repository';
 
-// Services
 import { ChatService } from './chat.service';
 import { TempChatService } from './temp-chat.service';
 import { ChatStateService } from './services/chat-state.service';
@@ -33,17 +29,13 @@ import { ChatNotificationService } from './services/chat-notification.service';
 import { ChatCacheService } from './services/chat-cache.service';
 import { OfferService } from './services/offer.service';
 
-// Controllers
 import { ChatController } from './chat.controller';
 import { ChatOffersController } from './chat-offers.controller';
 
-// Gateway
 import { ChatGateway } from './chat.gateway';
 
-// Translation
 import { TranslationModule } from '../translation/translation.module';
 
-// Redis
 import { RedisModule } from '../redis/redis.module';
 import { CommonModule } from '../common/common.module';
 import { StripeModule } from '../payment/stripe/stripe.module';
@@ -101,3 +93,5 @@ import { StripeModule } from '../payment/stripe/stripe.module';
   ],
 })
 export class ChatModule {}
+
+

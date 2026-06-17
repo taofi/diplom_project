@@ -46,3 +46,5 @@ export class UserProduct extends Model {
   @BelongsTo(() => Order)
   declare order: Order;
 }
+
+

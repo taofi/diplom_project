@@ -44,3 +44,5 @@ import { UserRole as UserRoleModel } from '../db/models/user-role.model';
   exports: [AuthService, JwtAuthGuard, RolesGuard, TokenModule, JwtModule],
 })
 export class AuthModule {}
+
+

@@ -159,7 +159,6 @@ export class ProductController {
       throw new BadRequestException('No file provided');
     }
 
-    // Check if product exists and belongs to seller
     const product = await this.productService.findById(id);
     if (!product) {
       throw new BadRequestException('Product not found');
@@ -170,13 +169,11 @@ export class ProductController {
       );
     }
 
-    // Determine media type
     let mediaType: MediaType = MediaType.IMAGE;
     if (file.mimetype.startsWith('video/')) {
       mediaType = MediaType.VIDEO;
     }
 
-    // Save file to product media folder
     const result = this.fileService.saveMediaFile(
       {
         originalname: file.originalname,
@@ -190,7 +187,6 @@ export class ProductController {
       id,
     );
 
-    // Add media to database
     const media = await this.productService.addMedia(id, sellerId, {
       url: result.url,
       mediaType,
@@ -279,3 +275,5 @@ export class ProductController {
     return { success: true };
   }
 }
+
+

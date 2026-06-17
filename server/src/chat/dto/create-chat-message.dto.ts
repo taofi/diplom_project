@@ -50,3 +50,5 @@ export class CreateChatMessageDto {
   @IsOptional()
   attachments?: ChatMessageAttachmentDto[];
 }
+
+

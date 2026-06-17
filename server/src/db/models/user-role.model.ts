@@ -35,3 +35,4 @@ export class UserRole extends Model {
   @BelongsTo(() => User)
   declare user: User;
 }
+

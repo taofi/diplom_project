@@ -25,17 +25,12 @@ export class ChatNotificationService {
 
   constructor(private readonly chatStateService: ChatStateService) {}
 
-  /**
-   * Установить ссылку на Socket.io сервер
-   */
+  
   setServer(server: Server): void {
     this.server = server;
   }
 
-  /**
-   * Отправить уведомление о непрочитанных сообщениях конкретному пользователю
-   * Работает с несколькими вкладками - отправляет на все активные сокеты
-   */
+  
   async notifyUnreadCount(userId: number, roomId: number, count: number): Promise<void> {
     if (!this.server) {
       this.logger.warn('Server not set, cannot send unread notification');
@@ -45,12 +40,10 @@ export class ChatNotificationService {
     const sockets = await this.chatStateService.getUserSockets(userId);
 
     if (sockets.length === 0) {
-      // Пользователь не в сети - можно сохранить уведомление в БД для позже
       this.logger.log(`User ${userId} is offline, unread count ${count} will be sent on next connect`);
       return;
     }
 
-    // Отправляем на все сокеты пользователя
     for (const socketId of sockets) {
       this.server.to(socketId).emit('unreadCountUpdate', { roomId, count });
     }
@@ -58,10 +51,7 @@ export class ChatNotificationService {
     this.logger.log(`Sent unread count ${count} for room ${roomId} to user ${userId} on ${sockets.length} socket(s)`);
   }
 
-  /**
-   * Отправить уведомление о новом сообщении участникам чата
-   * Кроме отправителя
-   */
+  
   notifyNewMessage(
     roomId: number,
     senderId: number,
@@ -78,15 +68,12 @@ export class ChatNotificationService {
 
     const roomKey = `chat:${roomId}`;
     
-    // Отправляем всем в комнате, кроме отправителя
     this.server.to(roomKey).emit('newMessage', { message });
     
     this.logger.log(`Notified room ${roomId} about new message ${message.id} from user ${senderId}`);
   }
 
-  /**
-   * Отправить уведомление конкретному пользователю на все его сокеты
-   */
+  
   async notifyUser(userId: number, event: string, data: unknown): Promise<void> {
     this.logger.log(`[ChatNotificationService] notifyUser: userId=${userId}, event=${event}`);
     
@@ -111,10 +98,7 @@ export class ChatNotificationService {
     this.logger.log(`[ChatNotificationService] Sent ${event} to user ${userId} on ${sockets.length} socket(s)`);
   }
 
-  /**
-   * Оповестить всех участников чата о важных событиях
-   * (создание чата, изменение статуса заказа, и т.д.)
-   */
+  
   notifyRoom(roomId: number, event: string, data: unknown): void {
     if (!this.server) {
       this.logger.warn('Server not set, cannot notify room');
@@ -127,24 +111,17 @@ export class ChatNotificationService {
     this.logger.log(`Notified room ${roomId} about ${event}`);
   }
 
-  /**
-   * Отправить обновление списка чатов пользователю
-   * Используется при создании нового чата или изменении метаданных
-   */
+  
   async notifyChatListUpdate(userId: number): Promise<void> {
     await this.notifyUser(userId, 'chatListUpdate', { timestamp: Date.now() });
   }
 
-  /**
-   * Отправить обновление метаданных чата всем участникам
-   */
+  
   notifyChatMetaUpdate(roomId: number, meta: unknown): void {
     this.notifyRoom(roomId, 'chatMetaUpdate', meta);
   }
 
-  /**
-   * Отправить уведомление о прочтении сообщений
-   */
+  
   notifyMessagesRead(roomId: number, userId: number, messageIds: number[]): void {
     if (!this.server) {
       this.logger.warn('Server not set, cannot notify messages read');
@@ -157,13 +134,9 @@ export class ChatNotificationService {
     this.logger.log(`Notified room ${roomId} that user ${userId} read ${messageIds.length} messages`);
   }
 
-  /**
-   * Проверить и отправить непрочитанные уведомления для всех активных пользователей
-   * Может вызываться периодически для синхронизации состояния
-   */
+  
   syncUnreadCounts(roomId: number, userIds: number[]): void {
-    // TODO: Интегрировать с ChatService для получения реальных непрочитанных counts
-    // Пока логируем
     this.logger.log(`Would sync unread counts for room ${roomId}: ${userIds.join(', ')}`);
   }
 }
+

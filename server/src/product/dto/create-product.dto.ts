@@ -41,10 +41,7 @@ class LicenseDto {
 }
 
 export class CreateProductDto {
-  // name и description перенесены в массив translations
-  // sku удален
 
-  // price убран - теперь вычисляется как MIN(licenses.price)
 
   @IsNumber({}, { message: 'Discount price must be a number' })
   @IsOptional()
@@ -55,18 +52,14 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'Type is required' })
   type: ProductType;
 
-  // Основной файл продукта
   @IsString({ message: 'File URL must be a string' })
   @IsOptional()
   fileUrl?: string;
 
-  // Временный URL файла (будет перемещен при создании продукта)
   @IsString({ message: 'Temp file URL must be a string' })
   @IsOptional()
   tempFileUrl?: string;
 
-  // Временные URL медиа (будут перемещены при создании продукта)
-  // Может быть массив URL (строк) или массив объектов { url, isCover }
   @IsOptional()
   tempMediaUrls?: { url: string; isCover?: boolean }[];
 
@@ -83,7 +76,6 @@ export class CreateProductDto {
   @IsOptional()
   isFeatured?: boolean;
 
-  // mainImage убран - теперь берется из media where is_cover = true
 
   @IsArray({ message: 'Category IDs must be an array' })
   @IsOptional()
@@ -102,3 +94,5 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'At least one license is required' })
   licenses: LicenseDto[];
 }
+
+

@@ -34,3 +34,5 @@ import { Offer } from '../db/models/offer.model';
   exports: [CheckoutService],
 })
 export class CheckoutModule {}
+
+

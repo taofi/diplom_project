@@ -70,3 +70,5 @@ export class UserController {
     return this.userService.updateLocale(id, updateUserLocaleDto.locale);
   }
 }
+
+

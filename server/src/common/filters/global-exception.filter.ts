@@ -22,7 +22,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       console.error('[GlobalExceptionFilter] Error message:', exception.message);
       console.error('[GlobalExceptionFilter] Error stack:', exception.stack);
       
-      // Проверяем, является ли это ошибкой Multer
       if (exception.message && exception.message.includes('Unexpected field')) {
         console.error('[GlobalExceptionFilter] === MULTER ERROR DETECTED ===');
         console.error('[GlobalExceptionFilter] Field name from error:', exception.message);
@@ -31,7 +30,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     
     console.error('[GlobalExceptionFilter] ===== END ERROR =====');
 
-    // Если это HttpException - используем её статус
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
@@ -45,7 +43,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
     }
 
-    // Для всех остальных ошибок - возвращаем 500
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Internal server error',
       error: 'Internal Server Error',
@@ -53,3 +50,4 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     });
   }
 }
+

@@ -38,7 +38,6 @@ export class OptionalJwtAuthGuard implements CanActivate {
     
     console.log('[AuthGuard] authHeader:', authHeader);
 
-    // Если нет токена - пропускаем (не выбрасываем ошибку)
     if (!authHeader) {
       return true;
     }
@@ -49,13 +48,11 @@ export class OptionalJwtAuthGuard implements CanActivate {
       return true;
     }
 
-    // Check if token is blacklisted
     const isBlacklisted = await this.tokenService.isTokenBlacklisted(token);
     if (isBlacklisted) {
-      return true; // Не блокируем, просто не аутентифицируем
+      return true;
     }
 
-    // Validate token and get user
     try {
       const payload = this.jwtService.verify<{ sub: number }>(token);
       
@@ -65,13 +62,13 @@ export class OptionalJwtAuthGuard implements CanActivate {
       
       const user = await this.authService.getProfile(payload.sub);
       
-      // Присваиваем полный объект пользователя в request для использования в декораторах @CurrentUser()
       request.user = user;
     } catch (error) {
-      // При любой ошибке верификации - пропускаем (не выбрасываем ошибку)
       return true;
     }
 
     return true;
   }
 }
+
+

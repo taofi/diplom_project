@@ -21,10 +21,7 @@ class TranslationDto {
 }
 
 export class UpdateProductDto {
-  // name и description перенесены в массив translations
-  // sku удален
 
-  // price убран - вычисляется как MIN(licenses.price)
 
   @IsNumber({}, { message: 'Discount price must be a number' })
   @IsOptional()
@@ -52,7 +49,6 @@ export class UpdateProductDto {
   @IsOptional()
   isFeatured?: boolean;
 
-  // mainImage убран - берется из media where is_cover = true
 
   @IsArray({ message: 'Category IDs must be an array' })
   @IsOptional()
@@ -65,35 +61,32 @@ export class UpdateProductDto {
   @Type(() => TranslationDto)
   translations?: TranslationDto[];
 
-  // Лицензии (добавляются/обновляются при редактировании)
   @IsArray({ message: 'Licenses must be an array' })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => Object)
   licenses?: { licenseTypeId: number; price: number }[];
 
-  // Временный URL основного файла (будет перемещен при обновлении)
   @IsString({ message: 'Temp file URL must be a string' })
   @IsOptional()
   tempFileUrl?: string;
 
-  // Временные URL медиа (будут перемещены при обновлении)
   @IsArray({ message: 'Temp media URLs must be an array' })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => Object)
   tempMediaUrls?: { url: string; isCover?: boolean }[];
 
-  // Обновленные медиа (изменение isCover для существующих)
   @IsArray({ message: 'Updated media must be an array' })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => Object)
   updatedMedia?: { id: number; isCover?: boolean }[];
 
-  // ID удаленных медиа
   @IsArray({ message: 'Deleted media IDs must be an array' })
   @IsOptional()
   @IsNumber({}, { each: true })
   deletedMediaIds?: number[];
 }
+
+

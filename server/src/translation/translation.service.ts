@@ -28,12 +28,7 @@ export class TranslationService {
     private readonly productMediaModel: typeof ProductMedia,
   ) {}
 
-  /**
-   * Получить перевод продукта по ID и языку
-   * @param productId - ID продукта
-   * @param locale - язык (ru/en)
-   * @returns данные перевода или null
-   */
+  
   async getProductTranslation(
     productId: number,
     locale?: string,
@@ -41,7 +36,6 @@ export class TranslationService {
     const normalizedLocale = normalizeLanguage(locale);
     console.log('[DEBUG] getProductTranslation: productId =', productId, ', locale =', locale, ', normalizedLocale =', normalizedLocale);
 
-    // Для product_translations используется поле 'language' (not 'locale')
     const translation = await this.productTranslationModel.findOne({
       where: {
         productId: productId,
@@ -51,7 +45,6 @@ export class TranslationService {
     console.log('[DEBUG] getProductTranslation: found =', translation ? 'yes' : 'no');
     
     if (!translation) {
-      // Если перевод для указанного языка не найден, пробуем получить любой
       const fallbackTranslation = await this.productTranslationModel.findOne({
         where: {
           productId: productId,
@@ -76,19 +69,13 @@ export class TranslationService {
     };
   }
 
-  /**
-   * Получить перевод типа лицензии по ID и языку
-   * @param licenseTypeId - ID типа лицензии
-   * @param locale - язык (ru/en)
-   * @returns данные перевода или null
-   */
+  
   async getLicenseTypeTranslation(
     licenseTypeId: number,
     locale?: string,
   ): Promise<LicenseTypeTranslationData | null> {
     const normalizedLocale = normalizeLanguage(locale);
 
-    // Для license_type_translations используется поле 'locale'
     const translation = await this.licenseTypeTranslationModel.findOne({
       where: {
         license_type_id: licenseTypeId,
@@ -97,7 +84,6 @@ export class TranslationService {
     });
 
     if (!translation) {
-      // Если перевод для указанного языка не найден, пробуем получить любой
       const fallbackTranslation = await this.licenseTypeTranslationModel.findOne({
         where: {
           license_type_id: licenseTypeId,
@@ -120,11 +106,7 @@ export class TranslationService {
     };
   }
 
-  /**
-   * Получить главное изображение продукта (is_cover = true)
-   * @param productId - ID продукта
-   * @returns URL изображения или null
-   */
+  
   async getProductCoverImage(productId: number): Promise<string | null> {
     const media = await this.productMediaModel.findOne({
       where: {
@@ -136,11 +118,7 @@ export class TranslationService {
     return media?.url || null;
   }
 
-  /**
-   * Получить все изображения продукта с указанием является ли封面
-   * @param productId - ID продукта
-   * @returns массив медиа с признаком isCover
-   */
+  
   async getProductMedia(productId: number): Promise<Array<{ url: string; isCover: boolean }>> {
     const media = await this.productMediaModel.findAll({
       where: {
@@ -155,12 +133,7 @@ export class TranslationService {
     }));
   }
 
-  /**
-   * Пакетное получение переводов продуктов
-   * @param productIds - массив ID продуктов
-   * @param locale - язык
-   * @returns Map с ID продукта и переводом
-   */
+  
   async getProductTranslationsBatch(
     productIds: number[],
     locale?: string,
@@ -172,7 +145,6 @@ export class TranslationService {
       return result;
     }
 
-    // Получаем все переводы для указанных продуктов
     const translations = await this.productTranslationModel.findAll({
       where: {
         productId: {
@@ -182,7 +154,6 @@ export class TranslationService {
       },
     });
 
-    // Заполняем результат
     for (const translation of translations) {
       result.set(translation.productId, {
         name: translation.name || '',
@@ -191,7 +162,6 @@ export class TranslationService {
       });
     }
 
-    // Для продуктов без перевода на указанный язык - получаем любой доступный
     const foundIds = new Set(translations.map((t) => t.productId));
     const missingIds = productIds.filter((id) => !foundIds.has(id));
 
@@ -204,7 +174,6 @@ export class TranslationService {
         },
       });
 
-      // Группируем по productId и берем первый попавшийся
       const groupedByProduct = new Map<number, ProductTranslation>();
       for (const translation of fallbackTranslations) {
         if (!groupedByProduct.has(translation.productId)) {
@@ -224,12 +193,7 @@ export class TranslationService {
     return result;
   }
 
-  /**
-   * Пакетное получение переводов типов лицензий
-   * @param licenseTypeIds - массив ID типов лицензий
-   * @param locale - язык
-   * @returns Map с ID типа лицензии и переводом
-   */
+  
   async getLicenseTypeTranslationsBatch(
     licenseTypeIds: number[],
     locale?: string,
@@ -257,7 +221,6 @@ export class TranslationService {
       });
     }
 
-    // Для типов лицензий без перевода - получаем любой доступный
     const foundIds = new Set(translations.map((t) => t.license_type_id));
     const missingIds = licenseTypeIds.filter((id) => !foundIds.has(id));
 
@@ -288,3 +251,4 @@ export class TranslationService {
     return result;
   }
 }
+

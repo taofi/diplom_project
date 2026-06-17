@@ -21,3 +21,5 @@ export class RegisterDto {
   @IsString()
   locale?: string = 'ru';
 }
+
+

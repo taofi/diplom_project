@@ -24,7 +24,7 @@ export class LicenseTypeController {
   async findAll(@Query('language') language?: string) {
     return this.licenseTypeService.findAll(language);
   }
-
+ 
   @Get(':id')
   async findById(
     @Param('id', ParseIntPipe) id: number,
@@ -65,3 +65,5 @@ export class LicenseTypeController {
     return { success: true };
   }
 }
+
+

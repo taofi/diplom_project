@@ -45,9 +45,7 @@ export interface CheckoutResponse {
   success: boolean;
 }
 
-/**
- * Ответ при создании Stripe Checkout Session (Phase 1)
- */
+
 export interface CheckoutSessionResponse {
   url: string;
   orderId: number;
@@ -85,11 +83,7 @@ export class CheckoutService {
     return this.orderModel.sequelize!;
   }
 
-/**
-    * Phase 1: Создать Checkout Session для авторизованного пользователя.
-    * Создаёт заказ (PENDING) и Stripe Checkout Session, но НЕ финализирует заказ.
-    * Очистка корзины, создание UserProducts и email — только после webhook.
-    */
+
 
 
   async createCheckoutByUserId(
@@ -106,7 +100,6 @@ export class CheckoutService {
       throw new BadRequestException('Cart is empty');
     }
 
-    // 1. Убедитесь, что createOrderOnly возвращает типизированный объект (например, Order)
     const order = await this.createOrderOnly(
       cartItems,
       { userId, guestEmail: null },
@@ -119,26 +112,21 @@ export class CheckoutService {
 
     const successUrl =
       this.configService.get<string>('STRIPE_CHECKOUT_SUCCESS_URL') ||
-      'http://localhost:4200/checkout/success';
+      'http:
     const cancelUrl =
       this.configService.get<string>('STRIPE_CHECKOUT_CANCEL_URL') ||
-      'http://localhost:4200/checkout/cancel';
+      'http:
 
-    // 2. Явно типизируем результат. 
-    // Если stripeService.createCheckoutSession возвращает 'any', 
-    // это исправит "Unsafe assignment"
     const session = (await this.stripeService.createCheckoutSession({
       orderId: order.id,
       lineItems: stripeLineItems,
       successUrl,
       cancelUrl,
       metadata: { orderId: String(order.id) },
-    })); // Принудительное приведение, если сервис не дотипизирован
+    }));
 
     this.logger.log(`[DEBUG] Stripe session created: ${session.id}, url: ${session.url?.substring(0, 50)}...`);
 
-    // 3. Используем id напрямую, если order типизирован корректно.
-    // Если линтер ругается на order.id, добавьте проверку или приведение типа:
     const orderId = order.id;
 
     await this.orderModel.update(
@@ -156,10 +144,7 @@ export class CheckoutService {
     };
   }
 
-/**
-    * Phase 1: Создать Checkout Session для гостя.
-    * Аналогично createCheckoutByUserId, но с guestEmail.
-    */
+
   async createCheckoutByGuestId(
     guestId: string,
     dto: CreateCheckoutDto,
@@ -171,7 +156,6 @@ export class CheckoutService {
       throw new BadRequestException('Email is required for guest checkout');
     }
 
-    // Получаем гостевую корзину
     const cartItems = await this.cartService.getFormattedGuestCart(guestId, locale);
     this.logger.log(`[DEBUG] Got ${cartItems.length} guest cart items`);
 
@@ -179,7 +163,6 @@ export class CheckoutService {
       throw new BadRequestException('Cart is empty');
     }
 
-    // Создаём заказ (PENDING) и OrderItems
     const order = await this.createOrderOnly(
       cartItems,
       { userId: null, guestEmail: dto.guestEmail },
@@ -187,17 +170,15 @@ export class CheckoutService {
     );
     this.logger.log(`[DEBUG] Created order ${order.id} for guest`);
 
-    // Формируем line_items для Stripe из корзины
     const stripeLineItems = this.buildStripeLineItems(cartItems);
 
     const successUrl =
       this.configService.get<string>('STRIPE_CHECKOUT_SUCCESS_URL') ||
-      'http://localhost:4200/checkout/success';
+      'http:
     const cancelUrl =
       this.configService.get<string>('STRIPE_CHECKOUT_CANCEL_URL') ||
-      'http://localhost:4200/checkout/cancel';
+      'http:
 
-    // Создаём Stripe Checkout Session с email гостя
     const session = await this.stripeService.createCheckoutSession({
       orderId: order.id,
       lineItems: stripeLineItems,
@@ -222,10 +203,7 @@ export class CheckoutService {
     };
   }
 
-/**
-     * Phase 2: Финализация заказа после подтверждения оплаты через Stripe webhook.
-    * Создаёт UserProducts, очищает корзину, отправляет email.
-    */
+
   async finalizeOrder(orderId: number): Promise<void> {
     this.logger.log(`[DEBUG] finalizeOrder START for order ${orderId}`);
     
@@ -234,7 +212,6 @@ export class CheckoutService {
     try {
       this.logger.log(`[DEBUG] Loading order ${orderId} with items`);
       
-      // Загружаем заказ с OrderItems
       const order = await this.orderModel.findByPk(orderId, {
         include: [{ model: this.orderItemModel }],
         transaction,
@@ -248,7 +225,6 @@ export class CheckoutService {
 
       this.logger.log(`[DEBUG] Order found: user_id=${order.user_id}, guest_email=${order.guest_email}, status=${order.status}`);
 
-      // Проверяем, что заказ ещё не финализирован (защита от повторного вызова)
       if (order.status !== OrderStatus.PENDING) {
         this.logger.warn(
           `Order ${orderId} is not PENDING (status: ${order.status}), skipping finalization`,
@@ -257,11 +233,9 @@ export class CheckoutService {
         return;
       }
 
-      // Получаем все order_items для заказа
       const orderItems = this.getOrderItems(order);
       this.logger.log(`[DEBUG] Found ${orderItems.length} order items`);
 
-      // Создаём UserProducts (только для авторизованных пользователей)
       if (order.user_id) {
         this.logger.log(`[DEBUG] Creating UserProducts for user ${order.user_id}`);
         for (const item of orderItems) {
@@ -284,7 +258,6 @@ export class CheckoutService {
             });
 
             if (existingUserProduct) {
-              // Увеличиваем количество
               const newCount =
                 (existingUserProduct.count || 1) + (item.quantity || 1);
               await existingUserProduct.update(
@@ -313,7 +286,6 @@ export class CheckoutService {
         this.logger.log(`[DEBUG] Guest order - skipping UserProducts creation`);
       }
 
-      // Очищаем корзину
       if (order.user_id) {
         this.logger.log(`[DEBUG] Clearing cart for user ${order.user_id}`);
         await this.cartService.clearCart(order.user_id);
@@ -322,7 +294,6 @@ export class CheckoutService {
         this.logger.log(`[DEBUG] Guest order - cart clearing not needed (guest cart ID is: ${order.guest_email || 'none'})`);
       }
 
-      // Обновляем статус заказа на PAID
       this.logger.log(`[DEBUG] Updating order status to PAID`);
       await order.update({ status: OrderStatus.PAID }, { transaction });
       this.logger.log(`[DEBUG] Order status updated to PAID`);
@@ -330,7 +301,6 @@ export class CheckoutService {
       await transaction.commit();
       this.logger.log(`[DEBUG] Transaction committed`);
 
-      // Отправляем email с файлами (вне транзакции, не блокируем)
       await this.sendOrderConfirmationEmail(
         orderId,
         order.user_id || null,
@@ -343,7 +313,6 @@ export class CheckoutService {
       try {
         await transaction.rollback();
       } catch {
-        // Игнорируем ошибку rollback
       }
       this.logger.error(`Failed to finalize order ${orderId}:`, error);
       throw error;
@@ -378,7 +347,6 @@ export class CheckoutService {
         if (event.type === 'checkout.session.async_payment_failed') {
           await this.handleCheckoutSessionFailed(session);
         } else {
-          // Разбираем вебхук по типу сущности: order (по умолчанию) или offer
           const metaType = session.metadata?.type;
           if (metaType === 'offer') {
             await this.handleOfferCheckoutSessionCompleted(session);
@@ -394,9 +362,7 @@ export class CheckoutService {
     }
   }
 
-/**
-     * Обработка успешного Checkout Session
-     */
+
   private async handleCheckoutSessionCompleted(
     session: CheckoutSessionData,
   ): Promise<void> {
@@ -426,11 +392,7 @@ export class CheckoutService {
     this.logger.log(`[DEBUG] finalizeOrder completed for order ${orderId}`);
   }
 
-  /**
-   * Обработка успешного Checkout Session для офера (Stripe вебхук)
-   * Вызывается когда metadata.type === 'offer'
-   * Создаёт Payment с offer_id (order_id = null), помечает офер COMPLETED + is_paid=true.
-   */
+  
   private async handleOfferCheckoutSessionCompleted(
     session: CheckoutSessionData,
   ): Promise<void> {
@@ -468,7 +430,6 @@ export class CheckoutService {
         return;
       }
 
-      // Создаём или обновляем запись Payment для офера (offer_id вместо order_id)
       const paymentModel = this.sequelize!.model('Payment');
 
       const existingPayment = await paymentModel.findOne({
@@ -500,7 +461,6 @@ export class CheckoutService {
       await transaction.commit();
       this.logger.log(`[DEBUG] Transaction committed for offer ${offerId}`);
 
-      // Помечаем офер как оплаченный и завершённый
       await offer.update({
         is_paid: true,
         paid_at: new Date(),
@@ -510,7 +470,6 @@ export class CheckoutService {
 
       this.logger.log(`[DEBUG] Offer ${offerId} marked as COMPLETED and is_paid=true`);
 
-      // WebSocket: уведомить создателя
       await this.chatNotificationService.notifyUser(offer.creator_id, 'offer:paid', {
         offer: {
           id: offer.id,
@@ -534,7 +493,6 @@ export class CheckoutService {
       });
       this.logger.log(`[DEBUG] WS notify offer:paid → creator ${offer.creator_id}`);
 
-      // WebSocket: уведомить автора
       await this.chatNotificationService.notifyUser(offer.author_id, 'offer:paid', {
         offer: {
           id: offer.id,
@@ -563,7 +521,6 @@ export class CheckoutService {
       try {
         await transaction.rollback();
       } catch {
-        // ignore rollback error
       }
       this.logger.error(`Failed to finalize offer payment ${offerId}:`, error);
       throw error;
@@ -604,9 +561,7 @@ export class CheckoutService {
     }
   }
 
-/**
-    * Создать или обновить запись Payment
-    */
+
   private async finalizePayment(
     orderId: number,
     sessionId: string,
@@ -633,13 +588,9 @@ export class CheckoutService {
       this.logger.log(`[DEBUG] Updated existing payment`);
     }
 
-    // Если Payment не найдена — это нормально для guest checkout,
-    // PaymentService.createPayment может быть вызван отдельно
   }
 
-/**
-    * Создать Order и OrderItems (Phase 1 — без UserProducts, очистки корзины, email)
-    */
+
   private async createOrderOnly(
     cartItems: CartItemResponse[],
     userContext: { userId: number | null; guestEmail: string | null },
@@ -647,17 +598,14 @@ export class CheckoutService {
   ): Promise<OrderResponse> {
     this.logger.log(`[DEBUG] createOrderOnly START, userId=${userContext.userId}, guestEmail=${userContext.guestEmail}, cartItems count=${cartItems.length}`);
     
-    // Рассчитываем общую сумму с учётом quantity
     const totalAmount = cartItems.reduce((sum, item) => {
       const quantity = item.quantity || 1;
       return sum + Number(item.product?.price || 0) * quantity;
     }, 0);
 
-    // Создаём заказ в транзакции
     const transaction = await this.sequelize.transaction();
 
     try {
-      // Создаём заказ
       const newOrder = await this.orderModel.create(
         {
           user_id: userContext.userId,
@@ -672,7 +620,6 @@ export class CheckoutService {
 
       this.logger.log(`[DEBUG] Created order ${newOrder.id}, totalAmount=${totalAmount}`);
 
-      // Создаём элементы заказа
       for (const item of cartItems) {
         this.logger.log(`[DEBUG] Processing cart item: productId=${item.productId}, licenseTypeId=${item.licenseTypeId}, quantity=${item.quantity}`);
         
@@ -704,23 +651,18 @@ export class CheckoutService {
       await transaction.commit();
       this.logger.log(`[DEBUG] Transaction committed for order ${newOrder.id}`);
 
-      // Загружаем заказ с элементами
       return await this.orderService.getOrderById(newOrder.id);
     } catch (error) {
-      // rollback вызывается только если транзакция ещё не зафиксирована
       try {
         await transaction.rollback();
       } catch {
-        // Игнорируем ошибку rollback — транзакция уже могла быть зафиксирована
       }
       this.logger.error(`[DEBUG] Error in createOrderOnly:`, error);
       throw error;
     }
   }
 
-  /**
-   * Формирование line_items для Stripe Checkout из корзины
-   */
+  
   private buildStripeLineItems(
     cartItems: CartItemResponse[],
   ): Array<{
@@ -743,9 +685,7 @@ export class CheckoutService {
     }));
   }
 
-  /**
-   * Отправить email с подтверждением заказа и файлами
-   */
+  
   private async sendOrderConfirmationEmail(
     orderId: number,
     userId: number | null,
@@ -753,7 +693,6 @@ export class CheckoutService {
     locale: string,
   ): Promise<void> {
     try {
-      // Определяем email получателя
       let email: string;
 
       if (userId) {
@@ -780,7 +719,6 @@ export class CheckoutService {
         return;
       }
 
-      // Отправляем email с файлами в фоне
       this.emailService.sendOrderConfirmationWithFiles(
         email,
         orderId,
@@ -797,3 +735,4 @@ export class CheckoutService {
     }
   }
 }
+

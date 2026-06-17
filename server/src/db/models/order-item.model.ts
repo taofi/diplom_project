@@ -38,3 +38,5 @@ export class OrderItem extends Model {
   @BelongsTo(() => ProductLicense)
   declare product_license: ProductLicense;
 }
+
+

@@ -32,10 +32,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
-    // Нормализуем роли перед возвратом
     const normalizedRoles = normalizeRoles(user.user_roles?.map(ur => ur.role));
     (user as unknown as { role: string[] }).role = normalizedRoles;
 
     return user;
   }
 }
+
+

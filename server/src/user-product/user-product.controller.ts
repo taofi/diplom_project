@@ -21,9 +21,7 @@ import { normalizeLanguage } from '../translation/utils/language.utils';
 export class UserProductController {
   constructor(private readonly userProductService: UserProductService) {}
 
-  /**
-   * Получить список купленных товаров текущего пользователя
-   */
+  
   @Get()
   async getMyProducts(
     @CurrentUserId() userId: number,
@@ -36,27 +34,24 @@ export class UserProductController {
     return this.userProductService.getUserProducts(userId, normalizedLocale);
   }
 
-  /**
-   * Скачать файл купленного товара
-   */
+  
   @Get(':id/download')
   async downloadProduct(
     @CurrentUserId() userId: number,
     @Param('id', ParseIntPipe) userProductId: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    // Проверяем, что пользователь приобрёл этот товар
     const fileInfo = await this.userProductService.getFileInfo(userId, userProductId);
     if (!fileInfo) {
       throw new NotFoundException('Product not found or not purchased');
     }
 
-    // Устанавливаем заголовки
     res.setHeader('Content-Disposition', `attachment; filename="${fileInfo.filename}"`);
     res.setHeader('Content-Type', fileInfo.mimeType || 'application/octet-stream');
     
-    // Получаем StreamableFile
     return this.userProductService.downloadProduct(userId, userProductId);
   }
 
   }
+
+

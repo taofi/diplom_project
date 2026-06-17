@@ -57,7 +57,6 @@ export class ChatMessage extends Model {
   @CreatedAt
   declare created_at: Date;
 
-  // Associations
   @BelongsTo(() => ChatRoom)
   declare chat_room: ChatRoom;
 
@@ -67,3 +66,5 @@ export class ChatMessage extends Model {
   @HasMany(() => ChatMessageAttachment, 'chat_message_id')
   declare attachments: ChatMessageAttachment[];
 }
+
+

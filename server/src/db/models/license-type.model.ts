@@ -18,7 +18,7 @@ export class LicenseType extends Model {
   declare id: number;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  declare description: string | null; // Описание лицензии
+  declare description: string | null;
 
   @HasMany(() => LicenseTypeTranslation, 'license_type_id')
   declare translations: LicenseTypeTranslation[];
@@ -26,3 +26,5 @@ export class LicenseType extends Model {
   @HasMany(() => ProductLicense, 'license_type_id')
   declare product_licenses: ProductLicense[];
 }
+
+

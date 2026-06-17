@@ -18,3 +18,4 @@ import { Payment } from '../db/models/payment.model';
   exports: [PaymentService, SequelizeModule],
 })
 export class PaymentModule {}
+

@@ -47,31 +47,7 @@ export class CategoryController {
     return { count };
   }
 
-  @Post()
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async create(
-    @Body() createCategoryDto: CreateCategoryDto,
-    @Query('language') language?: string,
-  ) {
-    return this.categoryService.create(createCategoryDto, language);
-  }
-
-  @Patch(':id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCategoryDto: UpdateCategoryDto,
-    @Query('language') language?: string,
-  ) {
-    return this.categoryService.update(id, updateCategoryDto, language);
-  }
-
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    await this.categoryService.delete(id);
-    return { success: true };
-  }
+Кон
 
   @Post(':id/products/:productId')
   @UseGuards(JwtAuthGuard)
@@ -92,3 +68,5 @@ export class CategoryController {
     return { success: true };
   }
 }
+
+

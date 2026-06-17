@@ -151,7 +151,6 @@ export class LicenseTypeService {
       }
     }
 
-    // Include all translations
     result.translations = translations?.map((t) => ({
       locale: t.locale,
       name: t.name,
@@ -161,3 +160,5 @@ export class LicenseTypeService {
     return result;
   }
 }
+
+
