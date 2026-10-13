@@ -1,3 +1,5 @@
 /.kilo
 /.VSCodeCounter
-/.logs
+/logs
+.env
+.env.*
